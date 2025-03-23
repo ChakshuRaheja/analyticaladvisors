@@ -8,6 +8,11 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import Profile from './pages/Profile';
+import ResetPassword from './pages/ResetPassword';
+import ForgotPassword from './pages/ForgotPassword';
+import Analysis from './pages/Analysis';
+import ControlPanel from './pages/ControlPanel';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
 
@@ -26,13 +31,25 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/analysis" element={<Analysis />} />
               
-              {/* Protected routes example */}
-              {/* <Route path="/dashboard" element={
+              {/* Protected routes */}
+              <Route path="/profile" element={
                 <PrivateRoute>
-                  <Dashboard />
+                  <Profile />
                 </PrivateRoute>
-              } /> */}
+              } />
+              <Route path="/reset-password" element={
+                <PrivateRoute>
+                  <ResetPassword />
+                </PrivateRoute>
+              } />
+              <Route path="/control-panel" element={
+                <PrivateRoute>
+                  <ControlPanel />
+                </PrivateRoute>
+              } />
             </Routes>
           </main>
           <Footer />

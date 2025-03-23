@@ -61,17 +61,22 @@ const SignUp = () => {
       
       // Provide more user-friendly error messages
       if (error.code === 'auth/api-key-not-valid') {
-        errorMessage = 'Firebase API key is invalid. Please check your Firebase configuration.';
+        errorMessage = 'Oops! Something went wrong with authentication. Please try again later.';
       } else if (error.code === 'auth/configuration-not-found') {
-        errorMessage = 'Firebase configuration is missing or invalid.';
+        errorMessage = 'Sorry, we\'re having technical difficulties. Please try again later.';
       } else if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'Sign-up was cancelled. Please try again.';
+        errorMessage = 'You closed the sign-up window. Click the button again to try signing up.';
       } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = 'Pop-up was blocked by your browser. Please enable pop-ups for this site.';
+        errorMessage = 'Your browser blocked our sign-up window. Please allow pop-ups for this website and try again.';
       } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = 'Network error. Please check your internet connection.';
+        errorMessage = 'Unable to connect. Please check if you\'re connected to the internet and try again.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered. Try signing in instead.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Please choose a stronger password. Use at least 6 characters.';
       }
-      
       setError(errorMessage);
       console.error('Google sign-up error:', error);
     } finally {

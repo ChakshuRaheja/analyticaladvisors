@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,7 @@ const navLinks = [
   { text: 'Home', path: '/' },
   { text: 'About Us', path: '/about' },
   { text: 'Services', path: '/services' },
+  { text: 'Analysis', path: '/analysis' },
   { text: 'Contact', path: '/contact' },
 ];
 
@@ -51,7 +52,7 @@ const NavLink = ({ path, text, isActive, isMobile, onClick }) => {
         className={`
           block py-2 px-4
           ${isMobile 
-            ? 'text-white hover:bg-gray-700' 
+            ? 'text-white ' 
             : isActive 
               ? 'text-white font-bold' 
               : 'text-gray-300 hover:text-white'
@@ -74,6 +75,8 @@ function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [error, setError] = useState("");
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -82,6 +85,18 @@ function Navbar() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleDrawerToggle = () => {
@@ -99,12 +114,16 @@ function Navbar() {
     }
   };
 
+  const toggleProfileMenu = () => {
+    setProfileMenuOpen(!profileMenuOpen);
+  };
+
   return (
     <HideOnScroll>
       <nav className={`
         fixed w-full z-50 transition-all duration-300
         ${scrolled || location.pathname !== '/' 
-          ? 'bg-black/95 backdrop-blur-md shadow-sm' 
+          ? 'bg-black shadow-sm' 
           : 'bg-black'
         }
       `}>
@@ -131,18 +150,52 @@ function Navbar() {
               ))}
               
               {currentUser ? (
-                <div className="flex items-center space-x-4">
-                  <span className="text-gray-300">
-                    {currentUser.displayName || currentUser.email}
-                  </span>
+                <div className="relative" ref={profileMenuRef}>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={handleLogout}
-                    className="text-black bg-white hover:bg-gray-200 px-4 py-2 rounded-md transition-colors duration-300"
+                    onClick={toggleProfileMenu}
+                    className="flex items-center space-x-2 text-white hover:text-gray-200 focus:outline-none"
                   >
-                    Logout
+                    <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-black">
+                      {currentUser.displayName 
+                        ? currentUser.displayName.charAt(0).toUpperCase() 
+                        : currentUser.email.charAt(0).toUpperCase()}
+                    </div>
+                    <span>{currentUser.displayName || currentUser.email.split('@')[0]}</span>
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className={`h-4 w-4 transition-transform duration-200 ${profileMenuOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </motion.button>
+                  
+                  {/* Profile Menu Dropdown */}
+                  {profileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-md shadow-xl z-50">
+                      <RouterLink 
+                        to="/control-panel" 
+                        className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        Control Panel
+                      </RouterLink>
+                      <hr className="my-1 border-gray-200" />
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setProfileMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <motion.div
@@ -210,10 +263,24 @@ function Navbar() {
             ))}
             
             {currentUser ? (
-              <div className="mt-4">
-                <div className="text-gray-300 mb-2">
-                  {currentUser.displayName || currentUser.email}
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center space-x-2 text-white p-2">
+                  <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-black">
+                    {currentUser.displayName 
+                      ? currentUser.displayName.charAt(0).toUpperCase() 
+                      : currentUser.email.charAt(0).toUpperCase()}
+                  </div>
+                  <span>{currentUser.displayName || currentUser.email.split('@')[0]}</span>
                 </div>
+                
+                <RouterLink
+                  to="/control-panel"
+                  onClick={handleDrawerToggle}
+                  className="block w-full text-white hover:bg-gray-700 py-2 px-4 rounded-md"
+                >
+                  Control Panel
+                </RouterLink>
+                
                 <button
                   onClick={() => {
                     handleLogout();

@@ -20,7 +20,7 @@ const Login = () => {
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
     } catch (error) {
-      setError(error.message);
+      setError('Invalid login credentials');
       console.error('Login error:', error);
     } finally {
       setLoading(false);
@@ -56,39 +56,7 @@ const Login = () => {
         stack: error.stack
       });
       
-      let errorMessage;
-      
-      // More detailed error handling based on Firebase error codes
-      switch(error.code) {
-        case 'auth/api-key-not-valid':
-          errorMessage = 'Firebase API key is invalid. Check Firebase configuration.';
-          break;
-        case 'auth/configuration-not-found':
-          errorMessage = 'Firebase configuration is missing or invalid.';
-          break;
-        case 'auth/popup-closed-by-user':
-          errorMessage = 'Sign-in was cancelled. Please try again.';
-          break;
-        case 'auth/popup-blocked':
-          errorMessage = 'Pop-up was blocked by your browser. Please enable pop-ups for this site.';
-          break;
-        case 'auth/network-request-failed':
-          errorMessage = 'Network error. Please check your internet connection.';
-          break;
-        case 'auth/invalid-credential':
-          errorMessage = 'The credential used for sign-in is invalid. Please try again.';
-          break;
-        case 'auth/operation-not-allowed':
-          errorMessage = 'Google sign-in is not enabled for this Firebase project.';
-          break;
-        case 'auth/internal-error':
-          errorMessage = 'An internal authentication error occurred. Please try again later.';
-          break;
-        default:
-          errorMessage = `Authentication error: ${error.message}`;
-      }
-      
-      setError(errorMessage);
+      setError('Unable to sign in with Google. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -102,9 +70,17 @@ const Login = () => {
             <h1 className="text-3xl font-bold text-center mb-6">Login</h1>
             
             {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                <p className="font-bold">Error:</p>
-                <p>{error}</p>
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r shadow-md transform transition-all duration-300 ease-in-out hover:scale-[1.02]">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700 font-medium">{error}</p>
+                  </div>
+                </div>
               </div>
             )}
             
@@ -125,9 +101,17 @@ const Login = () => {
               </div>
               
               <div className="mb-6">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-                  Password
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-gray-700 text-sm font-bold" htmlFor="password">
+                    Password
+                  </label>
+                  <Link 
+                    to="/forgot-password" 
+                    className="text-sm text-indigo-600 hover:text-indigo-800 transition-colors"
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
                 <input
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   id="password"
