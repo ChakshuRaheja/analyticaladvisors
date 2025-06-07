@@ -1,0 +1,16 @@
+{
+  "name": "Niveshartha",
+  "short_name": "Niveshartha",
+  "description": "Investment and financial advisory services",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3399cc",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+} 
