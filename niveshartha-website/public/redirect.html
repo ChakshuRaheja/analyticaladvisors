@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Navigation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        a {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        a:hover {
+            background-color: #3367d6;
+        }
+        .note {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Service Navigation</h1>
+    <p>Use the links below to navigate to service pages directly:</p>
+    
+    <div class="card">
+        <h2>Research Services</h2>
+        <ul>
+            <li><a href="/services/equity-research">Equity Research Reports</a></li>
+            <li><a href="/services/commodity-research">Commodity Research Reports</a></li>
+            <li><a href="/services/derivatives-research">Derivatives Research (F&O)</a></li>
+            <li><a href="/services/investment-ideas">Investment Ideas</a></li>
+            <li><a href="/services/sector-reports">Sector & Thematic Reports</a></li>
+            <li><a href="/services/model-portfolios">Model Portfolios</a></li>
+            <li><a href="/services/market-commentary">Market Commentary</a></li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2>Other Services</h2>
+        <ul>
+            <li><a href="/portfolio-review">Portfolio Review</a></li>
+            <li><a href="/contact">Contact Us</a></li>
+            <li><a href="/services">Back to Services</a></li>
+        </ul>
+    </div>
+    
+    <div class="note">
+        <p><strong>Note:</strong> If you're experiencing navigation issues on the main site, please use these direct links as an alternative.</p>
+    </div>
+
+    <script>
+        // Simple script to track if clicks are happening
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A') {
+                console.log('Link clicked: ' + e.target.href);
+                // Create a visible notification
+                const notification = document.createElement('div');
+                notification.style.position = 'fixed';
+                notification.style.top = '20px';
+                notification.style.left = '50%';
+                notification.style.transform = 'translateX(-50%)';
+                notification.style.padding = '10px 20px';
+                notification.style.backgroundColor = '#4caf50';
+                notification.style.color = 'white';
+                notification.style.borderRadius = '4px';
+                notification.style.zIndex = '9999';
+                notification.textContent = 'Navigating to: ' + e.target.href;
+                document.body.appendChild(notification);
+                
+                // Optional: Add this fallback in case the link doesn't work
+                setTimeout(function() {
+                    window.location.href = e.target.href;
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html> 
