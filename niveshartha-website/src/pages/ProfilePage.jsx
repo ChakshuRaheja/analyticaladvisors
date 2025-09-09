@@ -1,10 +1,21 @@
-import React from 'react';
-import RiskProfiling from '../components/RiskProfiling';
+import React, { useEffect } from 'react';
 import KYCVerification from '../components/KYCVerification';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const ProfilePage = () => {
   const { currentUser } = useAuth();
+  const location = useLocation();
+  
+  // Ensure scrolling is enabled when this component mounts
+  useEffect(() => {
+    document.body.style.overflow = 'auto';
+    window.scrollTo(0, 0);
+    
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [location.pathname]);
 
   if (!currentUser) {
     return (
@@ -21,16 +32,10 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">Your Profile</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">KYC Verification</h1>
         
         <div className="space-y-8">
-          <section id="risk-profiling">
-            <RiskProfiling />
-          </section>
-          
-          <section id="kyc-verification">
-            <KYCVerification />
-          </section>
+          <KYCVerification />
         </div>
       </div>
     </div>

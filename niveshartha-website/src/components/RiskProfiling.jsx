@@ -4,6 +4,28 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import ErrorBoundary from './ErrorBoundary';
 
+// Helper function to safely get environment variables
+const getEnv = (key, fallback = '') => {
+  // First try Vite's import.meta.env
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+    return import.meta.env[key];
+  }
+  // Then try window.env (set in public/env.js)
+  if (typeof window !== 'undefined' && window.env && window.env[key]) {
+    return window.env[key];
+  }
+  // Fallback to process.env (for Create React App)
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  return fallback;
+};
+
+// Get API base URL with fallback
+const getApiBaseUrl = () => {
+  return getEnv('REACT_APP_API_BASE_URL', 'http://localhost:3001');
+};
+
 // Error boundary for form sections
 const FormSection = ({ title, children }) => (
   <ErrorBoundary fallback={<div className="text-red-600 p-4 bg-red-50 rounded-md">An error occurred in the {title} section.</div>}>
@@ -157,7 +179,7 @@ const RiskProfiling = () => {
           
           // Try to call the KYC verification API
           try {
-            const response = await fetch('http://localhost:3001/api/kyc/verify', {
+            const response = await fetch(`${getApiBaseUrl()}/api/kyc/verify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

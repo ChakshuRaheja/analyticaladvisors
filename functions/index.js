@@ -49,21 +49,52 @@ exports.checkAndExpireSubscriptions = functions.pubsub
     }
   });
 
+// CORS configuration
+const cors = require('cors')({ 
+  origin: [
+    'https://analyticaladvisors.web.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+});
+
 /**
  * Function to update subscription status when endDate is reached
  * This is a callable function that can be triggered from the client side
  */
-exports.updateSubscriptionStatus = functions.https.onCall(async (data, context) => {
-  try {
-    // Verify authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        'You must be logged in to update subscription status.'
-      );
+exports.updateSubscriptionStatus = functions.https.onRequest(async (req, res) => {
+  // Enable CORS
+  return cors(req, res, async () => {
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
     }
+    
+    try {
 
-    const userId = context.auth.uid;
+      // Verify authentication from headers for HTTP requests
+      const authHeader = req.headers.authorization || '';
+      if (!authHeader.startsWith('Bearer ')) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      
+      const idToken = authHeader.split('Bearer ')[1];
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(idToken);
+      } catch (error) {
+        console.error('Error verifying token:', error);
+        res.status(401).json({ error: 'Invalid token' });
+        return;
+      }
+
+    const userId = decodedToken.uid;
     const now = admin.firestore.Timestamp.now();
     
     // Get the user's active subscription
@@ -90,18 +121,15 @@ exports.updateSubscriptionStatus = functions.https.onCall(async (data, context) 
     
     await batch.commit();
     
-    return { 
+    res.status(200).json({ 
       updated: true, 
       message: `Updated ${updates.length} subscription(s) to expired status`,
       updatedIds: updates
-    };
-    
-  } catch (error) {
-    console.error('Error updating subscription status:', error);
-    throw new functions.https.HttpsError(
-      'internal',
-      'Failed to update subscription status',
-      error.message
-    );
-  }
+    });
+      
+    } catch (error) {
+      console.error('Error updating subscription status:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 });

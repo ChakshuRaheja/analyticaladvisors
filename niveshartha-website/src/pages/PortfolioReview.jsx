@@ -212,25 +212,58 @@ const PortfolioReview = () => {
     }
 
     const fetchStocks = async () => {
+      // Skip if component is unmounting or no user
+      if (!currentUser) {
+        console.log('Skipping stocks fetch - no user');
+        return;
+      }
+      
+      // Set loading state and clear any previous errors
+      setLoading(true);
+      setError(null);
+      
+      // Create abort controller for request cancellation
+      const controller = new AbortController();
+      const timeoutId = setTimeout(
+        () => controller.abort(new Error('Request timed out after 10 seconds')), 
+        10000
+      );
+      
       try {
         console.log('Fetching stocks from API...');
-        // Create AbortController for timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
         
-        const response = await fetch('https://analytics-advisor-backend-1-583205731005.us-central1.run.app/get_stocks_list', {
+        // Make the API request with minimal headers to avoid CORS preflight
+        const apiUrl = 'https://analytics-advisor-backend-1-583205731005.us-central1.run.app/get_stocks_list';
+        console.log('Making request to:', apiUrl);
+        
+        // Try with minimal headers first
+        const response = await fetch(apiUrl, {
           method: 'GET',
+          // Don't set Content-Type for GET requests to avoid preflight
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Accept': 'application/json'
           },
+          // Don't set mode: 'cors' as it's the default
           signal: controller.signal
+        }).catch(err => {
+          console.error('Fetch error:', err);
+          throw new Error(`Failed to fetch stocks: ${err.message}`);
         });
         
+        // Clear the timeout since we got a response
         clearTimeout(timeoutId);
         
+        // Handle non-2xx responses
         if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
+          let errorMessage = `API error: ${response.status} ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If we can't parse the error response, use the status text
+            console.warn('Could not parse error response:', e);
+          }
+          throw new Error(errorMessage);
         }
         
         const data = await response.json();
@@ -353,17 +386,6 @@ const PortfolioReview = () => {
     setError(null); // Clear any error messages
   };
 
-  const handleRemoveStock = (symbol) => {
-    setSelectedStocks(prev => prev.filter(s => s.symbol !== symbol));
-    
-    // Also remove price if exists
-    setStockPrices(prev => {
-      const newPrices = {...prev};
-      delete newPrices[symbol];
-      return newPrices;
-    });
-  };
-
   const handleUpdatePrice = (symbol, price) => {
     if (price === '' || isNaN(parseFloat(price))) {
       // Remove price if empty or invalid
@@ -379,6 +401,18 @@ const PortfolioReview = () => {
         [symbol]: parseFloat(price).toString()
       }));
     }
+  };
+
+  // Handle removing a stock from the review list
+  const handleRemoveStock = (symbol) => {
+    setSelectedStocks(prev => prev.filter(stock => stock.symbol !== symbol));
+    
+    // Also remove the price if it exists
+    setStockPrices(prev => {
+      const newPrices = {...prev};
+      delete newPrices[symbol];
+      return newPrices;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -407,6 +441,18 @@ const PortfolioReview = () => {
         setError(`Please enter purchase prices for: ${missingPrices.map(s => s.symbol).join(', ')}`);
         return;
       }
+      
+      // Prepare email notification
+      const emailSubject = `New Portfolio Review Submission - ${currentUser.email || 'User'}`;
+      const emailBody = `
+        User: ${currentUser.email || 'Not provided'}
+        Submission Date: ${new Date().toLocaleString()}
+        
+        Selected Stocks:
+        ${selectedStocks.map(stock => 
+          `- ${stock.symbol} (${stock.name}): ${stockPrices[stock.symbol] || '0'} INR`
+        ).join('\n')}
+      `;
       
       // Log important data at the start of submission
       console.log("Starting submission for user:", currentUser.uid);
@@ -536,7 +582,30 @@ const PortfolioReview = () => {
           });
         }
         
-        // Even if Firestore fails, the API submission was successful, so show success
+        // Send email notification
+        try {
+          const formData = new FormData();
+          formData.append('_subject', emailSubject);
+          formData.append('_template', 'table');
+          formData.append('_autoresponse', 'Thank you for submitting your portfolio review. We will analyze it and get back to you soon.');
+          formData.append('email', 'analyticaladvisors@gmail.com');
+          formData.append('message', emailBody);
+          
+          await fetch('https://formsubmit.co/ajax/analyticaladvisors@gmail.com', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+          
+          console.log('Email notification sent successfully');
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+          // Don't fail the submission if email fails
+        }
+        
+        // Show success state
         setSubmitting(false);
         setSuccess(true);
         
@@ -609,7 +678,7 @@ const PortfolioReview = () => {
         <div className="min-h-screen bg-gray-100 pt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
             </div>
           </div>
         </div>
@@ -630,37 +699,29 @@ const PortfolioReview = () => {
             {success ? (
               <div className="text-center py-10">
                 <h2 className="text-2xl font-semibold text-green-600 mb-4">Portfolio Submitted Successfully!</h2>
-                <p className="mb-6">Thank you for submitting your portfolio. Our analysis will be provided to you shortly.</p>
-                <Link to="/" className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                <p className="mb-6">Thank you for your submission. Expect a response within 48 hours.</p>
+                <Link to="/" className="px-6 py-3 bg-teal-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                   Return to Home
                 </Link>
               </div>
             ) : hasSubmittedBefore && daysUntilNextSubmission > 0 ? (
               <div className="text-center py-10">
                 <h2 className="text-2xl font-semibold text-amber-600 mb-4">Portfolio Already Submitted</h2>
-                <p className="mb-2">You have already submitted a portfolio for review on {previousSubmission?.date.toLocaleDateString()}.</p>
+                <p className="mb-2">You have already submitted a portfolio for review on {previousSubmission?.date.toLocaleDateString('en-GB')}.</p>
                 <p className="mb-6">You can submit another portfolio after {daysUntilNextSubmission} days.</p>
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-2">Your submitted portfolio:</h3>
-                  <ul className="list-disc list-inside">
-                    {previousSubmission?.stocks.map((stock, index) => (
-                      <li key={index}>{stock.symbol} - {stock.name || stock.symbol}</li>
-                    ))}
-                  </ul>
-                </div>
-                <Link to="/" className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+
+                <Link to="/" className="px-6 py-3 bg-teal-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                   Return to Home
                 </Link>
               </div>
             ) : (
               <>
                 <p className="text-gray-600 mb-6">
-                  Select the stocks in your portfolio for a comprehensive review. Our AI-powered analysis will provide insights and recommendations.
-                </p>
+                  Select the stocks in your portfolio for a comprehensive review. Our data-powered analysis delivers insights and recommendations.</p>
                 
                 {/* Information note about review frequency */}
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-blue-800 flex items-center">
+                <div className="mb-6 p-4 bg-teal-50 border border-teal-200 rounded-lg">
+                  <p className="text-teal-800 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -684,14 +745,14 @@ const PortfolioReview = () => {
                         }}
                         onFocus={() => setShowDropdown(true)}
                         placeholder="Search by name or symbol..."
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
                       />
                       {showDropdown && filteredStocks.length > 0 && (
                         <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg max-h-60 overflow-y-auto">
-                          {filteredStocks.slice(0, 10).map((stock) => (
+                          {filteredStocks.map((stock) => (
                             <div
                               key={stock.symbol}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-0"
                               onClick={() => {
                                 setCurrentStock(stock.symbol);
                                 setSearchTerm(`${stock.symbol} - ${stock.name}`);
@@ -699,7 +760,7 @@ const PortfolioReview = () => {
                               }}
                             >
                               <div className="font-medium">{stock.symbol}</div>
-                              <div className="text-sm text-gray-500">{stock.name}</div>
+                              <div className="text-sm text-gray-500 truncate">{stock.name}</div>
                             </div>
                           ))}
                         </div>
@@ -727,7 +788,7 @@ const PortfolioReview = () => {
                       onClick={handleAddStock}
                       disabled={!currentStock}
                       className={`px-4 py-2 rounded-md text-white font-medium w-full ${
-                        !currentStock ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                        !currentStock ? 'bg-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700'
                       }`}
                     >
                       Add to Review List
@@ -745,41 +806,80 @@ const PortfolioReview = () => {
                 {/* Selected Stocks Table */}
                 {selectedStocks.length > 0 && (
                   <div className="mb-6 overflow-hidden border border-gray-200 rounded-lg">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Your Price</th>
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                    {/* Desktop Table */}
+                    <div className="hidden md:block">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Your Price</th>
+                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {selectedStocks.map(stock => (
+                            <tr key={stock.symbol}>
+                              <td className="px-6 py-4 whitespace-nowrap font-medium">{stock.symbol}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{stock.name}</td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <input
+                                  type="number"
+                                  value={stockPrices[stock.symbol] || ''}
+                                  onChange={(e) => handleUpdatePrice(stock.symbol, e.target.value)}
+                                  placeholder="Enter price..."
+                                  className="w-40 px-2 py-1 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right">
+                                <button
+                                  onClick={() => handleRemoveStock(stock.symbol)}
+                                  className="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-600 hover:bg-red-200 rounded-md text-sm font-medium transition-colors"
+                                  title="Remove from list"
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile List */}
+                    <div className="md:hidden">
+                      <div className="divide-y divide-gray-200">
                         {selectedStocks.map(stock => (
-                          <tr key={stock.symbol}>
-                            <td className="px-6 py-4 whitespace-nowrap font-medium">{stock.symbol}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{stock.name}</td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <input
-                                type="number"
-                                value={stockPrices[stock.symbol] || ''}
-                                onChange={(e) => handleUpdatePrice(stock.symbol, e.target.value)}
-                                placeholder="Enter price..."
-                                className="w-40 px-2 py-1 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div key={stock.symbol} className="px-4 py-3 relative">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center">
+                                  <span className="font-medium text-gray-900 mr-2">{stock.symbol}</span>
+                                  <span className="text-sm text-gray-500 truncate">{stock.name}</span>
+                                </div>
+                                <div className="mt-2">
+                                  <input
+                                    type="number"
+                                    value={stockPrices[stock.symbol] || ''}
+                                    onChange={(e) => handleUpdatePrice(stock.symbol, e.target.value)}
+                                    placeholder="Enter price..."
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500 text-sm"
+                                  />
+                                </div>
+                              </div>
                               <button
                                 onClick={() => handleRemoveStock(stock.symbol)}
-                                className="text-red-600 hover:text-red-900"
+                                className="ml-3 flex-shrink-0 flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 hover:bg-red-200 rounded-full text-lg font-bold transition-colors"
+                                title="Remove from list"
+                                aria-label="Remove from list"
                               >
-                                Remove
+                                ×
                               </button>
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -801,7 +901,7 @@ const PortfolioReview = () => {
                       className={`px-6 py-3 rounded-md text-white font-medium ${
                         selectedStocks.length === 0 || submitting
                           ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-700'
+                          : 'bg-teal-600 hover:bg-teal-700'
                       }`}
                     >
                       {submitting ? 'Submitting...' : 'Submit Portfolio'}

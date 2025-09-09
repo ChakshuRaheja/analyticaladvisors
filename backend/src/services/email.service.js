@@ -72,7 +72,7 @@ const emailTemplates = {
           <li>Explore our portfolio analysis tools</li>
           <li>Set up your investment preferences</li>
         </ol>
-        <p>Need help? Our support team is just an email away at support@analyticaladvisors.com</p>
+        <p>Need help? Our support team is just an email away at analyticaladvisors@gmail.com</p>
         <p>Best regards,<br>The Analytical Advisors Team</p>
       </div>
     `

@@ -11,7 +11,7 @@ const ApiTest = () => {
     
     try {
       // Test the health check endpoint
-      const result = await fetch('http://localhost:3001/', {
+      const result = await fetch('https://omkara-backend-725764883240.asia-south1.run.app/', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -68,7 +68,7 @@ const ApiTest = () => {
       
       <div className="mt-4 text-sm text-gray-600">
         <p>This component tests if your frontend can communicate with your backend API.</p>
-        <p>Backend URL: <code>http://localhost:3001</code></p>
+        <p>Backend URL: <code>https://omkara-backend-725764883240.asia-south1.run.app/</code></p>
         <p>If you see CORS errors in the console, you need to update your backend CORS configuration.</p>
       </div>
     </div>

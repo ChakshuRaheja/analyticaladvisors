@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import ScrollAnimation from '../components/ScrollAnimation';
 import IntrinsicValueTool from '../components/IntrinsicValueTool';
-import Footer from '../components/Footer';
+
 import { 
   NFOMasterReport, 
   CSPAnalysisReport, 
@@ -98,12 +98,65 @@ const Analysis = () => {
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const itemsPerPage = 10;
+  
+  // Column selector state
+  const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState({
+    'STOCK_SYMBOL': true,
+    'COMPANY_NAME': true,
+    'INDUSTRY': true,
+    'MARKET_CAP_CR': true,
+    'PRICE': true,
+    'CHANGE': true,
+    'VOLUME': true,
+    'PE_RATIO': true,
+    'DIVIDEND_YIELD': true,
+    'SECTOR': true,
+    'LAST_UPDATED': true
+  });
+
+  // CSP Analysis state
+  const [cspAnalysisData, setCspAnalysisData] = useState([]);
+  const [cspSearchTerm, setCspSearchTerm] = useState('');
+  const [cspCurrentPage, setCspCurrentPage] = useState(1);
+  const [cspItemsPerPage] = useState(10);
+  const [cspIndustryFilter, setCspIndustryFilter] = useState('');
+  const [cspExpiryFilter, setCspExpiryFilter] = useState('');
+
+  // Covered Call report state
+  const [ccAnalysisData, setCcAnalysisData] = useState([]);
+  const [ccSearchTerm, setCcSearchTerm] = useState('');
+  const [ccCurrentPage, setCcCurrentPage] = useState(1);
+  const ccItemsPerPage = 10;
+
+  // Initialize visible columns when report data is loaded
+  useEffect(() => {
+    if (reportData && reportData.length > 0) {
+      // Get all unique column names from the data
+      const allColumns = {};
+      reportData.forEach(item => {
+        Object.keys(item).forEach(key => {
+          if (!allColumns[key] && key !== 'key') {
+            allColumns[key] = visibleColumns[key] !== undefined ? visibleColumns[key] : true;
+          }
+        });
+      });
+      
+      // Only update if we have new columns
+      if (Object.keys(allColumns).length > 0) {
+        setVisibleColumns(prev => ({
+          ...allColumns,
+          ...prev // Preserve any existing column states
+        }));
+      }
+    }
+  }, [reportData]);
 
   // Available reports configuration
   const availableReports = [
-    { id: REPORT_TYPES.NFO_MASTER, title: 'NFO Master Data', icon: '📊' },
-    { id: REPORT_TYPES.CSP_ANALYSIS, title: 'CSP Analysis', icon: '📈' },
-    { id: REPORT_TYPES.COVERED_CALL, title: 'Covered Call', icon: '📞' },
+    { id: REPORT_TYPES.NFO_MASTER, title: 'Fundamental Analysis' },
+    { id: REPORT_TYPES.CSP_ANALYSIS, title: 'CSP Analysis' },
+    { id: REPORT_TYPES.COVERED_CALL, title: 'Covered Call' },
   ];
 
   // Fetch report data when active report changes
@@ -113,38 +166,119 @@ const Analysis = () => {
       setError(null);
       
       try {
-        if (activeReport === 'nfo-master') {
+        if (activeReport === REPORT_TYPES.NFO_MASTER) {
           // Fetch data from the provided API with additional options
-          const response = await fetch(' https://analytics-advisor-backend-1-583205731005.us-central1.run.app/get_stocks_master', {
+          const response = await fetch('https://analytics-advisor-backend-1-583205731005.us-central1.run.app/get_stocks_master', {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json',
             },
             mode: 'cors', // Explicitly set CORS mode
+            timeout: 30000 // 30 second timeout
           });
           
-          if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}`);
+          try {
+            const data = await response.json();
+            console.log('API Response:', data); // Debug the response
+            
+            // Validate data structure
+            if (!data || (typeof data !== 'object' && !Array.isArray(data))) {
+              throw new Error('Invalid data format received from API');
+            }
+            
+            // Handle array data
+            if (Array.isArray(data)) {
+              setReportData(data);
+            } 
+            // Handle object data
+            else if (typeof data === 'object') {
+              // If data contains an error message
+              if (data.error) {
+                throw new Error(data.error);
+              }
+              
+              // If data contains a data property
+              if (data.data) {
+                if (Array.isArray(data.data)) {
+                  setReportData(data.data);
+                } else if (typeof data.data === 'object') {
+                  const formattedData = Object.keys(data.data).map(key => ({
+                    key: key,
+                    ...data.data[key]
+                  }));
+                  setReportData(formattedData);
+                }
+              } 
+              // If data is a direct object
+              else {
+                const formattedData = Object.keys(data).map(key => ({
+                  key: key,
+                  ...data[key]
+                }));
+                setReportData(formattedData);
+              }
+            }
+          } catch (err) {
+            console.error('Error processing API response:', err);
+            throw new Error('Failed to process API response');
           }
+        } else if (activeReport === REPORT_TYPES.CSP_ANALYSIS) {
+          // Fetch CSP Analysis data
+          const response = await fetch('https://analytics-advisor-backend-1-583205731005.us-central1.run.app/get_csp_analysis', {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            mode: 'cors',
+            timeout: 30000
+          });
           
-          const data = await response.json();
-          console.log('API Response:', data); // Debug the response
-          
-          // Check if data is an array, if not, handle accordingly
-          if (Array.isArray(data)) {
-            setReportData(data);
-          } else if (data && typeof data === 'object') {
-            // If data is an object but not an array, convert it to array format
-            const formattedData = Object.keys(data).map(key => ({
-              key: key,
-              ...data[key]
-            }));
-            setReportData(formattedData);
-          } else {
-            // Handle empty or invalid data
-            setReportData([]);
-            console.warn('API returned unexpected data format:', data);
+          try {
+            const data = await response.json();
+            console.log('CSP Analysis API Response:', data);
+            
+            // Validate data structure
+            if (!data || (typeof data !== 'object' && !Array.isArray(data))) {
+              throw new Error('Invalid data format received from CSP Analysis API');
+            }
+            
+            // Handle array data
+            if (Array.isArray(data)) {
+              setCspAnalysisData(data);
+            } 
+            // Handle object data
+            else if (typeof data === 'object') {
+              // If data contains an error message
+              if (data.error) {
+                throw new Error(data.error);
+              }
+              
+              // If data contains a data property
+              if (data.data) {
+                if (Array.isArray(data.data)) {
+                  setCspAnalysisData(data.data);
+                } else if (typeof data.data === 'object') {
+                  const formattedData = Object.keys(data.data).map(key => ({
+                    key: key,
+                    ...data.data[key]
+                  }));
+                  setCspAnalysisData(formattedData);
+                }
+              } 
+              // If data is a direct object
+              else {
+                const formattedData = Object.keys(data).map(key => ({
+                  key: key,
+                  ...data[key]
+                }));
+                setCspAnalysisData(formattedData);
+              }
+            }
+          } catch (err) {
+            console.error('Error processing CSP Analysis API response:', err);
+            throw new Error('Failed to process CSP Analysis API response');
           }
         } else {
           // Demo data for other reports remains unchanged
@@ -193,6 +327,31 @@ const Analysis = () => {
       })
     : reportData;
 
+  // Filter CSP Analysis data
+  const filteredCspData = useMemo(() => {
+    if (!cspAnalysisData || !Array.isArray(cspAnalysisData) || cspAnalysisData.length === 0) return [];
+    
+    return cspAnalysisData.filter(item => {
+      if (typeof item !== 'object' || item === null) return false;
+
+      const industryMatch = !cspIndustryFilter || 
+        (item.INDUSTRY && item.INDUSTRY.toLowerCase() === cspIndustryFilter.toLowerCase()) ||
+        (item.SECTOR && item.SECTOR.toLowerCase() === cspIndustryFilter.toLowerCase());
+      
+      const searchMatch = !cspSearchTerm || 
+        Object.entries(item).some(([key, value]) => {
+          if (['key', 'id'].includes(key)) return false;
+          if (value === undefined || value === null) return false;
+          
+          const strValue = String(value).trim().toLowerCase();
+          const searchLower = cspSearchTerm.toLowerCase();
+          return strValue.includes(searchLower);
+        });
+      
+      return industryMatch && searchMatch;
+    });
+  }, [cspAnalysisData, cspSearchTerm, cspIndustryFilter]);
+
   // Calculate pagination
   const totalPages = filteredData && filteredData.length 
     ? Math.ceil(filteredData.length / itemsPerPage) 
@@ -201,6 +360,11 @@ const Analysis = () => {
   const paginatedData = filteredData && filteredData.length
     ? filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
     : [];
+
+  // Calculate pagination for CSP Analysis
+  const cspTotalPages = useMemo(() => {
+    return filteredCspData ? Math.ceil(filteredCspData.length / cspItemsPerPage) : 1;
+  }, [filteredCspData, cspItemsPerPage]);
 
   // Toggle sidebar (for both mobile and desktop)
   const toggleSidebar = () => {
@@ -222,19 +386,27 @@ const Analysis = () => {
     setCurrentPage(pageNumber);
   };
 
-  // Handle row selection for comparison
+  // Handle page change for CSP Analysis
+  const handleCspPageChange = (page) => {
+    setCspCurrentPage(page);
+  };
+
+  // Toggle row selection for comparison
   const toggleRowSelection = (index) => {
-    if (selectedRows.includes(index)) {
-      setSelectedRows(selectedRows.filter(rowIndex => rowIndex !== index));
-    } else {
-      setSelectedRows([...selectedRows, index]);
-    }
+    // Convert index to string for consistent comparison
+    const indexStr = index.toString();
+    setSelectedRows(prev => {
+      if (prev.includes(indexStr)) {
+        return prev.filter(rowIndex => rowIndex !== indexStr);
+      } else {
+        return [...prev, indexStr];
+      }
+    });
   };
 
   // Clear all selected rows
   const clearSelectedRows = () => {
     setSelectedRows([]);
-    setIsCompareMode(false);
   };
 
   // Toggle select mode
@@ -249,11 +421,13 @@ const Analysis = () => {
 
   // Handle row selection
   const handleRowSelect = (rowId) => {
+    // Convert rowId to string for consistent comparison
+    const rowIdStr = rowId.toString();
     setSelectedRows(prevSelected => {
-      if (prevSelected.includes(rowId)) {
-        return prevSelected.filter(id => id !== rowId);
+      if (prevSelected.includes(rowIdStr)) {
+        return prevSelected.filter(id => id !== rowIdStr);
       } else {
-        return [...prevSelected, rowId];
+        return [...prevSelected, rowIdStr];
       }
     });
   };
@@ -267,19 +441,33 @@ const Analysis = () => {
     }
   };
 
+  // Clear all filters for CSP Analysis
+  const clearCspFilters = () => {
+    setCspSearchTerm('');
+    setCspIndustryFilter('');
+    setCspExpiryFilter('');
+    setCspCurrentPage(1);
+  };
+  
+  // Clear all filters for Covered Call
+  const clearCcFilters = () => {
+    setCcSearchTerm('');
+    setCcCurrentPage(1);
+  };
+
   // Helper function to format column names for better display
   const formatColumnName = (columnName) => {
     if (!columnName) return '';
-    
+
     // Replace underscores with spaces
     let formatted = columnName.replace(/_/g, ' ');
-    
+
     // Convert to title case (capitalize first letter of each word)
     formatted = formatted
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
-    
+
     return formatted;
   };
 
@@ -323,360 +511,122 @@ const Analysis = () => {
       );
     }
 
-  // Handle different report types
-  if (activeReport === REPORT_TYPES.NFO_MASTER) {
-    return (
-      <div>
-        <NFOMasterReport 
-          reportData={reportData}
-          filteredData={filteredData}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          handleSearchChange={handleSearchChange}
-          marketCapFilter={marketCapFilter}
-          setMarketCapFilter={setMarketCapFilter}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-          itemsPerPage={itemsPerPage}
-          totalPages={totalPages}
-          handlePageChange={handlePageChange}
-          isSelectMode={isSelectMode}
-          isCompareMode={isCompareMode}
-          selectedRows={selectedRows}
-          toggleRowSelection={toggleRowSelection}
-          toggleSelectMode={toggleSelectMode}
-          toggleCompareMode={toggleCompareMode}
-          formatColumnName={formatColumnName}
-        />
-        
-        {/* Comparison Controls */}
-        <div className="bg-gray-50 border border-gray-200 rounded-md p-2 flex-1 min-w-[200px] mt-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-medium text-gray-800">Compare Stocks</h3>
-            <div className="flex space-x-2">
-              {!isSelectMode && !isCompareMode && (
-                <button 
-                  onClick={toggleSelectMode}
-                  className="px-2 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700"
-                >
-                  Select Stocks
-                </button>
-              )}
-              
-              {isSelectMode && !isCompareMode && (
-                <>
-                  <button 
-                    onClick={toggleCompareMode}
-                    disabled={selectedRows.length === 0}
-                    className={`px-2 py-1 text-xs rounded ${
-                      selectedRows.length > 0 
-                        ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    Compare
-                  </button>
-                  <button 
-                    onClick={toggleSelectMode}
-                    className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                  >
-                    Cancel
-                  </button>
-                </>
-              )}
-              
-              {isCompareMode && (
-                <button 
-                  onClick={toggleCompareMode}
-                  className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                >
-                  Exit Compare
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">
-              {isSelectMode 
-                ? `${selectedRows.length} stocks selected` 
-                : isCompareMode 
-                  ? `Comparing ${selectedRows.length} stocks` 
-                  : "Select stocks to compare"}
-            </p>
-          </div>
-        </div>
-          
-          {/* Comparison View */}
-          {isCompareMode && selectedRows.length > 0 && (
-            <div className="mb-6 bg-indigo-50 p-4 rounded-lg border border-indigo-100">
-              <h3 className="font-medium text-indigo-800 mb-3">Stock Comparison</h3>
-              <div className="overflow-x-auto" style={stickyColumnStyles.tableContainer}>
-                <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-                  <thead>
-                    <tr>
-                      <th 
-                        style={stickyColumnStyles.compareMetricHeader}
-                        className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
-                      >
-                        Metric
-                      </th>
-                      {selectedRows.map(rowIndex => {
-                        const item = filteredData[rowIndex];
-                        const symbol = item.STOCK_SYMBOL || item.STOCK || item.Symbol || '';
-                        return (
-                          <th 
-                            key={`compare-${rowIndex}`} 
-                            style={stickyColumnStyles.compareHeader}
-                            className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
-                          >
-                            {symbol}
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {Object.keys(filteredData[0])
-                      .filter(key => !['key'].includes(key))
-                      .map(key => (
-                        <tr key={`metric-${key}`} className="hover:bg-indigo-50">
-                          <td 
-                            style={stickyColumnStyles.compareMetricCol}
-                            className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700"
-                          >
-                            {formatColumnName(key)}
-                          </td>
-                          {selectedRows.map(rowIndex => {
-                            const item = filteredData[rowIndex];
-                            return (
-                              <td key={`value-${rowIndex}-${key}`} className="px-4 py-3 whitespace-nowrap text-sm">
-                                {item[key]?.toString() || ''}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-          
-          {/* Data Table - Only show when not in compare mode */}
-          {!isCompareMode && (
-            <div className="overflow-x-auto" style={stickyColumnStyles.tableContainer}>
-            <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-                <thead>
-                  <tr>
-                    {/* Selection column - Only show when in select mode */}
-                    {isSelectMode && (
-                      <th 
-                        style={stickyColumnStyles.stickyFirstColHeader}
-                        className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Select
-                      </th>
-                    )}
-                    {/* Stock Symbol with sticky positioning */}
-                    <th 
-                      style={isSelectMode ? stickyColumnStyles.stickySecondColHeader : stickyColumnStyles.stickyFirstColHeader}
-                      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Stock Symbol
-                    </th>
-                    <th 
-                      style={stickyColumnStyles.stickyHeader}
-                      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    >
-                      Company Name
-                    </th>
-                    <th 
-                      style={stickyColumnStyles.stickyHeader}
-                      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    >
-                      Industry
-                    </th>
-                    {/* Add any other important headers */}
-                    {reportData[0] && Object.keys(reportData[0])
-                      .filter(key => !['STOCK_SYMBOL', 'STOCK', 'STOCK_NAME', 'COMPANY_NAME', 'Symbol', 'Name', 'SECTOR', 'Industry', 'PRICE', 'CurrentPrice', 'IntrinsicValue'].includes(key))
-                      .map(key => (
-                        <th 
-                          key={key} 
-                          style={stickyColumnStyles.stickyHeader}
-                          className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          {formatColumnName(key)}
-                        </th>
-                      ))
-                    }
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                  {paginatedData.map((item, rowIndex) => {
-                    // Calculate the absolute index in filteredData
-                    const absoluteRowIndex = (currentPage - 1) * itemsPerPage + rowIndex;
-                    // Extract data fields
-                    const symbol = item.STOCK_SYMBOL || item.STOCK || item.Symbol || '';
-                    const name = item.STOCK_NAME || item.COMPANY_NAME || item.Name || '';
-                    const industry = item.SECTOR || item.Industry || '';
-                    const isSelected = selectedRows.includes(absoluteRowIndex);
-                    
-                    // Create cell styles with conditional background color for selected rows
-                    const checkboxCellStyle = {
-                      ...stickyColumnStyles.stickyFirstCol,
-                      ...(isSelected && { backgroundColor: '#EEF2FF' }) // Apply selected background if selected
-                    };
-                    
-                    const symbolCellStyle = {
-                      ...(isSelectMode ? stickyColumnStyles.stickySecondCol : stickyColumnStyles.stickyFirstCol),
-                      ...(isSelected && { backgroundColor: '#EEF2FF' }) // Apply selected background if selected
-                    };
-                    
-                    return (
-                      <tr key={rowIndex} className={`hover:bg-gray-50 ${isSelected ? 'bg-indigo-50' : ''}`}>
-                        {/* Checkbox for row selection - Only show when in select mode */}
-                        {isSelectMode && (
-                          <td 
-                            style={checkboxCellStyle}
-                            className="px-3 py-3 whitespace-nowrap text-sm sticky left-0"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleRowSelection(absoluteRowIndex)}
-                              className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                            />
-                          </td>
-                        )}
-                        {/* Stock Symbol - sticky on horizontal scroll */}
-                        <td 
-                          style={symbolCellStyle}
-                          className="px-4 py-3 whitespace-nowrap text-sm font-medium text-indigo-600 sticky"
-                        >
-                          {symbol}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{name}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">{industry}</td>
-                        {/* Display other fields */}
-                        {Object.entries(item)
-                          .filter(([key]) => !['STOCK_SYMBOL', 'STOCK', 'STOCK_NAME', 'COMPANY_NAME', 'Symbol', 'Name', 'SECTOR', 'Industry', 'PRICE', 'CurrentPrice', 'IntrinsicValue'].includes(key))
-                          .map(([key, value], cellIndex) => (
-                            <td key={cellIndex} className="px-4 py-3 whitespace-nowrap text-sm">
-                        {value?.toString() || ''}
-                      </td>
-                          ))
-                        }
-                  </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
-          )}
-
-          {/* Pagination - only show when not in compare mode */}
-          {!isCompareMode && totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div>
-                <span className="text-sm text-gray-700">
-                  Showing page {currentPage} of {totalPages}
-                </span>
-              </div>
-              <div className="flex space-x-1">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-md ${
-                    currentPage === 1
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                  }`}
-                >
-                  Previous
-                </button>
-                {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                  // Calculate which page numbers to show
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`px-3 py-1 rounded-md ${
-                        currentPage === pageNum
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-md ${
-                    currentPage === totalPages
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                  }`}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    } else {
-      // For other reports
+    // Handle different report types
+    if (activeReport === REPORT_TYPES.NFO_MASTER) {
       return (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metric</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {reportData && reportData.map((item, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap">{item.metric}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{item.value}</td>
-                  <td className={`px-6 py-4 whitespace-nowrap ${
-                    item.change && item.change.toString().startsWith('+') ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {item.change || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{item.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div>
+          <NFOMasterReport 
+            reportData={reportData}
+            filteredData={filteredData}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            marketCapFilter={marketCapFilter}
+            setMarketCapFilter={setMarketCapFilter}
+            selectedRows={selectedRows}
+            setSelectedRows={setSelectedRows}
+            isSelectMode={isSelectMode}
+            setIsSelectMode={setIsSelectMode}
+            isCompareMode={isCompareMode}
+            setIsCompareMode={setIsCompareMode}
+            showColumnSelector={showColumnSelector}
+            setShowColumnSelector={setShowColumnSelector}
+            visibleColumns={visibleColumns}
+            setVisibleColumns={setVisibleColumns}
+            itemsPerPage={itemsPerPage}
+            totalPages={totalPages}
+            handlePageChange={handlePageChange}
+            toggleRowSelection={toggleRowSelection}
+            toggleSelectMode={toggleSelectMode}
+            toggleCompareMode={toggleCompareMode}
+            formatColumnName={formatColumnName}
+          />
         </div>
       );
     }
+    
+    if (activeReport === REPORT_TYPES.CSP_ANALYSIS) {
+      return (
+        <CSPAnalysisReport 
+          reportData={cspAnalysisData}
+          searchTerm={cspSearchTerm}
+          setSearchTerm={setCspSearchTerm}
+          currentPage={cspCurrentPage}
+          setCurrentPage={setCspCurrentPage}
+          itemsPerPage={cspItemsPerPage}
+          industryFilter={cspIndustryFilter}
+          setIndustryFilter={setCspIndustryFilter}
+          expiryFilter={cspExpiryFilter}
+          setExpiryFilter={setCspExpiryFilter}
+          onClearFilters={clearCspFilters}
+        />
+      );
+    }
+    
+    if (activeReport === REPORT_TYPES.COVERED_CALL) {
+      return (
+        <CoveredCallReport 
+          reportData={ccAnalysisData}
+          searchTerm={ccSearchTerm}
+          setSearchTerm={setCcSearchTerm}
+          currentPage={ccCurrentPage}
+          setCurrentPage={setCcCurrentPage}
+          itemsPerPage={ccItemsPerPage}
+        />
+      );
+    }
+    
+    // Default return for other report types
+    return (
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metric</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {reportData && reportData.map((item, index) => (
+              <tr key={index}>
+                <td className="px-6 py-4 whitespace-nowrap">{item.metric}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{item.value}</td>
+                <td className={`px-6 py-4 whitespace-nowrap ${
+                  item.change && item.change.toString().startsWith('+') ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {item.change || 'N/A'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">{item.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   };
+
+  // Fix body scrolling when component mounts/unmounts
+  useEffect(() => {
+    // Enable body scrolling when component mounts
+    document.body.style.overflow = 'auto';
+
+    // Cleanup function to ensure scrolling is re-enabled when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
 
   // Render the main component
   return (
-    <div className="min-h-screen bg-gray-50 relative">
+    <div className="min-h-screen bg-gray-50 relative flex flex-col">
       {/* Authentication check - Show login prompt if not authenticated */}
       {!currentUser && <LoginPrompt />}
       
       {/* Content with blur effect when not authenticated */}
-      <div className={`${!currentUser ? 'filter blur-[3px] pointer-events-none' : ''}`}>
+      <div className={`flex-1 flex flex-col ${!currentUser ? 'filter blur-[3px] pointer-events-none' : ''}`}>
         {/* Sidebar toggle button - visible on all screen sizes */}
         <div className={`fixed top-20 ${isSidebarOpen ? 'left-64' : 'left-4'} z-20 transition-all duration-300`}>
           <button
@@ -703,7 +653,12 @@ const Analysis = () => {
             w-64 bg-white shadow-md overflow-y-auto
             transition-transform duration-300
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            overscroll-contain
           `}
+          style={{
+            WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+            scrollbarWidth: 'thin', // For Firefox
+          }}
         >
           <div className="p-4">
             <div className="flex items-center space-x-3 mb-6 p-2 border-b pb-4">
@@ -716,7 +671,6 @@ const Analysis = () => {
               </div>
               <div>
                 <p className="font-medium">{currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : "Guest User"}</p>
-                <p className="text-xs text-gray-500">{currentUser ? "Premium Member" : "Limited Access"}</p>
               </div>
             </div>
             
@@ -741,15 +695,6 @@ const Analysis = () => {
               <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Quick Links</h3>
               <nav className="space-y-1">
                 <ReportItem
-                  title="My Account"
-                  icon="👤"
-                  isActive={false}
-                  onClick={() => {
-                    navigate('/profile');
-                    if (window.innerWidth < 1024) toggleSidebar();
-                  }}
-                />
-                <ReportItem
                   title="Control Panel"
                   icon="⚙️"
                   isActive={false}
@@ -764,23 +709,33 @@ const Analysis = () => {
         </aside>
 
         {/* Main content - adjusts width based on sidebar state */}
-        <main className={`transition-all duration-300 ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'} pt-20 pb-10 px-4 sm:px-6 lg:px-8`}>
-          <div className={`mx-auto ${isSidebarOpen ? 'max-w-6xl' : 'max-w-(90rem)'}`}>
+        <main 
+          className={`
+            transition-all duration-300 
+            ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'} 
+            pt-20 px-4 sm:px-6 lg:px-8 
+            flex-1 overflow-y-auto
+          `}
+          style={{
+            WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+            scrollBehavior: 'smooth', // Smooth scrolling for modern browsers
+          }}
+        >
+          <div className={`mx-auto ${isSidebarOpen ? 'max-w-6xl' : 'max-w-full'}`}>
             <div className="flex items-center justify-between mb-7">
-              <h1 className="text-3xl px-12 font-bold">Financial Analysis Reports</h1>
-              <div className="text-sm text-gray-500">
-                Last updated: {new Date().toLocaleDateString()}
+              {/* <h1 className="text-3xl px-12 font-bold">Cash Secure Put Analysis</h1> */}
+              <div className="text-sm text-gray-500 ml-auto">
+                Last updated: {(() => {
+                  const yesterday = new Date();
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  return yesterday.toLocaleDateString('en-GB');
+                })()}
               </div>
             </div>
-            
-          
             
             {renderReportContent()}
           </div>
         </main>
-        
-        {/* Replace custom footer with Footer component */}
-        {/* <Footer /> */}
       </div>
     </div>
   );

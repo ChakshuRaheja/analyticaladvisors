@@ -1,0 +1,33 @@
+# Exclude only what we don't need
+node_modules
+npm-debug.log
+yarn-error.log
+.env
+.env.*
+!.env.example
+build
+dist
+.git
+.gitignore
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# Exclude data files and directories
+data/
+*.xlsx
+*.xls
+*.csv
+logs
+*.log
+coverage
+.nyc_output
+.cache
+.tmp
+temp

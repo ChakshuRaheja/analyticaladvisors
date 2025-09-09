@@ -14,43 +14,36 @@ const ForgotPassword = () => {
     e.preventDefault();
     
     if (!email) {
-      setMessage({
-        text: 'Please enter your email address',
-        type: 'error'
-      });
+      setMessage({ text: 'Please enter your email address', type: 'error' });
       return;
     }
-    
-    setLoading(true);
-    setMessage({ text: '', type: '' });
-    
+
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage({ text: 'Please enter a valid email address', type: 'error' });
+      return;
+    }
+
     try {
-      await sendPasswordResetEmail(auth, email);
-      setMessage({
-        text: 'Password reset email sent! Check your inbox for further instructions.',
-        type: 'success'
+      setLoading(true);
+      setMessage({ text: 'Sending password reset email...', type: 'info' });
+      
+      await sendPasswordResetEmail(auth, email, {
+        url: 'https://analyticaladvisors.in/login'
       });
-      setEmail('');
+      
+      setMessage({ 
+        text: `Password reset email sent to ${email}. Please check your inbox and follow the instructions.`,
+        type: 'success' 
+      });
+      
     } catch (error) {
-      let errorMessage;
-      
-      switch(error.code) {
-        case 'auth/user-not-found':
-          errorMessage = 'No account found with this email address.';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Please enter a valid email address.';
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = 'Too many unsuccessful attempts. Please try again later.';
-          break;
-        default:
-          errorMessage = `Error: ${error.message}`;
-      }
-      
-      setMessage({
-        text: errorMessage,
-        type: 'error'
+      console.error('Error sending reset email:', error);
+      setMessage({ 
+        text: error.code === 'auth/user-not-found' 
+          ? 'No account found with this email address.' 
+          : 'Failed to send reset email. Please try again later.', 
+        type: 'error' 
       });
     } finally {
       setLoading(false);
@@ -67,9 +60,9 @@ const ForgotPassword = () => {
           className="bg-white shadow-md rounded-lg overflow-hidden"
         >
           {/* Header */}
-          <div className="bg-indigo-600 text-white p-6">
+          <div className="bg-teal-600 text-white p-6">
             <h1 className="text-2xl font-bold">Forgot Password</h1>
-            <p className="mt-1 text-indigo-100">Reset your password via email</p>
+            <p className="mt-1 text-teal-100">Reset your password via email</p>
           </div>
 
           {/* Form */}
@@ -100,7 +93,7 @@ const ForgotPassword = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
                 />
                 <p className="mt-1 text-sm text-gray-500">
                   We'll send a password reset link to this email
@@ -110,7 +103,7 @@ const ForgotPassword = () => {
               <div className="pt-4 flex items-center justify-between">
                 <Link
                   to="/login"
-                  className="text-indigo-600 hover:text-indigo-800 transition-colors duration-200 text-sm"
+                  className="text-teal-600 hover:text-teal-800 transition-colors duration-200 text-sm"
                 >
                   Back to Login
                 </Link>
@@ -121,8 +114,8 @@ const ForgotPassword = () => {
                   type="submit"
                   disabled={loading}
                   className={`
-                    px-6 py-2 bg-indigo-600 text-white rounded-md 
-                    hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+                    px-6 py-2 bg-teal-600 text-white rounded-md 
+                    hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2
                     transition-colors duration-200
                     ${loading ? 'opacity-70 cursor-not-allowed' : ''}
                   `}
@@ -136,7 +129,7 @@ const ForgotPassword = () => {
           {/* Additional help */}
           <div className="p-6 bg-gray-50 border-t border-gray-200">
             <div className="text-sm text-gray-600">
-              <p>Still having trouble? <Link to="/contact" className="text-indigo-600 hover:text-indigo-800">Contact Support</Link></p>
+              <p>Still having trouble? <Link to="/contact" className="text-teal-600 hover:text-teal-800">Contact Support</Link></p>
             </div>
           </div>
         </motion.div>

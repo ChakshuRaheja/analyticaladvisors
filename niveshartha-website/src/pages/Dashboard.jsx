@@ -96,15 +96,20 @@ const Dashboard = () => {
               </div>
 
               {/* Subscription Summary Card */}
-              <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Subscriptions</h2>
+              <div className="bg-white shadow rounded-lg p-6 border-t-4 border-teal-500">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-teal-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path>
+                  </svg>
+                  Account Information
+                </h2>
                 
                 {subscriptions.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-600 mb-4">You don't have any active subscriptions.</p>
                     <Link 
                       to="/subscription" 
-                      className="inline-block px-5 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      className="inline-block px-5 py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       View Subscription Plans
                     </Link>
@@ -134,7 +139,7 @@ const Dashboard = () => {
                               </span>
                               {!isExpired && (
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  daysRemaining <= 7 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                                  daysRemaining <= 7 ? 'bg-red-100 text-red-800' : 'bg-teal-100 text-teal-800'
                                 }`}>
                                   {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left
                                 </span>
@@ -160,7 +165,7 @@ const Dashboard = () => {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-600">Expires:</span>
-                              <span className="font-medium">{new Date(subscription.endDate).toLocaleDateString()}</span>
+                              <span className="font-medium">{new Date(subscription.endDate).toLocaleDateString('en-GB')}</span>
                             </div>
 
                           </div>
@@ -178,7 +183,7 @@ const Dashboard = () => {
                             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                               <p className="text-red-800 text-sm">
                                 <span className="font-medium">Subscription expired: </span>
-                                Your {subscription.planName} plan has expired on {endDate.toLocaleDateString()}.
+                                Your {subscription.planName} plan has expired on {endDate.toLocaleDateString('en-GB')}.
                                 Please renew to continue accessing premium features.
                               </p>
                             </div>
@@ -193,7 +198,7 @@ const Dashboard = () => {
                       </span>
                       <Link 
                         to="/subscription" 
-                        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
                       >
                         Add Another Plan
                       </Link>
@@ -203,19 +208,24 @@ const Dashboard = () => {
               </div>
               
               {/* Quick Links Section */}
-              <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Links</h2>
+              <div className="bg-white shadow rounded-lg p-6 border-t-4 border-teal-500">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Quick Actions
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <Link to="/control-panel?section=profile" className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors">
-                    <h3 className="font-medium text-blue-600 mb-1">Profile Settings</h3>
+                  <Link to="/control-panel?section=profile" className="p-4 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-colors">
+                    <h3 className="font-medium text-teal-600 mb-1">Profile Settings</h3>
                     <p className="text-sm text-gray-600">Update your personal information</p>
                   </Link>
-                  <Link to="/subscription" className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors">
-                    <h3 className="font-medium text-blue-600 mb-1">Subscription Plans</h3>
+                  <Link to="/subscription" className="p-4 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-colors">
+                    <h3 className="font-medium text-teal-600 mb-1">Subscription Plans</h3>
                     <p className="text-sm text-gray-600">Explore available subscription options</p>
                   </Link>
-                  <Link to="/control-panel?section=kyc" className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors">
-                    <h3 className="font-medium text-blue-600 mb-1">KYC Verification</h3>
+                  <Link to="/control-panel?section=kyc" className="p-4 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-colors">
+                    <h3 className="font-medium text-teal-600 mb-1">KYC Verification</h3>
                     <p className="text-sm text-gray-600">Complete your identity verification</p>
                   </Link>
                 </div>

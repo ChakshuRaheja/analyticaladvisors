@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/config';
@@ -9,6 +10,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -72,25 +74,35 @@ const Login = () => {
                   </label>
                   <Link 
                     to="/forgot-password" 
-                    className="text-sm text-indigo-600 hover:text-indigo-800 transition-colors"
+                    className="text-sm text-teal-600 hover:text-teal-800 transition-colors"
                   >
                     Forgot Password?
                   </Link>
                 </div>
-                <input
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  id="password"
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <input
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <FiEye size={18} /> : <FiEyeOff size={18} />}
+                  </button>
+                </div>
               </div>
               
               <div className="flex items-center justify-between">
                 <button
-                  className={`w-full bg-black hover:bg-gray-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   type="submit"
                   disabled={loading}
                 >
@@ -101,7 +113,7 @@ const Login = () => {
               
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account? <Link to="/signup" className="text-black font-semibold hover:underline">Sign Up</Link>
+                Don't have an account? <Link to="/signup" className="text-teal-600 font-semibold hover:underline hover:text-teal-700">Sign Up</Link>
               </p>
             </div>
           </div>

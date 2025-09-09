@@ -4,15 +4,13 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 // Navbar links configuration
-// Update the navLinks array to include the subscription page
 const navLinks = [
   // { path: '/', text: 'Home' },
   { path: '/about', text: 'About' },
-  { path: '/services', text: 'Services' }, // Reverted: Text is 'Services'
+  { path: '/portfolio-review', text: 'Portfolio Review' },
   { path: '/analysis', text: 'Analysis' },
   { path: '/subscription', text: 'Subscription' },
-  { path: '/contact', text: 'Contact' },
-  // 'Portfolio Review' is NOT a top-level link in this shared array
+  { path: '/contact', text: 'Contact' }
 ];
 
 // Direct navigation helper function
@@ -154,14 +152,34 @@ function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close dropdowns when route changes
+  // Close dropdowns and mobile menu when route changes
   useEffect(() => {
     setServicesMenuOpen(false);
     setProfileMenuOpen(false);
+    setDrawerOpen(false);
+    
+    // Always ensure body scrolling is enabled when route changes
+    document.body.style.overflow = 'auto';
+    
+    // Reset scroll position when navigating
+    if (window.innerWidth < 768) { // Only on mobile
+      window.scrollTo(0, 0);
+    }
+    
+    // Cleanup function to ensure body scrolling is re-enabled when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
   }, [location.pathname]);
 
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
+    // Prevent body scroll when mobile menu is open
+    if (!drawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
   };
 
   const handleLogout = async () => {
@@ -197,14 +215,24 @@ function Navbar() {
       `}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* Logo */}
-            <RouterLink
-              to="/"
-              className="text-2xl font-bold uppercase tracking-wider text-black hover:text-[#008080] transition-colors duration-300 flex items-center"
-            >
-              <span className="text-black">Analytical</span>
-              <span className="ml-1 text-[#008080]">Advisors</span>
-            </RouterLink>
+            {/* Logo and Brand Name */}
+            <div className="flex-shrink-0">
+              <RouterLink
+                to="/"
+                className="flex items-center space-x-2"
+              >
+                <img 
+                  src="/logo1.png" 
+                  alt="Analytical Advisors Logo" 
+                  className="h-12 w-auto"
+                  style={{ minWidth: '48px' }}
+                />
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold uppercase tracking-wider text-black">Analytical</span>
+                  <span className="text-2xl font-bold uppercase tracking-wider text-[#008080] -mt-1">Advisors</span>
+                </div>
+              </RouterLink>
+            </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
@@ -363,9 +391,10 @@ function Navbar() {
                   >
                     <RouterLink
                       to="/signup"
-                      className="text-white bg-[#008080] hover:bg-[#006666] px-4 py-2 rounded-md font-bold transition-all duration-300 shadow-md whitespace-nowrap"
+                      className="text-white bg-[#008080] hover:bg-[#006666] hover:text-white px-4 py-2 rounded-md font-bold transition-all duration-300 shadow-md whitespace-nowrap"
+
                     >
-                      Sign up Free
+                      Start Free
                     </RouterLink>
                   </motion.div>
                 </div>
@@ -391,7 +420,8 @@ function Navbar() {
           initial={false}
           animate={{ x: drawerOpen ? 0 : '100%' }}
           transition={{ type: 'spring', damping: 20 }}
-          className="fixed inset-y-0 right-0 w-64 bg-white shadow-xl md:hidden"
+          className="fixed inset-y-0 right-0 w-64 bg-white shadow-xl md:hidden z-50 overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <RouterLink
@@ -411,7 +441,7 @@ function Navbar() {
               </svg>
             </button>
           </div>
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3" onClick={(e) => e.stopPropagation()}>
             {navLinks.flatMap((link) => {
               if (link.path === '/services') {
                 // Special handling for 'Services' link in mobile view

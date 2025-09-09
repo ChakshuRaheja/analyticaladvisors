@@ -1,59 +1,147 @@
-import { useState } from 'react';
-import { stickyColumnStyles, formatColumnName, getSortedColumns } from './ReportStyles';
+import { useState, useEffect, useMemo } from 'react';
+import { stickyColumnStyles } from './ReportStyles';
 
 const CoveredCallReport = ({ 
-  reportData,
+  reportData: initialReportData,
   searchTerm, 
-  setSearchTerm, 
+  setSearchTerm,
   currentPage, 
   setCurrentPage,
-  marketCapFilter,
-  setMarketCapFilter,
-  selectedRows,
-  setSelectedRows,
-  isSelectMode,
-  setIsSelectMode,
-  isCompareMode,
-  setIsCompareMode,
-  visibleColumns,
-  setVisibleColumns,
-  showColumnSelector,
-  setShowColumnSelector,
   itemsPerPage = 10
 }) => {
+  const [reportData, setReportData] = useState(initialReportData || []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [industryFilter, setIndustryFilter] = useState('');
   
-  // Handle search input change
-  const handleSearchChange = (e) => {
+  // Fetch data from API on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://analytics-advisor-backend-1-583205731005.us-central1.run.app/get_cc_analysis');
+        if (!response.ok) throw new Error('Failed to fetch Covered Call analysis data');
+        const data = await response.json();
+        setReportData(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Error fetching Covered Call analysis data:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!initialReportData || initialReportData.length === 0) {
+      fetchData();
+    } else {
+      setReportData(initialReportData);
+      setLoading(false);
+    }
+  }, [initialReportData]);
+
+  // Get unique symbols for the filter dropdown
+  const symbols = useMemo(() => {
+    if (!reportData || !Array.isArray(reportData)) return [];
+    const uniqueSymbols = new Set();
+    reportData.forEach(item => {
+      if (item.Symbol) uniqueSymbols.add(item.Symbol);
+    });
+    return Array.from(uniqueSymbols).sort();
+  }, [reportData]);
+
+  // Handle industry filter change
+  const handleSymbolChange = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   };
-  
-  // Filter data based on search term
-  const filteredData = reportData
-    ? reportData.filter(item => 
-        Object.values(item).some(
-          value => value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
-    : [];
-  
-  // Calculate pagination
-  const totalPages = filteredData && filteredData.length 
-    ? Math.ceil(filteredData.length / itemsPerPage) 
-    : 0;
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  // Filter data based on search term and symbol
+  const filteredData = useMemo(() => {
+    console.log('Filtering data. reportData:', reportData, 'searchTerm:', searchTerm);
     
-  const paginatedData = filteredData && filteredData.length
-    ? filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-    : [];
-  
+    if (!reportData || !Array.isArray(reportData)) {
+      console.log('No report data or invalid format');
+      return [];
+    }
+    
+    if (reportData.length === 0) {
+      console.log('Report data array is empty');
+      return [];
+    }
+    
+    const filtered = reportData.filter(item => {
+      if (typeof item !== 'object' || item === null) {
+        console.log('Skipping invalid item:', item);
+        return false;
+      }
+      
+      // Log first item structure for debugging
+      if (reportData.indexOf(item) === 0) {
+        console.log('First item structure:', Object.keys(item));
+      }
+      
+      // Search term filter
+      const searchMatch = !searchTerm || 
+        Object.entries(item).some(([key, value]) => {
+          if (['key', 'id'].includes(key)) return false;
+          if (value === undefined || value === null) return false;
+          const valueStr = String(value).toLowerCase();
+          const match = valueStr.includes(searchTerm.toLowerCase());
+          if (match) console.log(`Match found in ${key}:`, value);
+          return match;
+        });
+      
+      return searchMatch;
+    });
+    
+    console.log(`Filtered ${reportData.length} items to ${filtered.length} items`);
+    return filtered;
+  }, [reportData, searchTerm]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   // Handle page change
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
-  // Get sorted columns in the desired display order
-  const orderedColumns = visibleColumns ? getSortedColumns(visibleColumns) : [];
-  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading report data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-800 p-6 rounded-lg">
+        <h3 className="text-lg font-medium mb-2">Error Loading Data</h3>
+        <p className="mb-4">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   if (!reportData || reportData.length === 0) {
     return (
       <div className="bg-gray-50 p-6 rounded-lg text-center">
@@ -64,32 +152,26 @@ const CoveredCallReport = ({
   
   return (
     <div className="bg-white p-4 rounded-lg shadow-lg">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">Covered Call Analysis</h2>
-      
-      {/* Filter Controls with proper heading */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">Filter Options</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+        <h2 className="text-xl font-bold text-gray-800 mb-4 sm:mb-0">Covered Call Analysis</h2>
+        
+        {/* Filter Controls */}
+        <div className="w-full sm:w-auto grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Symbol Filter */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Symbol:</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Symbol</label>
             <select
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === 'all') {
-                  setSearchTerm('');
-                } else {
-                  setSearchTerm(value);
-                }
-                setCurrentPage(1);
-              }}
+              value={searchTerm}
+              onChange={handleSymbolChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm appearance-none"
             >
-              <option value="all">All Symbols</option>
-              {Array.from(new Set(reportData.map(item => item.Symbol || ''))).filter(Boolean).sort().map(symbol => (
-                <option key={symbol} value={symbol}>{symbol}</option>
+              <option value="">All Symbols</option>
+              {symbols.map((symbol) => (
+                <option key={symbol} value={symbol}>
+                  {symbol}
+                </option>
               ))}
             </select>
-            {/* Custom dropdown arrow */}
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 pt-6">
               <svg className="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="none" stroke="currentColor">
                 <path d="M7 7l3 3 3-3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -97,90 +179,76 @@ const CoveredCallReport = ({
             </div>
           </div>
           
+          {/* Search Input */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date:</label>
-            <select
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === 'all') {
-                  setSearchTerm('');
-                } else {
-                  setSearchTerm(value);
-                }
-                setCurrentPage(1);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm appearance-none"
-            >
-              <option value="all">All Expiry Dates</option>
-              {Array.from(new Set(reportData.map(item => item.Expiry || ''))).filter(Boolean).sort().map(expiry => (
-                <option key={expiry} value={expiry}>{expiry}</option>
-              ))}
-            </select>
-            {/* Custom dropdown arrow */}
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 pt-6">
-              <svg className="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="none" stroke="currentColor">
-                <path d="M7 7l3 3 3-3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-              </svg>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md text-sm"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
+          </div>
+          
+          {/* Clear Filters Button */}
+          <div className="flex items-end">
+            <button
+              onClick={clearFilters}
+              disabled={!searchTerm}
+              className={`w-full px-3 py-2 text-sm rounded-md ${
+                searchTerm
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Clear Filters
+            </button>
           </div>
         </div>
       </div>
       
-      {/* Covered Call Analysis Table with heading */}
+      {/* Covered Call Analysis Table */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">Options Data</h3>
-        <div className="overflow-x-auto" style={stickyColumnStyles.tableContainer}>
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th 
-                  scope="col" 
-                  style={{
-                    position: 'sticky',
-                    left: 0,
-                    top: 0,
-                    backgroundColor: '#F9FAFB',
-                    zIndex: 50,
-                    boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
-                  }}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Symbol
                 </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">StrikePrice</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">OPTION_LTP</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STOCK_LTP</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PREMIUM_AMT</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TOTAL_MARGIN_AMT</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">roi_pct_margin</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">roi_pct_total</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">pct_below52_high</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">pct_above52_low</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">wk52_h</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">wk52_l</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LotSize</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TradingSymbol</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Strike</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Option LTP</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Stock LTP</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Premium</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Margin Amt</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">ROI (Margin)</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">ROI (Total)</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">% Below 52w H</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">% Above 52w L</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">52w High</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">52w Low</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Lot Size</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Trading Symbol</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedData.map((item, index) => (
                 <tr key={`cc-${index}`} className="hover:bg-gray-50">
-                  <td 
-                    style={{
-                      position: 'sticky',
-                      left: 0,
-                      backgroundColor: 'white',
-                      zIndex: 30,
-                      boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
-                    }}
-                    className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900"
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = '#F9FAFB';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.backgroundColor = 'white';
-                    }}
-                  >
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                     {item.Symbol || '-'}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{item.StrikePrice || '-'}</td>

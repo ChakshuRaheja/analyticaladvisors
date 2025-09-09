@@ -1,22 +1,39 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, updateProfile, RecaptchaVerifier, signInWithPhoneNumber, signInWithCredential, PhoneAuthProvider } from 'firebase/auth';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi';
+import { 
+  createUserWithEmailAndPassword, 
+  updateProfile, 
+  RecaptchaVerifier, 
+  signInWithPhoneNumber, 
+  signInWithCredential, 
+  PhoneAuthProvider
+} from 'firebase/auth';
+import { sendWelcomeEmail } from '../services/emailService';
 import { auth } from '../firebase/config';
 import ScrollAnimation from '../components/ScrollAnimation';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { doc, setDoc, serverTimestamp, getDocs, query, where, collection } from 'firebase/firestore';
+import { db, functions } from '../firebase/config';
+import { toast } from 'react-toastify';
+import { httpsCallable } from 'firebase/functions';
 
 const SignUp = () => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    acceptedTerms: false
-  });
+  // Load saved form data from session storage on component mount
+  const loadFormData = () => {
+    const savedData = sessionStorage.getItem('signupFormData');
+    return savedData ? JSON.parse(savedData) : {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      acceptedTerms: false
+    };
+  };
+
+  const [formData, setFormData] = useState(loadFormData());
   const [error, setError] = useState({ message: '', isError: true });
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -34,6 +51,51 @@ const SignUp = () => {
   const [isPasswordCreated, setIsPasswordCreated] = useState(false);
   const [isAccountCreated, setIsAccountCreated] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Save form data to session storage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem('signupFormData', JSON.stringify(formData));
+  }, [formData]);
+
+  // Redirect to login after account creation
+  useEffect(() => {
+    if (isAccountCreated) {
+      // Show success toast
+      toast.success('🎉 Account created successfully! Redirecting to login...', {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+
+      // Redirect to login after delay
+      const timer = setTimeout(() => {
+        navigate('/login');
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAccountCreated, navigate]);
+
+  // Clear saved form data when component unmounts or when signup is complete
+  useEffect(() => {
+    return () => {
+      // Only clear if we're not navigating to terms/privacy pages
+      const isNavigatingAwayFromSignup = !location.pathname.includes('signup');
+      const isNavigatingToAuthPages = 
+        location.pathname === '/terms' || 
+        location.pathname === '/privacy' || 
+        location.pathname === '/disclaimer';
+      
+      if (isNavigatingAwayFromSignup && !isNavigatingToAuthPages) {
+        sessionStorage.removeItem('signupFormData');
+      }
+    };
+  }, [location.pathname]);
 
   useEffect(() => {
     // Clear any existing reCAPTCHA verifier
@@ -159,26 +221,56 @@ const SignUp = () => {
         phoneNumber: formData.phone
       });
 
+      // Update user profile with display name
+      await updateProfile(userCredential.user, {
+        displayName: `${formData.firstName} ${formData.lastName}`,
+        phoneNumber: formData.phone
+      });
+
       // Create user document in Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
+        emailVerified: false,
         createdAt: serverTimestamp(),
-        isActive: true
+        lastLogin: serverTimestamp(),
+        isActive: true,
+        role: 'user'
       });
 
+      // Send welcome email
+      try {
+        console.log('Attempting to send welcome email to:', formData.email);
+        await sendWelcomeEmail({
+          to: formData.email,
+          name: `${formData.firstName} ${formData.lastName}`
+        });
+        
+        console.log('Welcome email sent successfully to:', formData.email);
+        // Show success message
+        toast.success('Welcome email sent! Please check your inbox.', {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true
+        });
+        
+      } catch (emailError) {
+        console.error('Error sending welcome email:', emailError);
+        // Continue with signup even if email fails
+        toast.warning('Account created, but there was an issue sending the welcome email.', {
+          position: "top-center",
+          autoClose: 5000
+        });
+      }
+      
       // Sign out the user after account creation
       await auth.signOut();
-      
-      // Show success message
-      setError('Account created successfully! Please login to continue.');
-      
-      // Redirect to login page after a short delay
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      setIsAccountCreated(true);
       
     } catch (error) {
       console.error('Signup error:', error);
@@ -198,30 +290,85 @@ const SignUp = () => {
     }
   };
 
-  const handlePersonalDetailsSubmit = (e) => {
+  const checkExistingUser = async (email, phone) => {
+    try {
+      const response = await fetch('https://asia-south1-aerobic-acronym-466116-e1.cloudfunctions.net/checkUserExists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, phone }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Failed to check user existence');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error checking user existence:', error);
+      throw new Error('Error checking if user already exists: ' + error.message);
+    }
+  };
+
+  const handlePersonalDetailsSubmit = async (e) => {
     e.preventDefault();
     setError({ message: '', isError: true });
+    setLoading(true);
 
-    // Validate required fields
-    if (!formData.firstName.trim()) {
-      setError({ message: 'Please enter your first name', isError: true });
-      return;
-    }
-    if (!formData.lastName.trim()) {
-      setError({ message: 'Please enter your last name', isError: true });
-      return;
-    }
-    if (!formData.email.trim()) {
-      setError({ message: 'Please enter your email address', isError: true });
-      return;
-    }
-    if (!formData.phone.trim()) {
-      setError({ message: 'Please enter your phone number', isError: true });
-      return;
+    try {
+      // Validate required fields
+      if (!formData.firstName.trim()) {
+        throw new Error('Please enter your first name');
+      }
+      if (!formData.lastName.trim()) {
+        throw new Error('Please enter your last name');
+      }
+      if (!formData.email.trim()) {
+        throw new Error('Please enter your email');
+      }
+      if (!formData.phone.trim()) {
+        throw new Error('Please enter your phone number');
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      // Validate phone number (minimum 10 digits, only numbers)
+      const phoneRegex = /^\d{10,15}$/;
+      const phoneNumber = formData.phone.replace(/\D/g, '');
+      if (!phoneRegex.test(phoneNumber)) {
+        throw new Error('Please enter a valid phone number (10-15 digits)');
+      }
+
+      // Check if email or phone already exists
+      const { emailExists, phoneExists } = await checkExistingUser(formData.email, phoneNumber);
+      
+      if (emailExists && phoneExists) {
+        throw new Error('Email and phone number are already registered');
+      } else if (emailExists) {
+        throw new Error('This email is already registered');
+      } else if (phoneExists) {
+        throw new Error('This phone number is already registered');
+      }
+      
+      // If no duplicates, proceed to OTP verification
+      setCurrentStep(2);
+      
+    } catch (error) {
+      console.error('Error during signup validation:', error);
+      setError({ 
+        message: error.message, 
+        isError: true 
+      });
+    } finally {
+      setLoading(false);
     }
 
-    // Move to next step
-    setCurrentStep(2);
   };
 
   return (
@@ -234,20 +381,20 @@ const SignUp = () => {
             {/* Progress Steps */}
             <div className="mb-8">
               <div className="flex justify-between items-center">
-                <div className={`flex-1 text-center ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center border-2 ${currentStep >= 1 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
+                <div className={`flex-1 text-center ${currentStep >= 1 ? 'text-teal-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center border-2 ${currentStep >= 1 ? 'border-teal-600 bg-teal-600 text-white' : 'border-gray-300'}`}>
                     1
                   </div>
                   <span className="text-sm mt-1">Personal Details</span>
                 </div>
-                <div className={`flex-1 text-center ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center border-2 ${currentStep >= 2 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
+                <div className={`flex-1 text-center ${currentStep >= 2 ? 'text-teal-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center border-2 ${currentStep >= 2 ? 'border-teal-600 bg-teal-600 text-white' : 'border-gray-300'}`}>
                     2
                   </div>
                   <span className="text-sm mt-1">Phone Verification</span>
                 </div>
-                <div className={`flex-1 text-center ${currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center border-2 ${currentStep >= 3 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
+                <div className={`flex-1 text-center ${currentStep >= 3 ? 'text-teal-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center border-2 ${currentStep >= 3 ? 'border-teal-600 bg-teal-600 text-white' : 'border-gray-300'}`}>
                     3
                   </div>
                   <span className="text-sm mt-1">Create Password</span>
@@ -263,7 +410,7 @@ const SignUp = () => {
                     First Name
                   </label>
                   <input
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200"
                     id="firstName"
                     type="text"
                     placeholder="Enter your first name"
@@ -278,7 +425,7 @@ const SignUp = () => {
                     Last Name
                   </label>
                   <input
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200"
                     id="lastName"
                     type="text"
                     placeholder="Enter your last name"
@@ -293,7 +440,7 @@ const SignUp = () => {
                     Email Address
                   </label>
                   <input
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200"
                     id="email"
                     type="email"
                     placeholder="Enter your email"
@@ -307,20 +454,31 @@ const SignUp = () => {
                   <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="phone">
                     Phone Number
                   </label>
-                  <input
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-                    id="phone"
-                    type="tel"
-                    placeholder="Enter your phone number"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    required
-                  />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500">+91</span>
+                    </div>
+                    <input
+                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200"
+                      id="phone"
+                      type="tel"
+                      placeholder="1234567890"
+                      value={formData.phone}
+                      onChange={(e) => {
+                        // Allow only numbers
+                        const numericValue = e.target.value.replace(/\D/g, '');
+                        setFormData({ ...formData, phone: numericValue });
+                      }}
+                      pattern="[0-9]{10}"
+                      title="Please enter a valid 10-digit phone number"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="w-full py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200"
                 >
                   Continue to Phone Verification
                 </button>
@@ -336,19 +494,20 @@ const SignUp = () => {
                   </label>
                   <div className="flex gap-4">
                     <input
-                      className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className={`flex-1 px-4 py-3 rounded-lg border ${!otpSent ? 'bg-gray-100' : 'bg-white'} border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200`}
                       id="otp"
                       type="text"
-                      placeholder="Enter 6-digit code"
+                      placeholder={otpSent ? "Enter 6-digit code" : "Click Send OTP first"}
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
+                      disabled={!otpSent}
                       required
                     />
                     <button
                       id="send-otp-button"
                       onClick={handleSendOTP}
                       disabled={loading || otpSent}
-                      className={`px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all duration-200 ${
+                      className={`px-6 py-3 bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-all duration-200 ${
                         (loading || otpSent) ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
@@ -357,15 +516,17 @@ const SignUp = () => {
                   </div>
                 </div>
 
-                {otpSent && (
-                  <button
-                    onClick={handleVerifyOTP}
-                    disabled={loading || !otp}
-                    className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Verifying...' : 'Verify OTP'}
-                  </button>
-                )}
+                <button
+                  onClick={handleVerifyOTP}
+                  disabled={!otpSent || loading || !otp}
+                  className={`w-full py-3 rounded-lg transition-colors duration-200 ${
+                    !otpSent || loading || !otp
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-teal-600 text-white hover:bg-teal-700'
+                  }`}
+                >
+                  {loading ? 'Verifying...' : 'Verify OTP'}
+                </button>
               </div>
             )}
 
@@ -378,7 +539,7 @@ const SignUp = () => {
                   </label>
                   <div className="relative">
                     <input
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200"
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
@@ -393,8 +554,9 @@ const SignUp = () => {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
-                      {showPassword ? "Hide" : "Show"}
+                      {showPassword ? <FiEye size={18} /> : <FiEyeOff size={18} />}
                     </button>
                   </div>
                 </div>
@@ -405,7 +567,7 @@ const SignUp = () => {
                   </label>
                   <div className="relative">
                     <input
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200"
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm your password"
@@ -417,8 +579,9 @@ const SignUp = () => {
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                     >
-                      {showConfirmPassword ? "Hide" : "Show"}
+                      {showConfirmPassword ? <FiEye size={18} /> : <FiEyeOff size={18} />}
                     </button>
                   </div>
                 </div>
@@ -430,23 +593,50 @@ const SignUp = () => {
                       type="checkbox"
                       checked={formData.acceptedTerms}
                       onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
                     />
                   </div>
                   <div className="ml-3 text-sm">
                     <label htmlFor="terms" className="font-medium text-gray-700">
                       I accept the{' '}
-                      <Link to="/terms" className="text-blue-600 hover:text-blue-500">
-                        Terms & Conditions
-                      </Link>
-                      ,{' '}
-                      <Link to="/privacy" className="text-blue-600 hover:text-blue-500">
-                        Privacy Policy
-                      </Link>
-                      , and{' '}
-                      <Link to="/disclaimer" className="text-blue-600 hover:text-blue-500">
-                        Disclaimer & Disclosure
-                      </Link>
+                      <Link 
+                      to="/terms" 
+                      className="text-teal-600 hover:text-blue-500 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => {
+                        sessionStorage.setItem('formData', JSON.stringify(formData));
+                        sessionStorage.setItem('currentStep', currentStep);
+                      }}
+                    >
+                      Terms & Conditions
+                    </Link>
+                    {', '}
+                    <Link 
+                      to="/privacy-policy" 
+                      className="text-teal-600 hover:text-blue-500 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => {
+                        sessionStorage.setItem('formData', JSON.stringify(formData));
+                        sessionStorage.setItem('currentStep', currentStep);
+                      }}
+                    >
+                      Privacy Policy
+                    </Link>
+                    {' and '}
+                    <Link 
+                      to="/disclaimer" 
+                      className="text-teal-600 hover:text-blue-500 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => {
+                        sessionStorage.setItem('formData', JSON.stringify(formData));
+                        sessionStorage.setItem('currentStep', currentStep);
+                      }}
+                    >
+                      Disclaimer & Disclosure
+                    </Link>
                     </label>
                   </div>
                 </div>
@@ -454,7 +644,7 @@ const SignUp = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting || !formData.acceptedTerms}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? 'Creating Account...' : 'Create Account'}
                 </button>

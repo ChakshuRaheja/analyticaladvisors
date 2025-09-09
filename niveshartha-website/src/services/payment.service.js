@@ -2,9 +2,33 @@
  * Payment Service for Razorpay integration
  * Handles communication with the backend payment API
  */
+import { auth } from '../firebase/config';
 
-// Hardcoded URL for local testing to avoid any environment variable issues
-const API_BASE_URL = 'http://localhost:5175';
+// Helper function to safely get environment variables
+const getEnv = (key, fallback = '') => {
+  // First try Vite's import.meta.env
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+    return import.meta.env[key];
+  }
+  // Then try window.env (set in public/env.js)
+  if (typeof window !== 'undefined' && window.env && window.env[key]) {
+    return window.env[key];
+  }
+  // Fallback to process.env (for Create React App)
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  return fallback;
+};
+
+// Get API base URL with fallback
+const getApiBaseUrl = () => {
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+};
+
+
+// Use the API base URL
+const API_BASE_URL = getApiBaseUrl();
 
 // Potential API endpoint variations to try
 const API_ENDPOINTS = [
@@ -25,6 +49,16 @@ const API_ENDPOINTS = [
 export const createOrder = async (amount, currency = 'INR', receipt = null, notes = {}) => {
   try {
     console.log('Creating order with params:', { amount, currency, receipt, notes });
+    
+    // Get the current user's ID token
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    const token = await user.getIdToken();
+    if (!token) {
+      throw new Error('Failed to get authentication token');
+    }
     
     // Ensure amount is a number
     const numericAmount = Number(amount);

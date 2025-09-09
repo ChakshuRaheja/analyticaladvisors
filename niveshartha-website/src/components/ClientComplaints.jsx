@@ -15,12 +15,12 @@ const ClientComplaints = () => {
     },
     {
       source: 'SEBI (SCORES)',
-      pendingLastMonth: 1,
+      pendingLastMonth: 0,
       received: 0,
-      resolved: 1,
+      resolved: 0,
       totalPending: 0,
       pendingOver3Months: 0,
-      avgResolutionTime: 15
+      avgResolutionTime: 0
     },
     {
       source: 'Other Sources (if any)',
@@ -41,7 +41,7 @@ const ClientComplaints = () => {
     resolved: complaintData.reduce((sum, row) => sum + row.resolved, 0),
     totalPending: complaintData.reduce((sum, row) => sum + row.totalPending, 0),
     pendingOver3Months: complaintData.reduce((sum, row) => sum + row.pendingOver3Months, 0),
-    avgResolutionTime: 15 // This is calculated differently in real data
+    avgResolutionTime: 0// This is calculated differently in real data
   };
   
   // Current month and year for the heading
@@ -107,9 +107,9 @@ const ClientComplaints = () => {
                 </tbody>
               </table>
             </div>
-            <div className="p-3 text-xs text-gray-500 italic">
+            {/* <div className="p-3 text-xs text-gray-500 italic">
               *Average Resolution time is the sum total of time taken to resolve each complaint in days, in the current month divided by total number of complaints resolved in the current month. For more details <a href="/investor-grievance" className="text-[#008080] hover:underline"> click here</a>
-            </div>
+            </div> */}
           </div>
         </ScrollAnimation>
 

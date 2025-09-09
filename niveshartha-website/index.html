@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
+    <!-- Favicon configuration with multiple sizes -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo1.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/logo1.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo1.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/logo1.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#3399cc" />
@@ -11,18 +15,7 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
-            .then(registration => {
-              console.log('Service Worker registered with scope:', registration.scope);
-            })
-            .catch(error => {
-              console.error('Service Worker registration failed:', error);
-            });
-        });
-      }
-    </script>
+  
   </body>
 </html>
+<!-- production level deploy ready , 80% -->

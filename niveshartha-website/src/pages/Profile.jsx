@@ -63,7 +63,7 @@ const Profile = () => {
   // Function to format the creation date
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown';
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('en-GB', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

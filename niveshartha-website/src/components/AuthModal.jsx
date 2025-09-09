@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/config';
 
-const AuthModal = ({ onClose }) => {
+const AuthModal = ({ onClose, onSwitchToSignup }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -42,13 +41,15 @@ const AuthModal = ({ onClose }) => {
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          disabled={loading}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
-        <h2 className="text-2xl font-bold text-center mb-6">Login to Continue</h2>
+        <h2 className="text-2xl font-bold text-center mb-6">Welcome Back</h2>
+        <p className="text-center text-gray-600 mb-6">Login to access your account</p>
         
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
@@ -97,9 +98,14 @@ const AuthModal = ({ onClose }) => {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
-            <Link to="/signup" className="text-black font-semibold hover:underline">
+            <button
+              type="button"
+              onClick={onSwitchToSignup}
+              className="text-black font-semibold hover:underline focus:outline-none"
+              disabled={loading}
+            >
               Sign up
-            </Link>
+            </button>
           </p>
         </div>
       </div>
@@ -107,4 +113,4 @@ const AuthModal = ({ onClose }) => {
   );
 };
 
-export default AuthModal; 
+export default AuthModal;

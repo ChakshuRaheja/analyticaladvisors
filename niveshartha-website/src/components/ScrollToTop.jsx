@@ -1,23 +1,30 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
 /**
  * ScrollToTop component that scrolls the window to the top
- * when navigating between routes
+ * when navigating between routes but not on hash changes
  */
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, search, key } = useLocation();
+  const previousPathname = useRef(pathname);
 
   useEffect(() => {
-    // Scroll to top of the page with smooth behavior
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'auto' // Use 'auto' instead of 'smooth' for instant scrolling
-    });
-  }, [pathname]); // This effect runs when the pathname changes
+    // Only scroll to top if pathname has changed (not just hash or search params)
+    if (previousPathname.current !== pathname) {
+      // Scroll to top of the page
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'auto'
+      });
+      
+      // Update the previous pathname
+      previousPathname.current = pathname;
+    }
+  }, [pathname, search, key]);
 
-  return null; // This component doesn't render anything
+  return null;
 }
 
-export default ScrollToTop; 
+export default ScrollToTop;

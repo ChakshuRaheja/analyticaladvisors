@@ -2,14 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { Navigate, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
+import ErrorBoundary from '../components/ErrorBoundary';
+import StockRecommendations from '../components/StockRecommendations';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { auth, db } from '../firebase/config';
 import SubscriptionInfo from '../components/SubscriptionInfo';
 import RiskProfiling from '../components/RiskProfiling';
-import ErrorBoundary from '../components/ErrorBoundary';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
 
 // Sidebar item component
-const SidebarItem = ({ icon, text, isActive, onClick }) => {
+const SidebarItem = ({ icon, text, isActive, onClick, hasAccess = true }) => {
+  if (!hasAccess) return null;
+  
   return (
     <motion.div
       whileHover={{ scale: 1.03 }}
@@ -18,7 +22,7 @@ const SidebarItem = ({ icon, text, isActive, onClick }) => {
       className={`
         flex items-center space-x-3 px-4 py-3 cursor-pointer rounded-lg
         ${isActive 
-          ? 'bg-indigo-600 text-white' 
+          ? 'bg-teal-600 text-white' 
           : 'text-gray-700 hover:bg-gray-100'
         }
         transition-colors duration-200
@@ -32,19 +36,431 @@ const SidebarItem = ({ icon, text, isActive, onClick }) => {
 
 // Main Control Panel component
 const ControlPanel = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState({ success: null, message: '' });
   const [loading, setLoading] = useState(false);
   const [sendingResetEmail, setSendingResetEmail] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
-  const [formData, setFormData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState({ text: '', type: '' });
+  const [activeSubscriptions, setActiveSubscriptions] = useState([]);
+  const modalRef = useRef(null);
+  
+  // User data state
+  const [userData, setUserData] = useState({
+    displayName: currentUser?.displayName || '',
+    email: currentUser?.email || '',
+    phoneNumber: currentUser?.phoneNumber || '',
+    address: ''
   });
+
+  // Fetch user data from Firestore
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!currentUser?.uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserData(prev => ({
+            ...prev,
+            phoneNumber: userData.phone || prev.phoneNumber,
+            address: userData.address || prev.address
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, [currentUser]);
+  
+  // Support form data
+  const [supportFormData, setSupportFormData] = useState({
+    name: currentUser?.displayName || '',
+    email: currentUser?.email || '',
+    phone: '',
+    subject: '',
+    message: '',
+    preferredTime: ''
+  });
+  
+  // Check if user has an active subscription
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!currentUser) return;
+      
+      try {
+        // Add your subscription check logic here
+        // For example, check Firestore for active subscription
+        // const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        // setHasSubscription(userDoc.data()?.hasActiveSubscription || false);
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+      }
+    };
+    
+    checkSubscription();
+  }, [currentUser]);
+  
+  // Handle password reset via email
+  const handlePasswordReset = async () => {
+    if (!currentUser?.email) {
+      setMessage({ 
+        text: 'No email address found for your account.', 
+        type: 'error' 
+      });
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setMessage({ 
+        text: 'Sending password reset email...', 
+        type: 'info' 
+      });
+      
+      await sendPasswordResetEmail(auth, currentUser.email, {
+        url: 'https://analyticaladvisors.in/login'
+      });
+      
+      setMessage({ 
+        text: `Password reset email sent to ${currentUser.email}. Please check your inbox.`,
+        type: 'success' 
+      });
+      
+    } catch (error) {
+      console.error('Error sending reset email:', error);
+      setMessage({ 
+        text: error.code === 'auth/user-not-found' 
+          ? 'No account found with this email address.' 
+          : 'Failed to send reset email. Please try again later.', 
+        type: 'error' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle password reset email
+  const handleSendResetEmail = async () => {
+    if (!currentUser?.email) {
+      setMessage({ 
+        text: 'No email address found for your account.', 
+        type: 'error' 
+      });
+      return;
+    }
+    
+    try {
+      setSendingResetEmail(true);
+      await sendPasswordResetEmail(auth, currentUser.email, {
+        url: 'https://analyticaladvisors.in/login'
+      });
+      
+      setMessage({ 
+        text: `Password reset email sent to ${currentUser.email}. Please check your inbox.`,
+        type: 'success' 
+      });
+    } catch (error) {
+      console.error('Error sending reset email:', error);
+      setMessage({ 
+        text: error.code === 'auth/user-not-found' 
+          ? 'No account found with this email address.' 
+          : 'Failed to send reset email. Please try again later.', 
+        type: 'error' 
+      });
+    } finally {
+      setSendingResetEmail(false);
+    }
+  };
+
+  // Close modal when clicking outside or pressing Escape
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setActiveModal(null);
+      }
+    }
+    
+    function handleEscapeKey(event) {
+      if (event.key === 'Escape') {
+        setActiveModal(null);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscapeKey);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, []);
+  
+  const handleSupportInputChange = (e) => {
+    const { name, value } = e.target;
+    setSupportFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const handleSupportSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Basic form validation
+    if (activeModal === 'callback' && !supportFormData.preferredTime) {
+      setSubmitStatus({ success: false, message: 'Please select a preferred callback time' });
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('_subject', `[${activeModal === 'query' ? 'Query' : activeModal === 'callback' ? 'Callback' : 'Feedback'}] ${supportFormData.subject || 'No Subject'}`);
+      formData.append('_template', 'table');
+      formData.append('_autoresponse', `Thank you for your ${activeModal === 'query' ? 'query' : activeModal === 'callback' ? 'callback request' : 'feedback'}. We'll get back to you soon!`);
+      formData.append('name', supportFormData.name);
+      formData.append('email', supportFormData.email);
+      formData.append('phone', supportFormData.phone || 'N/A');
+      formData.append('subject', supportFormData.subject || 'N/A');
+      formData.append('message', supportFormData.message);
+      if (activeModal === 'callback') {
+        formData.append('preferredTime', supportFormData.preferredTime);
+      }
+
+      const response = await fetch('https://formsubmit.co/ajax/f747b7ea84fc616da624d24df459669d', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setSubmitStatus({ success: true, message: 'Your message has been sent successfully!' });
+        // Reset form
+        setSupportFormData({
+          name: currentUser?.displayName || '',
+          email: currentUser?.email || '',
+          phone: '',
+          subject: '',
+          message: '',
+          preferredTime: ''
+        });
+        
+        // Close modal after 2 seconds
+        setTimeout(() => {
+          setActiveModal(null);
+          setSubmitStatus({ success: null, message: '' });
+        }, 2000);
+      } else {
+        throw new Error(result.message || 'Failed to send message');
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setSubmitStatus({ 
+        success: false, 
+        message: error.message || 'Failed to send message. Please try again later.' 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const renderModal = () => {
+    if (!activeModal) return null;
+
+    const modalTitle = {
+      query: 'Submit a Query',
+      callback: 'Request a Call Back',
+      feedback: 'Share Your Feedback'
+    }[activeModal];
+
+    const modalDescription = {
+      query: 'Please provide details about your query and we\'ll get back to you as soon as possible.',
+      callback: 'Let us know your preferred time for a callback and we\'ll get in touch with you.',
+      feedback: 'We appreciate your feedback to help us improve our services.'
+    }[activeModal];
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start md:items-center justify-center z-50 p-4 pt-20 md:pt-4 overflow-y-auto">
+        <div 
+          ref={modalRef}
+          className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-y-auto"
+        >
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800">{modalTitle}</h3>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <p className="text-gray-600 mb-6">{modalDescription}</p>
+            
+            {submitStatus.message && (
+              <div 
+                className={`mb-6 p-4 rounded-lg ${
+                  submitStatus.success 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-red-100 text-red-700'
+                }`}
+              >
+                <div className="flex items-center">
+                  {submitStatus.success ? (
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  )}
+                  <span>{submitStatus.message}</span>
+                </div>
+              </div>
+            )}
+            
+            {!submitStatus.success && (
+              <form onSubmit={handleSupportSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={supportFormData.name}
+                    onChange={handleSupportInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={supportFormData.email}
+                    onChange={handleSupportInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number {activeModal === 'callback' ? '*' : ''}
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={supportFormData.phone}
+                    onChange={handleSupportInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    required={activeModal === 'callback'}
+                  />
+                </div>
+                
+                {activeModal !== 'feedback' && (
+                  <div>
+                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+                      {activeModal === 'query' ? 'Query Subject *' : 'Subject'}
+                    </label>
+                    <input
+                      type="text"
+                      id="subject"
+                      name="subject"
+                      value={supportFormData.subject}
+                      onChange={handleSupportInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      required={activeModal === 'query'}
+                    />
+                  </div>
+                )}
+                
+                {activeModal === 'callback' && (
+                  <div>
+                    <label htmlFor="preferredTime" className="block text-sm font-medium text-gray-700 mb-1">
+                      Preferred Callback Time *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      id="preferredTime"
+                      name="preferredTime"
+                      value={supportFormData.preferredTime}
+                      onChange={handleSupportInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      required
+                    />
+                  </div>
+                )}
+                
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                    {activeModal === 'callback' ? 'Additional Notes' : 'Message *'}
+                  </label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    rows="4"
+                    value={supportFormData.message}
+                    onChange={handleSupportInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    required={activeModal !== 'callback'}
+                    placeholder={activeModal === 'callback' ? 'Any additional information about your request...' : 'Please provide details about your ' + (activeModal === 'query' ? 'query...' : 'feedback...')}
+                  ></textarea>
+                </div>
+                
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`w-full py-3 px-6 rounded-lg font-medium text-white ${
+                      isSubmitting 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : activeModal === 'query' 
+                          ? 'bg-indigo-600 hover:bg-indigo-700' 
+                          : activeModal === 'callback'
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : 'bg-purple-600 hover:bg-purple-700'
+                    } transition-colors`}
+                  >
+                    {isSubmitting ? (
+                      'Sending...'
+                    ) : (
+                      `Submit ${activeModal === 'query' ? 'Query' : activeModal === 'callback' ? 'Request' : 'Feedback'}`
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
   // Add profile form state
   const [profileData, setProfileData] = useState({
     displayName: currentUser?.displayName || '',
@@ -53,8 +469,7 @@ const ControlPanel = () => {
   });
   const [profileImageUrl, setProfileImageUrl] = useState(currentUser?.photoURL || null);
   const fileInputRef = useRef(null);
-  const [userData, setUserData] = useState(null);
-  const [hasSubscription, setHasSubscription] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [kycStatus, setKycStatus] = useState(null);
 
   // Check URL parameters for section
@@ -62,33 +477,125 @@ const ControlPanel = () => {
     const params = new URLSearchParams(location.search);
     const sectionParam = params.get('section');
     
-    if (sectionParam && ['dashboard', 'profile', 'settings', 'password', 'help'].includes(sectionParam)) {
+    if (sectionParam && ['dashboard', 'profile', 'settings', 'password', 'help', 'my-plans', 'stock-recommendations'].includes(sectionParam)) {
       setActiveSection(sectionParam);
     }
   }, [location]);
 
   // Fetch user data including subscription and KYC status
   useEffect(() => {
+    if (!currentUser) return;
+    
     const fetchUserData = async () => {
-      if (!currentUser) return;
-
       try {
         // Fetch user document
+        console.log('Fetching user data for UID:', currentUser.uid);
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          setUserData(data);
+          console.log('Fetched user data from Firestore:', data);
+          console.log('Current user auth data:', {
+            displayName: currentUser.displayName,
+            phoneNumber: currentUser.phoneNumber,
+            email: currentUser.email
+          });
+          
+          const newUserData = {
+            displayName: data.displayName || currentUser.displayName || '',
+            email: currentUser.email || '',
+            phoneNumber: data.phoneNumber || currentUser.phoneNumber || '',
+            address: data.address || ''
+          };
+          
+          console.log('Setting user data:', newUserData);
+          setUserData(newUserData);
           setKycStatus(data.kycStatus || 'pending');
         }
 
-        // Fetch subscription document
-        const subscriptionDoc = await getDoc(doc(db, 'subscriptions', currentUser.uid));
-        setHasSubscription(subscriptionDoc.exists() && subscriptionDoc.data().status === 'active');
+        // Query subscriptions collection for the current user (Firebase v9+ modular syntax)
+        const subscriptionsRef = collection(db, 'subscriptions');
+        const q = query(subscriptionsRef, where('userId', '==', currentUser.uid));
+        const querySnapshot = await getDocs(q);
+        
+        console.log('Subscription query results:', querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })));
+        
+        const activeSubs = [];
+        
+        // If no subscriptions found, log and return early
+        if (querySnapshot.empty) {
+          console.log('No subscriptions found for user');
+          setActiveSubscriptions([]);
+          return;
+        }
+        
+        // Check each subscription
+        for (const doc of querySnapshot.docs) {
+          const subscriptionData = doc.data();
+          console.log('Processing subscription:', subscriptionData);
+          
+          // Log the status for debugging
+          console.log('Subscription status:', subscriptionData.status);
+          
+          // Check if status is active (case insensitive)
+          if (subscriptionData.status && typeof subscriptionData.status === 'string' && 
+              subscriptionData.status.toLowerCase() !== 'active') {
+            console.log('Skipping subscription - status not active:', subscriptionData.status);
+            continue;
+          }
+          
+          // Handle different date formats
+          let endDate;
+          if (subscriptionData.endDate) {
+            if (subscriptionData.endDate.seconds) {
+              // Handle Firestore Timestamp
+              endDate = new Date(subscriptionData.endDate.seconds * 1000);
+            } else if (subscriptionData.endDate.toDate) {
+              // Handle Firestore Timestamp (alternative)
+              endDate = subscriptionData.endDate.toDate();
+            } else if (typeof subscriptionData.endDate === 'string') {
+              // Handle string date
+              endDate = new Date(subscriptionData.endDate);
+            } else if (subscriptionData.endDate instanceof Date) {
+              // Already a Date object
+              endDate = subscriptionData.endDate;
+            }
+          }
+          
+          if (!endDate || isNaN(endDate.getTime())) {
+            console.log('No valid end date found for subscription:', subscriptionData);
+            continue;
+          }
+          
+          const now = new Date();
+          console.log('Subscription end date:', endDate, 'Current date:', now);
+          
+          if (endDate > now) {
+            console.log('Active subscription found:', subscriptionData);
+            // Map planId to internal plan key
+            const planId = subscriptionData.planId;
+            if (planId) {
+              // Normalize planId by replacing hyphens with underscores
+              const normalizedPlanId = planId.replace(/-/g, '_');
+              if (!activeSubs.includes(normalizedPlanId)) {
+                activeSubs.push(normalizedPlanId);
+              }
+            }
+          } else {
+            console.log('Subscription expired on:', endDate);
+          }
+        }
+        
+        console.log('Active subscriptions:', activeSubs);
+        setActiveSubscriptions(activeSubs);
       } catch (error) {
         console.error('Error fetching user data:', error);
+        setHasSubscription(false);
       }
     };
-
+    
     fetchUserData();
   }, [currentUser]);
 
@@ -149,7 +656,7 @@ const ControlPanel = () => {
     return <Navigate to="/login" />;
   }
 
-  // Handle form input changes
+  // Handle form input changes for password form
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -158,73 +665,120 @@ const ControlPanel = () => {
     }));
   };
 
-  // Handle password reset form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      if (formData.newPassword !== formData.confirmPassword) {
-        throw new Error("New passwords don't match");
-      }
-
-      if (formData.newPassword.length < 6) {
-        throw new Error("Password must be at least 6 characters long");
-      }
-
-      // Add your password reset logic here
-      
-      setMessage({
-        text: 'Password successfully updated!',
-        type: 'success'
-      });
-      setFormData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-    } catch (error) {
-      setMessage({
-        text: error.message,
-        type: 'error'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle sending password reset email
-  const handleSendResetEmail = async () => {
-    setSendingResetEmail(true);
-    try {
-      // Add your send reset email logic here
-      
-      setMessage({
-        text: 'Password reset link sent to your email!',
-        type: 'success'
-      });
-    } catch (error) {
-      setMessage({
-        text: error.message,
-        type: 'error'
-      });
-    } finally {
-      setSendingResetEmail(false);
-    }
-  };
-
-  // Sidebar items configuration
-  const sidebarItems = [
-    { id: 'dashboard', text: 'Dashboard', icon: '📊' },
-    { id: 'profile', text: 'Profile', icon: '👤' },
-    { id: 'settings', text: 'Settings', icon: '⚙️' },
-    { id: 'password', text: 'Reset Password', icon: '🔒'},
-    { id: 'help', text: 'Help & Support', icon: '❓' },
-  ];
-
   // Toggle mobile menu
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  // Check if user has an active subscription
+  const hasActiveSubscription = activeSubscriptions.length > 0;
+
+  // Handle input changes for account details
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setUserData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Save account details to Firestore
+  const handleSaveAccountDetails = async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    
+    console.log('Saving account details with data:', userData);
+    setIsSaving(true);
+    setSaveMessage({ text: '', type: '' });
+    
+    try {
+      const updateData = {
+        displayName: userData.displayName,
+        phoneNumber: userData.phoneNumber,
+        address: userData.address,
+        updatedAt: serverTimestamp()
+      };
+      
+      console.log('Updating Firestore with:', updateData);
+      
+      // Update Firestore document
+      await updateDoc(doc(db, 'users', currentUser.uid), updateData);
+      
+      console.log('Firestore update successful');
+      
+      // Update auth profile if display name changed
+      if (currentUser.displayName !== userData.displayName) {
+        console.log('Updating auth display name to:', userData.displayName);
+        await updateProfile(auth.currentUser, {
+          displayName: userData.displayName
+        });
+        console.log('Auth profile update successful');
+      }
+      
+      setSaveMessage({
+        text: 'Account details updated successfully!',
+        type: 'success'
+      });
+      
+      // Exit edit mode after a short delay
+      setTimeout(() => {
+        setIsEditing(false);
+        // Reset the message after 3 seconds
+        setTimeout(() => setSaveMessage({ text: '', type: '' }), 3000);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error updating account details:', error);
+      setSaveMessage({
+        text: 'Failed to update account details. Please try again.',
+        type: 'error'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  // Toggle edit mode for account details
+  const toggleEditMode = async () => {
+    if (isEditing) {
+      // If canceling edit, reset to original values
+      console.log('Canceling edit, resetting form data...');
+      try {
+        console.log('Fetching latest user data from Firestore...');
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const resetData = {
+            displayName: data.displayName || currentUser.displayName || '',
+            email: currentUser.email || '',
+            phoneNumber: data.phoneNumber || currentUser.phoneNumber || '',
+            address: data.address || ''
+          };
+          console.log('Resetting form data to:', resetData);
+          setUserData(prev => ({
+            ...prev,
+            ...resetData
+          }));
+        } else {
+          console.log('No user document found in Firestore');
+        }
+      } catch (error) {
+        console.error('Error resetting form data:', error);
+      }
+    } else {
+      console.log('Entering edit mode with current userData:', userData);
+    }
+    setIsEditing(!isEditing);
+  };
+
+  // Handle edit profile
+  const handleEditProfile = () => {
+    setActiveSection('profile');
+  };
+
+  // Handle change password navigation
+  const handleChangePassword = () => {
+    setActiveSection('password');
   };
 
   const renderContent = () => {
@@ -234,15 +788,14 @@ const ControlPanel = () => {
           <div className="space-y-6">
             {/* Subscription Info Card */}
             <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Your Subscription</h3>
               <SubscriptionInfo />
             </div>
-
-            {/* Profile Completion Card - Show if user has subscription but profile is incomplete */}
-            {hasSubscription && (
+{/* 
+            Profile Completion Card - Show if user has subscription but profile is incomplete
+            {activeSubscriptions.length > 0 && (
               <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-                <div className="flex items-center justify-between mb-4 border-b pb-2">
-                  <h3 className="text-xl font-bold text-gray-900">Complete Your Profile</h3>
+                <div className="flex items-center justify-center md:justify-between mb-4 border-b pb-2">
+                  <h3 className="text-xl font-bold text-gray-900 text-center md:text-left">Complete Your Profile</h3>
                 </div>
                 <p className="text-gray-600 mb-6">
                   Complete your risk profile and KYC verification to unlock all features and get personalized investment recommendations.
@@ -254,7 +807,7 @@ const ControlPanel = () => {
                   Complete My Profile
                 </button>
               </div>
-            )}
+            )} */}
 
             {/* What's New Card */}
             <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
@@ -325,95 +878,202 @@ const ControlPanel = () => {
               </div>
             }>
               <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Complete Your Profile</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b pb-2 text-center md:text-left">Complete Your Profile</h2>
                 <p className="text-gray-600 mb-6">
-                  Please complete your risk profiling and KYC verification to unlock all features of your subscription.
-                  This helps us provide you with personalized investment recommendations and comply with financial regulations.
+                  Complete your profile to get the most out of your subscription.
+                  This helps us provide you with personalized investment recommendations.
                 </p>
+                {/* KYC verification temporarily disabled
                 <RiskProfiling />
+                */}
               </div>
             </ErrorBoundary>
           </div>
         );
 
-      case 'settings':
+      case 'my-plans':
         return (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Settings</h2>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Account Settings</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Email Notifications</p>
-                        <p className="text-sm text-gray-500">Receive email updates about your account</p>
-                      </div>
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked />
-                        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Two-Factor Authentication</p>
-                        <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
-                      </div>
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" />
-                        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Marketing Emails</p>
-                        <p className="text-sm text-gray-500">Receive emails about new features and offers</p>
-                      </div>
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked />
-                        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">My Plans & Subscriptions</h2>
+              {/* <button
+                onClick={() => navigate('/subscription')}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Upgrade Plan
+              </button> */}
+            </div>
+            
+            <ErrorBoundary fallback={
+              <div className="bg-red-50 border-l-4 border-red-500 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
                   </div>
-                </div>
-                
-                <div className="pt-4 border-t border-gray-200">
-                  <h3 className="text-lg font-semibold mb-4">Privacy Settings</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Activity Tracking</p>
-                        <p className="text-sm text-gray-500">Allow us to track your activity for better recommendations</p>
-                      </div>
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked />
-                        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Data Sharing</p>
-                        <p className="text-sm text-gray-500">Share your non-personal data for service improvement</p>
-                      </div>
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" />
-                        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">
+                      An error occurred while loading your subscriptions. Please refresh the page or contact support if the issue persists.
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="mt-2 text-sm font-medium text-red-700 hover:text-red-600"
+                    >
+                      Try again <span aria-hidden="true">&rarr;</span>
+                    </button>
                   </div>
-                </div>
-                
-                <div className="pt-4 border-t border-gray-200">
-                  <button
-                    type="button"
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                  >
-                    Save Settings
-                  </button>
                 </div>
               </div>
+            }>
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <SubscriptionInfo />
+              </div>
+            </ErrorBoundary>
+          </div>
+        );
+
+      case 'stock-recommendations':
+        return <StockRecommendations currentUser={currentUser} activeSubscriptions={activeSubscriptions} />;
+
+
+
+      case 'account':
+        return (
+          <div className="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900">Account Details</h2>
+              <p className="mt-2 text-gray-600">View and manage your account information</p>
             </div>
+
+            {saveMessage.text && (
+              <div className={`mb-6 p-4 rounded-lg ${
+                saveMessage.type === 'success' 
+                  ? 'bg-green-50 text-green-800 border border-green-200' 
+                  : 'bg-red-50 text-red-800 border border-red-200'
+              }`}>
+                {saveMessage.text}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveAccountDetails} className="space-y-6">
+              <div className="bg-gray-50 p-6 rounded-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
+                  {!isEditing ? (
+                    <button
+                      type="button"
+                      onClick={toggleEditMode}
+                      className="text-sm text-indigo-600 hover:text-indigo-800"
+                    >
+                      Edit
+                    </button>
+                  ) : (
+                    <div className="space-x-2">
+                      <button
+                        type="button"
+                        onClick={toggleEditMode}
+                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                        disabled={isSaving}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                        disabled={isSaving}
+                      >
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between pb-2 border-b">
+                    <label className="text-gray-600 mb-1 sm:mb-0">Full Name</label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="displayName"
+                        value={userData.displayName || ''}
+                        onChange={handleInputChange}
+                        className="px-2 py-1 border rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        required
+                      />
+                    ) : (
+                      <span className="font-medium">{userData.displayName || 'Not set'}</span>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row justify-between pb-2 border-b">
+                    <span className="text-gray-600 mb-1 sm:mb-0">Email</span>
+                    <span className="font-medium">{userData.email || 'Not set'}</span>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row justify-between pb-2 border-b">
+                    <label className="text-gray-600 mb-1 sm:mb-0">Mobile</label>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        name="phoneNumber"
+                        value={userData.phoneNumber || ''}
+                        onChange={handleInputChange}
+                        className="px-2 py-1 border rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="+91 XXXXXXXXXX"
+                      />
+                    ) : (
+                      <span className="font-medium">{userData.phoneNumber || 'Not set'}</span>
+                    )}
+                  </div>
+                  
+                  <div className="pt-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    {isEditing ? (
+                      <textarea
+                        name="address"
+                        value={userData.address || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        rows="3"
+                        placeholder="Enter your full address"
+                      />
+                    ) : (
+                      <p className="text-gray-800 whitespace-pre-line">
+                        {userData.address || 'No address provided'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-gray-200 mt-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Password</h3>
+                <div className="bg-indigo-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-700 mb-3">
+                    To change your password, we'll send you a secure link to your email address.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handlePasswordReset}
+                    disabled={loading}
+                    className="px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-100 rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Sending...' : 'Send Password Reset Email'}
+                  </button>
+                  {message.text && (
+                    <p className={`mt-2 text-sm ${
+                      message.type === 'success' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {message.text}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </form>
           </div>
         );
 
@@ -421,8 +1081,8 @@ const ControlPanel = () => {
         return (
           <div className="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">Reset Password</h2>
-              <p className="mt-2 text-gray-600">Create a new password for your account</p>
+              <h2 className="text-3xl font-bold text-gray-900">Reset Your Password</h2>
+              <p className="mt-2 text-gray-600">We'll send you a secure link to reset your password</p>
             </div>
 
             {message.text && (
@@ -430,7 +1090,9 @@ const ControlPanel = () => {
                 className={`mb-6 p-4 rounded-lg border ${
                   message.type === 'success' 
                     ? 'bg-green-50 text-green-800 border-green-300' 
-                    : 'bg-red-50 text-red-800 border-red-300'
+                    : message.type === 'error'
+                    ? 'bg-red-50 text-red-800 border-red-300'
+                    : 'bg-blue-50 text-blue-800 border-blue-300'
                 }`}
               >
                 <div className="flex items-center">
@@ -438,9 +1100,14 @@ const ControlPanel = () => {
                     <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                     </svg>
-                  ) : (
+                  ) : message.type === 'error' ? (
                     <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                   )}
                   {message.text}
@@ -448,96 +1115,121 @@ const ControlPanel = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Password
+                  Email Address
                 </label>
                 <input
-                  type="password"
-                  name="currentPassword"
-                  value={formData.currentPassword}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all duration-200"
-                  placeholder="Enter your current password"
+                  type="email"
+                  value={currentUser?.email || ''}
+                  disabled
+                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 bg-gray-50 cursor-not-allowed"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={formData.newPassword}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all duration-200"
-                  placeholder="Enter your new password"
-                />
-                <p className="mt-2 text-sm text-gray-500">
-                  Password must be at least 6 characters long
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm New Password
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all duration-200"
-                  placeholder="Confirm your new password"
-                />
-              </div>
-
-              <div className="flex flex-col space-y-4 pt-6">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`
-                    w-full py-4 text-white bg-indigo-600 rounded-lg
-                    hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50
-                    transform transition-all duration-200 ease-in-out
-                    ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'}
-                    text-lg font-semibold shadow-lg hover:shadow-xl
-                  `}
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Resetting Password...
-                    </div>
-                  ) : (
-                    'Reset Password'
-                  )}
-                </button>
-
+              <div className="pt-2">
                 <button
                   type="button"
-                  onClick={handleSendResetEmail}
-                  disabled={sendingResetEmail}
-                  className={`
-                    w-full py-4 text-indigo-600 bg-indigo-50 rounded-lg border-2 border-indigo-200
-                    hover:bg-indigo-100 hover:border-indigo-300 focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:ring-opacity-50
-                    transform transition-all duration-200 ease-in-out
-                    ${sendingResetEmail ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'}
-                    text-lg font-semibold
-                  `}
+                  onClick={handlePasswordReset}
+                  disabled={loading}
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {sendingResetEmail ? 'Sending Reset Link...' : 'Send Password Reset Email'}
+                  {loading ? 'Sending Reset Link...' : 'Send Password Reset Email'}
                 </button>
               </div>
-            </form>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setActiveSection('account')}
+                  className="text-sm text-indigo-600 hover:text-indigo-500"
+                >
+                  Back to Account
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'help':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white p-8 rounded-xl shadow-lg">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-900">Support / Feedback</h2>
+                <p className="mt-2 text-gray-600">We're here to help. Choose an option below to get assistance.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Raise a Query Card */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow duration-300">
+                  <div className="bg-indigo-100 w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-center mb-2">Raise a Query</h3>
+                  <p className="text-gray-600 text-center mb-4">Have a specific question? Our support team is ready to help.</p>
+                  <button 
+                    onClick={() => setActiveModal('query')}
+                    className="w-full py-2 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    Submit Query
+                  </button>
+                </div>
+
+                {/* Request a Call Back Card */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow duration-300">
+                  <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-center mb-2">Request a Call Back</h3>
+                  <p className="text-gray-600 text-center mb-4">Prefer to speak with someone? We'll call you back at your convenience.</p>
+                  <button 
+                    onClick={() => setActiveModal('callback')}
+                    className="w-full py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Request Call Back
+                  </button>
+                </div>
+
+                {/* General Feedback Card */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow duration-300">
+                  <div className="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-center mb-2">General Feedback</h3>
+                  <p className="text-gray-600 text-center mb-4">We'd love to hear your thoughts and suggestions to improve our service.</p>
+                  <button 
+                    onClick={() => setActiveModal('feedback')}
+                    className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Share Feedback
+                  </button>
+                </div>
+
+                {/* Do-it-yourself Card */}
+                <Link to="/faq" className="block">
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow duration-300 h-full">
+                    <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-center mb-2">Do-it-yourself</h3>
+                    <p className="text-gray-600 text-center mb-4">Find answers to common questions in our comprehensive FAQ section.</p>
+                    <div className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center">
+                      View FAQs
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            </div>
           </div>
         );
 
@@ -553,8 +1245,22 @@ const ControlPanel = () => {
     }
   };
 
+  // Navigation items
+  const navItems = [
+    { id: 'dashboard', text: 'Dashboard', icon: '📊' },
+    { id: 'account', text: 'Account', icon: '👤' },
+    { id: 'my-plans', text: 'My Plans & Subscriptions', icon: '💎' },
+    { id: 'stock-recommendations', text: 'Stock Recommendations', icon: '📈' },
+    { id: 'password', text: 'Change Password', icon: '🔒', hideFromNav: true }, // Hidden from main nav, accessible from Account
+    { id: 'help', text: 'Help & Support', icon: '❓' },
+  ];
+  
+  // Filter out hidden navigation items
+  const visibleNavItems = navItems.filter(item => !item.hideFromNav);
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {activeModal && renderModal()}
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-20 left-4 z-20">
         <button
@@ -591,12 +1297,11 @@ const ControlPanel = () => {
             </div>
             <div>
               <p className="font-medium">{currentUser.displayName || currentUser.email.split('@')[0]}</p>
-              <p className="text-xs text-gray-500">Member</p>
             </div>
           </div>
           
-          <nav className="space-y-1">
-            {sidebarItems.map((item) => (
+          <nav className="space-y-1 mt-6">
+            {visibleNavItems.map((item) => (
               <SidebarItem
                 key={item.id}
                 icon={item.icon}
@@ -606,6 +1311,7 @@ const ControlPanel = () => {
                   setActiveSection(item.id);
                   if (isMobileMenuOpen) setIsMobileMenuOpen(false);
                 }}
+                hasAccess={item.hasAccess !== false}
               />
             ))}
           </nav>

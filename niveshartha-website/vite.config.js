@@ -21,6 +21,26 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false
+      },
+      // Proxy for contact form to avoid CORS in development
+      '^/contact': {
+        target: 'https://omkara-backend-725764883240.asia-south1.run.app',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/contact/, '')
+      },
+      '/api/proxy': {
+        target: 'https://analytics-advisor-backend-1-583205731005.us-central1.run.app',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/proxy/, '')
+      },
+      // Keep the old proxy for backward compatibility
+      '/analytics-api': {
+        target: 'https://analytics-advisor-backend-1-583205731005.us-central1.run.app',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/analytics-api/, '')
       }
     }
   },
@@ -34,11 +54,14 @@ export default defineConfig({
       'firebase/firestore'
     ]
   },
-  base: './',
+  base: '/',
   build: {
-    chunkSizeWarningLimit: 800,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],

@@ -14,13 +14,11 @@ const fallbackResponses = {
   'services': "At Analytical Advisors, we offer various services including Stock Analysis, Portfolio Review, and Investment Advisory. Would you like to know more about any of these?",
   
   // Default
-  'default': "I'm experiencing some technical difficulties right now. Please try again later or contact us directly at support@analyticaladvisors.com."
+  'default': "I'm experiencing some technical difficulties right now. Please try again later or contact us directly at support@analyticaladvisors.in."
 };
 
-// API URL - can be configured based on environment
-const API_URL = import.meta.env.PROD 
-  ? '/api/chatbot' 
-  : 'http://localhost:3001/api/chatbot';
+// API URL - using deployed Cloud Run service
+const API_URL = 'https://omkara-backend-725764883240.asia-south1.run.app/api/chatbot';
 
 // To store conversation history
 let conversationHistory = [];

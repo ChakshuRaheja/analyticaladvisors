@@ -10,10 +10,10 @@ const PrivacyPolicy = () => {
             <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">Privacy Policy</h1>
             
             <div className="prose prose-lg max-w-none">
-              <p className="text-gray-600 mb-6">Last updated: {new Date().toLocaleDateString()}</p>
+              <p className="text-gray-600 mb-6">Last updated: {new Date().toLocaleDateString('en-GB')}</p>
 
               <p className="text-gray-700 mb-6">
-                Welcome to Niveshartha Private Limited, where your privacy is prioritised and protected to the greatest extent possible where our website www.niveshartha.com & our Niveshartha Application comes under this privacy policy. We are committed to protecting your privacy and data in accordance with the provisions of the Information Technology Act 2000 (the "Act") and the Information Technology (Reasonable security practises and procedures and sensitive personal data or information) Rules, 2011 (the "Rules") framed and issued by the Government of India in accordance with the Act. We are also committed to using your personal information responsibly and justifiably in order to provide our services. This user-friendly document is intended to assist you in understanding our common practises with regard to the personal information we collect from our users on our website, located at www.niveshartha.com ("website"), related online services, and for other lawful purposes. Before using the Website or submitting any sensitive personal information or data, please read this Privacy Policy.
+                Welcome to Analytical Advisors, where your privacy is prioritized and protected to the greatest extent possible where our website www.analyticaladvisors.in comes under this privacy policy. We are committed to protecting your privacy and data in accordance with the provisions of the Information Technology Act 2000 (the "Act") and the Information Technology (Reasonable security practises and procedures and sensitive personal data or information) Rules, 2011 (the "Rules") framed and issued by the Government of India in accordance with the Act. We are also committed to using your personal information responsibly and justifiably in order to provide our services. This user-friendly document is intended to assist you in understanding our common practices with regard to the personal information we collect from our users on our website, located at www.analyticaladvisors.in ("website"), related online services, and for other lawful purposes. Before using the Website or submitting any sensitive personal information or data, please read this Privacy Policy.
               </p>
 
               <p className="text-gray-700 mb-6">
@@ -41,7 +41,7 @@ const PrivacyPolicy = () => {
                   By sharing the Personal Information of another individual, you represent that you are authorized to do so and/or that you have obtained all required consents from that individual for us to collect, use, and disclose his or her Personal Information in accordance with this Privacy Statement. In addition, you agree to adhere to follow KYC standards as defined by SEBI.
                 </p>
                 <p className="text-gray-700 mt-4">
-                  Niveshartha may, at its sole option, suspend/hold its services if the KYC requirements are incomplete or wrong. pending. The User shall not hold Niveshartha responsible for such occurrences.
+                  Analytical Advisors may, at its sole option, suspend/hold its services if the KYC requirements are incomplete or wrong. Pending. The User shall not hold Analytical Advisors responsible for such occurrences.
                 </p>
                 <p className="text-gray-700 mt-4">
                   This document does not apply to any information that is not protected by privacy laws.
@@ -91,14 +91,14 @@ const PrivacyPolicy = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">5. Safeguarding Your Privacy – Safety</h2>
                 <p className="text-gray-700">
-                  Niveshartha takes appropriate precautions to prevent unauthorised access to or disclosure of our Users' information. All information about our Users is protected in our offices and our staff are regularly updated on security and privacy policies.
+                  Analytical Advisors takes appropriate precautions to prevent unauthorized access to or disclosure of our Users' information. All information about our Users is protected in our offices and our staff are regularly updated on security and privacy policies.
                 </p>
               </section>
 
               <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">6. Your Options- Choice/Opt-out</h2>
                 <p className="text-gray-700">
-                  Users who no longer want to receive communications from us can opt out by sending an email to research@niveshartha.com.
+                  Users who no longer want to receive communications from us can opt out by sending an email to support@analyticaladvisors.in.
                 </p>
               </section>
 
@@ -112,7 +112,7 @@ const PrivacyPolicy = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">8. Phishing</h2>
                 <p className="text-gray-700">
-                  We implement security measures to protect against phishing and unauthorized access. Contact us immediately at research@niveshartha.com if you suspect any unauthorized use of your account.
+                  We implement security measures to protect against phishing and unauthorized access. Contact us immediately at support@analyticaladvisors.in if you suspect any unauthorized use of your account.
                 </p>
               </section>
 
@@ -129,10 +129,10 @@ const PrivacyPolicy = () => {
                   For questions about this Privacy Statement, contact us at:
                 </p>
                 <p className="text-gray-700 mt-2">
-                  Niveshartha Pvt Ltd<br />
-                  No.189k, No.207 189, 9th main, 6th Sector,<br />
-                  HSR Layout, Bengaluru - 560102, Karnataka - India<br />
-                  Email: research@niveshartha.com
+                  GBP No.32 Ground Floor New Market, Timarpur<br />
+                  National Capital Territory of Delhi<br />
+                  Delhi, 110007 INDIA<br />
+                  Email: support@analyticaladvisors.in
                 </p>
               </section>
 
@@ -153,7 +153,7 @@ const PrivacyPolicy = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">13. Conflicts and Authority</h2>
                 <p className="text-gray-700">
-                  Any disputes relating to this Privacy Policy will be settled through the Dispute Resolution procedure outlined in our Terms of Use / Service in Bangalore, Karnataka jurisdiction only.
+                  Any disputes relating to this Privacy Policy will be settled through the Dispute Resolution procedure outlined in our Terms of Use / Service in Delhi, National Capital Territory of Delhi jurisdiction only.
                 </p>
               </section>
             </div>

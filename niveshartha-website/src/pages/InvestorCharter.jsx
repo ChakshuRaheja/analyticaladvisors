@@ -22,7 +22,7 @@ const InvestorCharter = () => {
           <ScrollAnimation>
             <section className="mb-8">
               <p className="text-gray-700 mb-6">
-                Analytical Advisors is a SEBI registered Research analyst having <strong><u>SEBI Registration number </u></strong><strong><u>INH000009047</u></strong>. This charter (hereinafter to be referred as the "Investor charter" or the "Charter") is prepared in terms of SEBI circular SEBI/HO/IMD/IMDII CIS/P/CIR/2021/0685 dated December 13, 2021.
+                Analytical Advisors is a SEBI registered Research analyst having <strong><u>SEBI Registration number </u></strong><strong><u>INH000020183</u></strong>. This charter (hereinafter to be referred as the "Investor charter" or the "Charter") is prepared in terms of SEBI circular SEBI/HO/IMD/IMDII CIS/P/CIR/2021/0685 dated December 13, 2021.
               </p>
               
               <h3 className="text-xl font-bold text-gray-900 mb-3">1. Vision and Mission statement for investors</h3>

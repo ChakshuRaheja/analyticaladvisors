@@ -10,12 +10,12 @@ const Disclaimer = () => {
             <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">Disclaimer & Disclosure</h1>
             
             <div className="prose prose-lg max-w-none">
-              <p className="text-gray-600 mb-6">Last updated: {new Date().toLocaleDateString()}</p>
+              <p className="text-gray-600 mb-6">Last updated: {new Date().toLocaleDateString('en-GB')}</p>
               
               <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Disclosures</h2>
                 <ul className="list-disc pl-6 space-y-2 text-gray-700">
-                  <li>The Research Analyst is registered with SEBI under registration no. ghfhfhy jyujy.</li>
+                  <li>The Research Analyst is registered with SEBI under registration no. INH000020183.</li>
                   <li>The Research Analyst/Company/Employees may hold financial interest in the recommended securities.</li>
                   <li>The research is not influenced by any business relationship or compensation from the subject company.</li>
                 </ul>

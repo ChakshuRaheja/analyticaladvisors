@@ -10,15 +10,28 @@ import { useAuth } from '../context/AuthContext';
 // Image paths from public directory
 const p1 = '/images/p1.jpg';
 const p1Mobile = '/images/p1 (2).jpg';
-const p2 = '/images/p 2.jpg';
+const p2 = '/images/p 2.png';
 const p2Mobile = '/images/p 2 (2).png';
 const p3 = '/images/p3.png';
-const p3Mobile = '/images/p3(2).png';
+const p3Mobile = '/images/p3(2).jpg'; // Fixed extension to match actual filename
 
 // Debug: Log the base URL
 console.log('Base URL:', window.location.origin);
 
-const Home = () => {
+const Home = ({ faqOnly = false }) => {
+  // If faqOnly is true, scroll to FAQ section on mount
+  useEffect(() => {
+    if (faqOnly) {
+      // Small timeout to ensure the DOM is ready
+      const timer = setTimeout(() => {
+        const faqSection = document.getElementById('faq');
+        if (faqSection) {
+          faqSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [faqOnly]);
   const { currentUser } = useAuth();
   const [openFaq, setOpenFaq] = useState(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
@@ -174,12 +187,56 @@ const Home = () => {
     },
     {
       question: "How can I unsubscribe or opt out of your services?",
-      answer: "You can cancel your subscription anytime by writing to us at [Your Email]. If you've paid for a term-based subscription, we'll guide you through the cancellation and refund policy (if applicable)."
+      answer: "You can cancel your subscription anytime by writing to us at  support@analyticaladvisors.in . If you've paid for a term-based subscription, we'll guide you through the cancellation and refund policy (if applicable)."
     }
   ];
 
+  // If faqOnly is true, only render the FAQ section
+  if (faqOnly) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-grow">
+          {/* FAQ Section */}
+          <section id="faq" className="py-20 bg-white-50">
+            <div className="container mx-auto px-4">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-800">
+                  Have a Question ?
+                </h2>
+              </div>
+
+              <div className="max-w-4xl mx-auto">
+                {faqItems.map((faq, index) => (
+                  <div key={index} className="mb-6 bg-white rounded-lg shadow-md overflow-hidden">
+                    <button
+                      className="w-full px-6 py-5 text-left flex justify-between items-center focus:outline-none"
+                      onClick={() => toggleFaq(index)}
+                    >
+                      <span className="text-xl font-medium text-gray-800">
+                        {`0${index + 1}. ${faq.question}`}
+                      </span>
+                      <span className="text-2xl">
+                        {openFaq === index ? '−' : '+'}
+                      </span>
+                    </button>
+                    {openFaq === index && (
+                      <div className="px-6 pb-5">
+                        <p className="text-gray-600 whitespace-pre-line">{faq.answer}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // Original return for normal home page
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       {/* WhatsApp Click to Chat Button */}
       <div className="fixed left-4 bottom-6 z-50">
         {/* WhatsApp Message - Only appears when state is true */}
@@ -247,16 +304,21 @@ const Home = () => {
         </button>
       </div>
       
-      {/* Full Page Hero Section with Carousel */}
-      <div className="h-20"></div> {/* Empty div to account for navbar height */}
-      <section className="relative h-[calc(100vh-5rem)] w-full flex items-center justify-center bg-white overflow-hidden">
+      {/* Hero Section with Carousel */}
+      <div className="relative w-full" style={{
+        height: 'calc(100vh - 5rem)',
+        minHeight: '500px',
+        marginTop: '5rem',
+        backgroundColor: '#f8f9fa',
+        overflow: 'hidden'
+      }}>
         {console.log('Rendering carousel with images:', carouselImages)}
         {imagesLoaded ? (
           <div className="w-full h-full">
             <ImageCarousel 
               images={carouselImages} 
               interval={5000} 
-              key={JSON.stringify(carouselImages.map(img => img.src))} // Force re-render when images change
+              key={JSON.stringify(carouselImages.map(img => img.src))}
             />
           </div>
         ) : (
@@ -264,7 +326,7 @@ const Home = () => {
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#008080]"></div>
           </div>
         )}
-      </section>
+      </div>
 
       {/* What We Offer Teaser */}
       <section className="py-16 bg-gray-50">
@@ -278,10 +340,10 @@ const Home = () => {
               Our expert insights and data-driven approach give you the edge you need.
             </p>
             <Link 
-              to="/services" 
+              to="/subscription" 
               className="inline-flex items-center text-[#008080] font-semibold hover:text-[#006666] transition-colors group"
             >
-              View All Services
+              View Subscription Plans
               <svg 
                 className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" 
                 fill="none" 
@@ -452,7 +514,7 @@ const Home = () => {
       <ClientComplaints />
 
       {/* FAQ Section */}
-      <section className="py-20 bg-white-50">
+      <section id="faq" className="py-20 bg-white-50">
         <div className="container mx-auto px-4">
           <ScrollAnimation animation="from-bottom" delay={0.2}>
             <div className="text-center mb-16">
@@ -502,7 +564,7 @@ const Home = () => {
             </p>
             <div className="flex justify-center">
               <Link
-                to={currentUser ? "/dashboard" : "/login"}
+                to={currentUser ? "/dashboard" : "/signup"}
                 className="px-10 py-4 bg-white text-[#008080] font-bold rounded-lg hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 {currentUser ? 'Go to Dashboard' : 'Get Started Now'}

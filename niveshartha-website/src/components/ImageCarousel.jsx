@@ -85,19 +85,35 @@ const ImageCarousel = ({ images, interval = 5000, fullPage = true }) => {
 
   // Debug: Log current image with full path
   const currentImage = images[currentIndex];
-  const imageSrc = currentImage?.src ? 
-    (currentImage.src.startsWith('http') ? currentImage.src : window.location.origin + currentImage.src) : 
-    '';
-    
+  const imageSrc = currentImage?.src || '';
+  const fullImagePath = imageSrc.startsWith('http') ? imageSrc : `${window.location.origin}${imageSrc}`;
+  
   console.log('Current slide:', {
     index: currentIndex,
-    image: currentImage,
-    fullPath: imageSrc,
-    allImages: images
+    currentImage,
+    imageSrc,
+    fullImagePath,
+    allImages: images,
+    windowLocation: window.location.href
   });
+  
+  // Log image loading state
+  useEffect(() => {
+    if (imageSrc) {
+      const img = new Image();
+      img.onload = () => console.log(`Image loaded successfully: ${imageSrc}`);
+      img.onerror = () => console.error(`Failed to load image: ${imageSrc}`);
+      img.src = imageSrc.startsWith('http') ? imageSrc : `${window.location.origin}${imageSrc}`;
+    }
+  }, [imageSrc]);
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full" style={{
+      height: '100%',
+      width: '100%',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
       {/* Image container */}
       <div className="relative h-full w-full">
         <AnimatePresence initial={false} custom={direction} mode="wait">
@@ -112,26 +128,44 @@ const ImageCarousel = ({ images, interval = 5000, fullPage = true }) => {
               variants={slideVariants}
               transition={{ duration: 0.5 }}
             >
-              <div className="w-full h-full flex items-center justify-center">
+              <div className="w-full h-full flex items-center justify-center overflow-hidden bg-gray-100">
                 {imageSrc ? (
-                  <img
-                    src={imageSrc}
-                    alt={images[currentIndex].alt || `Slide ${currentIndex + 1}`}
-                    className={`max-h-full max-w-full ${
-                      isMobile 
-                        ? "object-contain" 
-                        : "object-cover"
-                    }`}
-                    style={{ 
-                      objectPosition: 'center',
-                      width: isMobile ? 'auto' : '100%',
-                      height: isMobile ? '100%' : 'auto',
-                    }}
-                    onError={(e) => {
-                      console.error('Failed to load image:', images[currentIndex].src);
-                      e.target.src = 'https://via.placeholder.com/800x400?text=Image+Not+Found';
-                    }}
-                  />
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: '#f8f9fa',
+                      zIndex: 1
+                    }}></div>
+                    <img
+                      src={imageSrc}
+                      alt={images[currentIndex].alt || `Slide ${currentIndex + 1}`}
+                      style={{
+                        position: 'relative',
+                        zIndex: 2,
+                        width: 'auto',
+                        height: 'auto',
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        objectFit: 'contain',
+                      }}
+                      onError={(e) => {
+                        console.error('Failed to load image:', images[currentIndex].src);
+                        e.target.src = 'https://via.placeholder.com/800x400?text=Image+Not+Found';
+                      }}
+                    />
+                  </div>
                 ) : (
                   <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                     <p>Image not available</p>
