@@ -11,7 +11,6 @@ const navLinks = [
   { path: '/analysis', text: 'Analysis' },
   { path: '/subscription', text: 'Subscription' },
   { path: '/contact', text: 'Contact' },
-  { path: '/blog', text: 'Blog' }
 ];
 
 // Direct navigation helper function
