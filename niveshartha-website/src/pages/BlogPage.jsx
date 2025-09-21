@@ -29,13 +29,6 @@ export default function BlogPage() {
       paddingBottom: "16px",
       borderBottom: "1px solid #ddd",
     },
-    postTitle: {
-      fontSize: "22px",
-      fontWeight: "600",
-      marginBottom: "8px",
-      color: "#111",
-      textDecoration: "none",
-    },
     meta: { color: "#666", fontSize: "14px", marginBottom: "8px" },
     excerpt: { color: "#333", fontSize: "16px", lineHeight: "1.5", paddingTop: "20px" },
   };
@@ -47,7 +40,7 @@ export default function BlogPage() {
           <h1 style={styles.title}>Blogs</h1>
           {posts.map((post) => (
             <div key={post.id} style={styles.postCard}>
-              <Link to={`/blog/${post.id}`} style={styles.postTitle}>
+              <Link to={`/blog/${post.id}`} className="text-xl font-semibold mb-2 text-gray-900 transition-colors duration-300 hover:text-[#008080]" >
                 {post.title}
               </Link>
               <br />
