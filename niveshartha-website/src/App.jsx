@@ -31,7 +31,8 @@ import Dashboard from './pages/Dashboard';
 import ApiTest from './components/ApiTest';
 import TestPage from './pages/TestPage';
 import KycCallback from './pages/KycCallback';
-
+import BlogPage from './pages/BlogPage';
+import BlogDetailPage from './pages/BlogDetailPage';
 
 // Component to conditionally render the footer based on the current route
 const ConditionalFooter = () => {
@@ -88,6 +89,8 @@ function App() {
               <Route path="/api-test" element={<ApiTest />} />
               <Route path="/test-complaints" element={<TestPage />} />
               <Route path="/kyc/callback" element={<KycCallback />} />
+              <Route path="/blog" element={<BlogPage />} />
+              <Route path="/blog/:id" element={<BlogDetailPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
