@@ -10,7 +10,7 @@ const navLinks = [
   { path: '/portfolio-review', text: 'Portfolio Review' },
   { path: '/analysis', text: 'Analysis' },
   { path: '/subscription', text: 'Subscription' },
-  { path: '/contact', text: 'Contact' }
+  { path: '/contact', text: 'Contact' },
 ];
 
 // Direct navigation helper function
