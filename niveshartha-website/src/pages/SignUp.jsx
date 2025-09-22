@@ -152,6 +152,8 @@ const SignUp = () => {
         }
       }
     };
+    
+    autoSendOTP();
   }, [currentStep, otpSent, loading, formData.phone])
 
   const handleVerifyOTP = async () => {
