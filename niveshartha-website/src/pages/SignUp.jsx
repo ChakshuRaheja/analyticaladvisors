@@ -102,54 +102,57 @@ const SignUp = () => {
     window.recaptchaVerifier = null;
   }, []);
 
-  const handleSendOTP = async (e) => {
-    e.preventDefault();
-    setError({ message: '', isError: true });
-    setLoading(true);
-
-    try {
-      // Format phone number
-      const formattedPhoneNumber = formData.phone.startsWith('+') ? formData.phone : `+91${formData.phone}`;
-      
-      // Clear any existing reCAPTCHA verifier
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-      }
-      
-      // Setup new reCAPTCHA verifier
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {
-          // reCAPTCHA solved, will be called when the reCAPTCHA is verified
-        },
-        'expired-callback': () => {
-          // Reset reCAPTCHA?
+  useEffect(()=> {
+    const autoSendOTP = async (e) => {
+  
+      if (currentStep === 2 && !otpSent && !loading){
+        try {
+          setError({ message: '', isError: true });
+          setLoading(true);
+          // Format phone number
+          const formattedPhoneNumber = formData.phone.startsWith('+') ? formData.phone : `+91${formData.phone}`;
+          
+          // Clear any existing reCAPTCHA verifier
+          if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+          }
+          
+          // Setup new reCAPTCHA verifier
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': () => {
+              // reCAPTCHA solved, will be called when the reCAPTCHA is verified
+            },
+            'expired-callback': () => {
+              // Reset reCAPTCHA?
+            }
+          });
+    
+          // Get the reCAPTCHA verifier
+          const appVerifier = window.recaptchaVerifier;
+          
+          // Send OTP
+          const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
+          setVerificationId(confirmation.verificationId);
+          setOtpSent(true);
+          setError({ message: 'OTP sent successfully!', isError: false });
+        } catch (error) {
+          console.error('Error sending OTP:', error);
+          let errorMessage = 'Unable to send verification code.';
+          
+          if (error.code === 'auth/invalid-phone-number') {
+            errorMessage = 'Please enter a valid phone number.';
+          } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = 'Too many attempts. Please try again later.';
+          }
+          
+          setError(errorMessage, true);
+        } finally {
+          setLoading(false);
         }
-      });
-
-      // Get the reCAPTCHA verifier
-      const appVerifier = window.recaptchaVerifier;
-      
-      // Send OTP
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
-      setVerificationId(confirmation.verificationId);
-      setOtpSent(true);
-      setError({ message: 'OTP sent successfully!', isError: false });
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      let errorMessage = 'Unable to send verification code.';
-      
-      if (error.code === 'auth/invalid-phone-number') {
-        errorMessage = 'Please enter a valid phone number.';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many attempts. Please try again later.';
       }
-      
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+  }, [currentStep, otpSent, loading, formData.phone])
 
   const handleVerifyOTP = async () => {
     if (!otp.trim()) {
@@ -503,16 +506,6 @@ const SignUp = () => {
                       disabled={!otpSent}
                       required
                     />
-                    <button
-                      id="send-otp-button"
-                      onClick={handleSendOTP}
-                      disabled={loading || otpSent}
-                      className={`px-6 py-3 bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-all duration-200 ${
-                        (loading || otpSent) ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      {loading ? 'Sending...' : otpSent ? 'Sent' : 'Send OTP'}
-                    </button>
                   </div>
                 </div>
 
