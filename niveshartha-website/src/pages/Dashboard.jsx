@@ -216,7 +216,7 @@ const Dashboard = () => {
                   Quick Actions
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <Link to="/control-panel?section=profile" className="p-4 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-colors">
+                  <Link to="/settings?section=profile" className="p-4 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-colors">
                     <h3 className="font-medium text-teal-600 mb-1">Profile Settings</h3>
                     <p className="text-sm text-gray-600">Update your personal information</p>
                   </Link>
@@ -224,7 +224,7 @@ const Dashboard = () => {
                     <h3 className="font-medium text-teal-600 mb-1">Subscription Plans</h3>
                     <p className="text-sm text-gray-600">Explore available subscription options</p>
                   </Link>
-                  <Link to="/control-panel?section=kyc" className="p-4 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-colors">
+                  <Link to="/settings?section=kyc" className="p-4 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-colors">
                     <h3 className="font-medium text-teal-600 mb-1">KYC Verification</h3>
                     <p className="text-sm text-gray-600">Complete your identity verification</p>
                   </Link>
