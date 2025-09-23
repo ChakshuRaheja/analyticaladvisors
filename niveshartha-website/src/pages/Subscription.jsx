@@ -734,7 +734,7 @@ const Subscription = () => {
                       {plan.features.map((feature, index) => (
                         <li key={index} className="flex items-center text-gray-600">
                           <svg
-                            className="w-5 h-5 text-green-500 mr-2"
+                            className="w-5 h-5 text-green-500 mr-2 flex-shrink-0"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
