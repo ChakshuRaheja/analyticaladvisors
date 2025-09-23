@@ -7,6 +7,7 @@ import SimpleClientComplaints from '../components/SimpleClientComplaints';
 import ClientComplaints from '../components/ClientComplaints';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { ContactChannels } from '../constants/systemEnums';
 // Image paths from public directory
 const p1 = '/images/p1.jpg';
 const p1Mobile = '/images/p1 (2).jpg';
@@ -39,7 +40,7 @@ const Home = ({ faqOnly = false }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   // WhatsApp number - update this with your actual business number
-  const whatsappNumber = "919599449376"; // Format: country code + number (no + or spaces)
+  const whatsappNumber = ContactChannels.phone_NUMBER.replace(/[^0-9]/g, ""); // Format: country code + number (no + or spaces)
   const whatsappMessage = "Hello! I'm interested in learning more about your investment services.";
 
   // Function to toggle WhatsApp message

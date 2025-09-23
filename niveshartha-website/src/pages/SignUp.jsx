@@ -502,7 +502,7 @@ const SignUp = () => {
                       className={`flex-1 px-4 py-3 rounded-lg border ${!otpSent ? 'bg-gray-100' : 'bg-white'} border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200`}
                       id="otp"
                       type="text"
-                      placeholder={otpSent ? "Enter 6-digit code" : "Click Send OTP first"}
+                      placeholder={"Enter 6-digit code" }
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
                       disabled={!otpSent}

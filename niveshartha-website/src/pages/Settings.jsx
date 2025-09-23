@@ -34,8 +34,8 @@ const SidebarItem = ({ icon, text, isActive, onClick, hasAccess = true }) => {
   );
 };
 
-// Main Control Panel component
-const ControlPanel = () => {
+// Main Settings component
+const Settings = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -1170,7 +1170,7 @@ const ControlPanel = () => {
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-center mb-2">Raise a Query</h3>
-                  <p className="text-gray-600 text-center mb-4">Have a specific question? Our support team is ready to help.</p>
+                  <p className="text-gray-600 text-center mb-11">Have a specific question? Our support team is ready to help.</p>
                   <button 
                     onClick={() => setActiveModal('query')}
                     className="w-full py-2 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
@@ -1328,4 +1328,4 @@ const ControlPanel = () => {
   );
 };
 
-export default ControlPanel;
+export default Settings;

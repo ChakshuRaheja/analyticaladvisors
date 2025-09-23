@@ -15,7 +15,7 @@ import ProfilePage from './pages/ProfilePage';
 import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
 import Analysis from './pages/Analysis';
-import ControlPanel from './pages/ControlPanel';
+import Settings from './pages/Settings';
 import PortfolioReview from './pages/PortfolioReview';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
@@ -37,7 +37,7 @@ import BlogDetailPage from './pages/BlogDetailPage';
 // Component to conditionally render the footer based on the current route
 const ConditionalFooter = () => {
   const location = useLocation();
-  const noFooterPaths = ['/control-panel', '/analysis', '/dashboard'];
+  const noFooterPaths = ['/settings', '/analysis', '/dashboard'];
   const showFooter = !noFooterPaths.some(path => location.pathname.startsWith(path));
   
   return showFooter ? <Footer /> : null;
@@ -78,7 +78,7 @@ function App() {
               <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
               <Route path="/portfolio-review" element={<PortfolioReview />} />
               <Route path="/portfolio" element={<Portfolio />} />
-              <Route path="/control-panel" element={<PrivateRoute><ControlPanel /></PrivateRoute>} />
+              <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
               <Route path="/terms" element={<TermsAndConditions />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/disclaimer" element={<Disclaimer />} />

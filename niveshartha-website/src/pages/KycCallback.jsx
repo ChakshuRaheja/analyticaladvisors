@@ -80,7 +80,7 @@ const KycCallback = () => {
           
           // Redirect to dashboard after 3 seconds
           setTimeout(() => {
-            navigate('/control-panel?kyc=success', { replace: true });
+            navigate('/settings?kyc=success', { replace: true });
           }, 3000);
         } else {
           // If verification failed but we got a response
@@ -203,7 +203,7 @@ const KycCallback = () => {
             <div className="mt-2 text-xs text-gray-400">
               If you are not redirected,{' '}
               <button 
-                onClick={() => navigate('/control-panel')}
+                onClick={() => navigate('/settings')}
                 className="text-blue-600 hover:underline focus:outline-none"
               >
                 click here
