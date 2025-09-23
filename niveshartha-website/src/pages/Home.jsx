@@ -8,6 +8,7 @@ import ClientComplaints from '../components/ClientComplaints';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ContactChannels } from '../constants/systemEnums';
+import Subscription from './Subscription';
 // Image paths from public directory
 const p1 = '/images/p1.jpg';
 const p1Mobile = '/images/p1 (2).jpg';
@@ -510,6 +511,9 @@ const Home = ({ faqOnly = false }) => {
           </div>
         </div>
       </section>
+
+      {/* Subscription Section */}
+      <Subscription />
 
       {/* Client Complaints Section */}
       <ClientComplaints />
