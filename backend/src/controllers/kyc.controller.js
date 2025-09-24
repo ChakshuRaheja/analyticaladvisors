@@ -3,113 +3,39 @@ const digioClient = require('../config/digio.config');
 const { sendSuccess, sendError } = require('../utils/response');
 const Subscription = require('../models/subscription.model');
 
-//     // Validate PAN number format
-//     const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-//     if (!panRegex.test(panNumber)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Invalid PAN number format'
-//       });
-//     }
-
-//     // Development mode: Simulate successful verification
-//     if (process.env.NODE_ENV === 'development') {
-//       console.log('Development mode: Simulating successful KYC verification');
-//       return res.status(200).json({
-//         success: true,
-//         message: 'KYC verification successful (Development Mode)',
-//         data: {
-//           verified: true,
-//           documentId: `dev_doc_${Date.now()}`,
-//           verifiedAt: new Date().toISOString(),
-//           details: {
-//             name: fullName,
-//             panNumber: panNumber,
-//             dateOfBirth: dateOfBirth
-//           }
-//         }
-//       });
-//     }
-
-//     // Production mode: Use Digio API
-//     if (!process.env.DIGIO_API_KEY) {
-//       throw new Error('Digio API key not configured');
-//     }
-
-//     // Initialize Digio client
-//     const digioClient = axios.create({
-//       baseURL: process.env.DIGIO_API_URL || 'https://api.digio.in',
-//       headers: {
-//         'x-api-key': process.env.DIGIO_API_KEY,
-//         'Content-Type': 'application/json'
-//       }
-//     });
-
-//     // Create a document for PAN verification
-//     const documentResponse = await digioClient.post('/v2/document', {
-//       document_type: 'pan',
-//       document_number: panNumber,
-//       name: fullName,
-//       date_of_birth: dateOfBirth
-//     });
-
-//     // Verify the document
-//     const verificationResponse = await digioClient.post('/v2/verify', {
-//       document_id: documentResponse.data.document_id
-//     });
-
-//     // Check verification status
-//     if (verificationResponse.data.status === 'success') {
-//       // Return success response
-//       return res.status(200).json({
-//         success: true,
-//         message: 'KYC verification successful',
-//         data: {
-//           verified: true,
-//           documentId: documentResponse.data.document_id,
-//           verifiedAt: new Date().toISOString()
-//         }
-//       });
-//     } else {
-//       // Return failure response
-//       return res.status(400).json({
-//         success: false,
-//         message: 'KYC verification failed',
-//         data: {
-//           verified: false,
-//           reason: verificationResponse.data.reason || 'Verification failed'
-//         }
-//       });
-//     }
-//   } catch (error) {
-//     console.error('KYC verification error:', error);
-//     return res.status(500).json({
-//       success: false,
-//       message: 'Internal server error during KYC verification',
-//       error: process.env.NODE_ENV === 'development' ? error.message : undefined
-//     });
-//   }
-// };
-
-// module.exports = {
-//   verifyKYC
-// }; 
-
-
-
 const initKYC = async (req, res) => {
+  console.log('=== KYC INIT REQUEST START ===');
+  console.log('Request Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Request Body:', JSON.stringify(req.body, null, 2));
+  console.log('Authenticated User:', req.user || 'No user data');
+  
+  // Log environment configuration
+  const envVars = {
+    NODE_ENV: process.env.NODE_ENV || 'development',
+    FRONTEND_URL: process.env.FRONTEND_URL || 'Not set',
+    WORKFLOW_ID: process.env.WORKFLOW_ID ? 'Set' : 'Not set',
+    DIGIO_CLIENT_ID: process.env.DIGIO_CLIENT_ID ? '***' + process.env.DIGIO_CLIENT_ID.slice(-4) : 'Not set',
+    DIGIO_CLIENT_SECRET: process.env.DIGIO_CLIENT_SECRET ? '***' + process.env.DIGIO_CLIENT_SECRET.slice(-4) : 'Not set',
+    DIGIO_API_URL: process.env.DIGIO_API_URL || 'Not set'
+  };
+  
+  console.log('Environment Configuration:', JSON.stringify(envVars, null, 2));
+  
   try {
-    console.log('KYC Init Request Body:', JSON.stringify(req.body, null, 2));
-    console.log('Authenticated User:', req.user);
-    console.log('Environment Variables:', {
-      NODE_ENV: process.env.NODE_ENV,
-      DIGIO_ENV: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
-      FRONTEND_URL: process.env.FRONTEND_URL ? 'Set' : 'Not set',
-      DIGIO_COMBINED_WORKFLOW_ID: process.env.DIGIO_COMBINED_WORKFLOW_ID ? 'Set' : 'Not set',
-      DIGIO_CLIENT_ID: process.env.DIGIO_CLIENT_ID ? 'Set' : 'Not set',
-      DIGIO_CLIENT_SECRET: process.env.DIGIO_CLIENT_SECRET ? 'Set' : 'Not set'
-    });
     
+    // Log the raw request body for debugging
+    console.log('Raw request body:', JSON.stringify(req.body, null, 2));
+    
+    // Validate required fields
+    const requiredFields = ['customer_identifier', 'customer_name', 'reference_id'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      console.error('Missing required fields:', missingFields);
+      return sendError(res, `Missing required fields: ${missingFields.join(', ')}`, null, 400);
+    }
+    
+    // Destructure and trim string values
     const { 
       customer_identifier: email, 
       customer_name: name, 
@@ -118,41 +44,41 @@ const initKYC = async (req, res) => {
       generate_access_token: generateAccessToken = true,
       request_details: requestDetails = {}
     } = req.body;
-
-    if (!email || !name || !referenceId) {
-      console.error('Missing required fields:', { email, name, referenceId });
-      return sendError(res, 'Missing required fields. Required: customer_identifier, customer_name, reference_id', null, 400);
+    
+    // Trim string values
+    const trimmedEmail = email?.toString().trim();
+    const trimmedName = name?.toString().trim();
+    const trimmedReferenceId = referenceId?.toString().trim();
+    
+    // Validate non-empty values after trimming
+    if (!trimmedEmail || !trimmedName || !trimmedReferenceId) {
+      const emptyFields = [];
+      if (!trimmedEmail) emptyFields.push('customer_identifier');
+      if (!trimmedName) emptyFields.push('customer_name');
+      if (!trimmedReferenceId) emptyFields.push('reference_id');
+      
+      console.error('Empty field values after trimming:', { 
+        customer_identifier: !!trimmedEmail,
+        customer_name: !!trimmedName,
+        reference_id: !!trimmedReferenceId
+      });
+      
+      return sendError(res, `Empty values not allowed for: ${emptyFields.join(', ')}`, null, 400);
     }
     
-    const templateName = 'DIGILOKER INTEGRATION';
-
     const options = {
-      customer: {
-        id: email, // Using email as customer ID
-        email,
-        name,
-      },
-      workflow_id: process.env.DIGIO_COMBINED_WORKFLOW_ID,
-      redirect_url: `${process.env.FRONTEND_URL}/kyc/callback`,
-      reference_id: referenceId,
+      customer_identifier: trimmedEmail,
+      customer_name: trimmedName,
+      reference_id: trimmedReferenceId,
       template_name: 'DIGILOKER INTEGRATION',
       notify_customer: notifyCustomer,
       generate_access_token: generateAccessToken,
       request_details: requestDetails,
+      redirect_url: `${process.env.FRONTEND_URL}/kyc/callback`,
       ui: {
         theme: {
           primary_color: '#4F46E5',
         },
-      },
-      document: {
-        doc_name: 'KYC Document',
-        description: 'KYC verification document',
-        custom_fields: {
-          customer_name: name,
-          customer_email: email,
-          reference_id: referenceId,
-          date: new Date().toLocaleDateString()
-        }
       }
     };
 
@@ -168,42 +94,97 @@ const initKYC = async (req, res) => {
       customer: { ...options.customer, id: '***' } // Mask sensitive data
     }, null, 2));
     
-    const digioResponse = await digioClient.kyc.initiate(options);
-    console.log('Digio API Response:', JSON.stringify({
-      status: digioResponse?.status,
-      statusText: digioResponse?.statusText,
-      data: digioResponse?.data,
-      headers: digioResponse?.headers
-    }, null, 2));
+    console.log('Calling Digio KYC initiate with options:', JSON.stringify(options, null, 2));
+    
+    try {
+      // Make direct API call to Digio with the new endpoint
+      const response = await digioClient.request('POST', digioClient.endpoints.kyc.request, options);
+      
+      // Format the response to match the expected structure
+      const digioResponse = {
+        url: response.data?.url,
+        reference_id: response.data?.reference_id || trimmedReferenceId,
+        status: response.status,
+        data: response.data
+      };
 
-    if (!digioResponse?.url) {
-      throw new Error('Invalid response from Digio: Missing URL');
+      console.log('Digio API Response:', {
+        status: digioResponse?.status,
+        hasUrl: !!digioResponse?.url,
+        referenceId: digioResponse?.reference_id
+      });
+
+      if (!digioResponse?.url || !digioResponse.reference_id) {
+        console.error('Invalid response from Digio: Missing URL or reference_id in response:', digioResponse);
+        throw new Error('Invalid response from KYC provider: Missing URL or reference_id');
+      }
+
+      // CRITICAL: Save the kycReferenceId to the subscription before redirecting.
+      // We assume the reference_id passed in the request body is the subscription ID.
+      const subscription = await Subscription.findByIdAndUpdate(
+        trimmedReferenceId,
+        { $set: { kycReferenceId: digioResponse.reference_id, kycStatus: 'initiated' } },
+        { new: true }
+      );
+
+      if (!subscription) {
+        console.error(`Failed to find and update subscription with ID: ${trimmedReferenceId}`);
+        throw new Error(`Subscription not found for reference_id: ${trimmedReferenceId}`);
+      }
+
+      console.log(`Successfully saved kycReferenceId for subscription: ${subscription._id}`);
+
+      return sendSuccess(res, 'KYC initiated successfully', {
+        kycUrl: digioResponse.url,
+        referenceId: digioResponse.reference_id,
+      });
+    } catch (digioError) {
+      console.error('Digio KYC Initiation Error:', {
+        message: digioError.message,
+        code: digioError.code,
+        stack: digioError.stack,
+        response: digioError.response?.data || 'No response data'
+      });
+      throw new Error(`KYC provider error: ${digioError.message}`);
     }
-
-    return sendSuccess(res, 'KYC initiated successfully', {
-      kycUrl: digioResponse.url,
-      referenceId: digioResponse.reference_id,
-    });
   } catch (error) {
-    // Log the full error object
-    console.error('FULL KYC INIT ERROR:', JSON.stringify({
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
+    // Log the full error object with all available details
+    const errorDetails = {
+      timestamp: new Date().toISOString(),
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+      },
+      request: {
+        method: req.method,
+        url: req.originalUrl,
+        headers: req.headers,
+        body: req.body,
+        params: req.params,
+        query: req.query,
+      },
       response: error.response ? {
         status: error.response.status,
         statusText: error.response.statusText,
         headers: error.response.headers,
         data: error.response.data
       } : null,
-      request: error.request ? {
-        method: error.config?.method,
-        url: error.config?.url,
-        headers: error.config?.headers,
-        data: error.config?.data
+      config: error.config ? {
+        method: error.config.method,
+        url: error.config.url,
+        headers: error.config.headers ? {
+          ...error.config.headers,
+          'x-api-key': error.config.headers['x-api-key'] ? '***' + String(error.config.headers['x-api-key']).slice(-4) : undefined,
+          'x-api-secret': error.config.headers['x-api-secret'] ? '***' + String(error.config.headers['x-api-secret']).slice(-4) : undefined,
+          'authorization': error.config.headers['authorization'] ? '***' : undefined
+        } : undefined,
+        data: error.config.data
       } : null
-    }, null, 2));
+    };
+
+    console.error('FULL KYC INIT ERROR:', JSON.stringify(errorDetails, null, 2));
     
     // Handle specific error types
     let statusCode = 500;
@@ -211,24 +192,51 @@ const initKYC = async (req, res) => {
     
     if (error.response) {
       // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
       statusCode = error.response.status || 500;
       errorMessage = error.response.data?.message || 'Error from KYC provider';
+      
+      // Log the full response if available
+      if (error.response.data) {
+        console.error('KYC Provider Error Response:', JSON.stringify({
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        }, null, 2));
+      }
     } else if (error.request) {
       // The request was made but no response was received
       errorMessage = 'No response received from KYC provider';
+      console.error('No response received from KYC provider. Request details:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        timeout: error.config?.timeout
+      });
     } else if (error.code === 'ECONNABORTED') {
       errorMessage = 'Connection to KYC provider timed out';
       statusCode = 504; // Gateway Timeout
+      console.error('Request timeout:', error.message);
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = `Could not connect to KYC provider: ${error.hostname || 'Unknown host'}`;
+      statusCode = 502; // Bad Gateway
+      console.error('DNS/Connection error:', error.message);
     }
     
     console.error(`KYC Initiation Error [${statusCode}]:`, errorMessage);
-    return sendError(
-      res, 
-      'Failed to initiate KYC', 
-      process.env.NODE_ENV === 'development' ? error.message : errorMessage, 
-      statusCode
-    );
+    
+    // Return a more detailed error response in development
+    const errorResponse = {
+      success: false,
+      message: 'Failed to initiate KYC',
+      error: process.env.NODE_ENV === 'development' ? error.message : errorMessage,
+      ...(process.env.NODE_ENV === 'development' && {
+        details: {
+          code: error.code,
+          stack: error.stack
+        }
+      })
+    };
+    
+    return res.status(statusCode).json(errorResponse);
   }
 };
 

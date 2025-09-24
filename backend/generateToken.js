@@ -67,9 +67,9 @@ const auth = getAuth(firebaseApp);
 async function testKYC() {
   try {
     const testUser = {
-      uid: 'Chakshu Raheja',
-      email: 'chakshuraheja8@gmail.com',
-      name: 'Chakshu Raheja'
+      uid: 'Dheeraj Gupta',
+      email: 'dgupta.iet@gmail.com',
+      name: 'Dheeraj Gupta'
     };
 
     // Create a custom token
@@ -87,11 +87,11 @@ async function testKYC() {
     console.log('Token length:', idToken ? idToken.length : 'No token');
 
     const kycData = {
-      userId: testUser.uid,
-      email: testUser.email,
-      name: testUser.name,
-      subscriptionId: 'sub_123456'
-    };
+      "customer_identifier": "dgupta.iet@gmail.com",
+      "customer_name": "Dheeraj Gupta",
+      "reference_id": "ref_123456",  // generate a unique ID for each request
+      "subscriptionId": "sub_123456"
+    }
 
     const url = 'https://omkara-backend-725764883240.asia-south1.run.app/api/kyc/init';
 

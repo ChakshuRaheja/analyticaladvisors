@@ -585,31 +585,35 @@ const Subscription = () => {
         displayName: currentUser.displayName
       });
 
+      // Prepare KYC data in the format expected by the backend
       const kycData = {
-        userId: currentUser.uid,
-        email: currentUser.email,
-        name: userName,
-        subscriptionId: subscriptionId,
+        customer_identifier: currentUser.email,  // Using email as the unique identifier
+        customer_name: userName,
+        reference_id: `KYC_${Date.now()}_${currentUser.uid}`,  // Create a unique reference ID
+        request_details: {
+          subscription_id: subscriptionId,
+          user_id: currentUser.uid
+        }
       };
 
       // Debug log - show what we're sending
       console.log('KYC Data being sent to backend:', JSON.stringify(kycData, null, 2));
       
-      // Validation check
-      if (!kycData.name) {
-        console.error('Name is missing in KYC data');
-        throw new Error('Full name is required for KYC verification');
-      }
-      
-      // Log if any required field is missing
-      const missingFields = [];
-      if (!kycData.userId) missingFields.push('userId');
-      if (!kycData.email) missingFields.push('email');
-      if (!kycData.name) missingFields.push('name');
-      if (!kycData.subscriptionId) missingFields.push('subscriptionId');
+      // Validate required fields
+      const requiredFields = ['customer_identifier', 'customer_name', 'reference_id'];
+      const missingFields = requiredFields.filter(field => !kycData[field]);
       
       if (missingFields.length > 0) {
-        console.error('Missing required KYC fields:', missingFields);
+        const errorMsg = `Missing required KYC fields: ${missingFields.join(', ')}`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      // Ensure name is not empty after trimming
+      if (!kycData.customer_name || !kycData.customer_name.trim()) {
+        const errorMsg = 'Full name is required for KYC verification';
+        console.error(errorMsg);
+        throw new Error(errorMsg);
       }
 
       const { kycUrl } = await initiateKYC(kycData);
