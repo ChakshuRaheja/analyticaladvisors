@@ -6,6 +6,7 @@ import { doc, setDoc, collection, addDoc, getDoc, getDocs, query, where } from '
 import { db } from '../firebase/config';
 import { createOrder, verifyPayment, loadRazorpayScript } from '../services/payment.service';
 import { initiateKYC } from '../services/kyc.service';
+import { useLocation } from 'react-router-dom';
 
 // Helper function to safely get environment variables
 const getEnv = (key, fallback = '') => {
@@ -76,6 +77,8 @@ const Subscription = () => {
   const [userSubscriptions, setUserSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDuration, setSelectedDuration] = useState('Monthly');
+  const location = useLocation();
+  const isSubscriptionPage = location.pathname === '/subscription';
 
   // Get Razorpay key from environment variables with fallback to test key
   const razorpayKeyId = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_OoxElqgmaEVe1I'; // Fallback to test key
@@ -625,11 +628,19 @@ const Subscription = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-20">
+    <div className={isSubscriptionPage ? "min-h-screen bg-gray-50 py-20" : "bg-teal-50 py-20"}>
       <div className="container mx-auto px-4">
         <ScrollAnimation animation="from-bottom" delay={0.2}>
           <div className="text-center mb-16">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
+            {isSubscriptionPage ?
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Choose Your Plan
+              </h1>
+              :
+              <h1 className="text-3xl font-bold text-center border-t-4 border-teal-600 inline-block pt-3">
+                Our Services
+              </h1>
+            }
             <p className="text-xl text-gray-600">Select the perfect plan for your investment needs</p>
           </div>
 
