@@ -21,34 +21,22 @@ export default function BlogPage() {
     fetchPosts();
   }, []);
 
-  const styles = {
-    container: { maxWidth: "700px", margin: "0 auto", paddingTop: "80px" },
-    title: { fontSize: "28px", fontWeight: "bold", marginTop: "30px", marginBottom: "20px"},
-    postCard: {
-      marginBottom: "24px",
-      paddingBottom: "16px",
-      borderBottom: "1px solid #ddd",
-    },
-    meta: { color: "#666", fontSize: "14px", marginBottom: "8px" },
-    excerpt: { color: "#333", fontSize: "16px", lineHeight: "1.5", paddingTop: "20px" },
-  };
-
   return (
     <div className="min-h-screen bg-white">
       <ScrollAnimation animation="from-bottom" delay={0.4}>
-        <div style={styles.container}>
-          <h1 style={styles.title}>Blogs</h1>
+        <div className="max-w-3xl mx-auto pt-20 px-4">
+          <h1 className="text-3xl font-bold mt-8 mb-5">Blogs</h1>
           {posts.map((post) => (
-            <div key={post.id} style={styles.postCard}>
+            <div key={post.id} className="mb-6 pb-4 border-b border-gray-300">
               <Link to={`/blog/${post.id}`} className="text-xl font-semibold mb-2 text-gray-900 transition-colors duration-300 hover:text-[#008080]" >
                 {post.title}
               </Link>
               <br />
-              <Link to={`/blog/${post.id}`} style={styles.meta}>
+              <Link to={`/blog/${post.id}`} className="text-sm text-gray-600 block mt-1">
                 By {post.author || "Unknown"} •{" "}
                 {post.createdAt?.toDate().toLocaleDateString()}
               </Link>
-              <p style={styles.excerpt}>
+              <p className="text-gray-800 text-base leading-relaxed pt-4">
                 {post.content.length > 120
                   ? post.content.substring(0, 120) + "..."
                   : post.content}
