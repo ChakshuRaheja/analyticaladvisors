@@ -10,7 +10,7 @@ const navLinks = [
   { path: '/portfolio-review', text: 'Portfolio Review' },
   { path: '/analysis', text: 'Analysis' },
   { path: '/subscription', text: 'Subscription' },
-  { path: '/contact', text: 'Contact' }
+  { path: '/contact', text: 'Contact' },
 ];
 
 // Direct navigation helper function
@@ -353,11 +353,11 @@ function Navbar() {
                   {profileMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-md shadow-xl z-50 border border-gray-100">
                       <RouterLink 
-                        to="/control-panel" 
+                        to="/settings" 
                         className="block px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold"
                         onClick={() => setProfileMenuOpen(false)}
                       >
-                        Control Panel
+                        Settings
                       </RouterLink>
                       <hr className="my-1 border-gray-200" />
                       <button
@@ -478,9 +478,9 @@ function Navbar() {
             })}
             {currentUser && (
               <NavLink
-                path="/control-panel"
-                text="Control Panel"
-                isActive={location.pathname === '/control-panel'}
+                path="/settings"
+                text="Settings"
+                isActive={location.pathname === '/settings'}
                 isMobile={true}
                 onClick={() => setDrawerOpen(false)}
               />

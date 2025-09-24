@@ -695,11 +695,11 @@ const Analysis = () => {
               <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Quick Links</h3>
               <nav className="space-y-1">
                 <ReportItem
-                  title="Control Panel"
+                  title="Settings"
                   icon="⚙️"
                   isActive={false}
                   onClick={() => {
-                    navigate('/control-panel');
+                    navigate('/settings');
                     if (window.innerWidth < 1024) toggleSidebar();
                   }}
                 />

@@ -3,6 +3,8 @@ import { useState } from 'react';
 import ScrollAnimation from '../components/ScrollAnimation';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { ContactChannels } from '../constants/systemEnums';
+
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -199,7 +201,7 @@ const Contact = () => {
                   <div>
                     <h3 className="text-xl font-semibold mb-2">Phone Numbers</h3>
                     <p className="text-gray-600">
-                    +91 95994 49376
+                    {ContactChannels.phone_NUMBER}
                     </p>
                   </div>
                   <div>

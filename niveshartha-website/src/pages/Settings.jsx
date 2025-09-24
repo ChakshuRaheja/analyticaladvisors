@@ -34,12 +34,12 @@ const SidebarItem = ({ icon, text, isActive, onClick, hasAccess = true }) => {
   );
 };
 
-// Main Control Panel component
-const ControlPanel = () => {
+// Main Settings component
+const Settings = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState('account');
   const [activeModal, setActiveModal] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ success: null, message: '' });
@@ -477,7 +477,7 @@ const ControlPanel = () => {
     const params = new URLSearchParams(location.search);
     const sectionParam = params.get('section');
     
-    if (sectionParam && ['dashboard', 'profile', 'settings', 'password', 'help', 'my-plans', 'stock-recommendations'].includes(sectionParam)) {
+    if (sectionParam && ['profile', 'settings', 'password', 'help', 'my-plans', 'stock-recommendations'].includes(sectionParam)) {
       setActiveSection(sectionParam);
     }
   }, [location]);
@@ -783,81 +783,6 @@ const ControlPanel = () => {
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'dashboard':
-        return (
-          <div className="space-y-6">
-            {/* Subscription Info Card */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-              <SubscriptionInfo />
-            </div>
-{/* 
-            Profile Completion Card - Show if user has subscription but profile is incomplete
-            {activeSubscriptions.length > 0 && (
-              <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-                <div className="flex items-center justify-center md:justify-between mb-4 border-b pb-2">
-                  <h3 className="text-xl font-bold text-gray-900 text-center md:text-left">Complete Your Profile</h3>
-                </div>
-                <p className="text-gray-600 mb-6">
-                  Complete your risk profile and KYC verification to unlock all features and get personalized investment recommendations.
-                </p>
-                <button
-                  onClick={() => setActiveSection('profile')}
-                  className="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg"
-                >
-                  Complete My Profile
-                </button>
-              </div>
-            )} */}
-
-            {/* What's New Card */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">What's New</h3>
-              <div className="space-y-4 mt-4">
-                <div className="space-y-6">
-                  {/* Update 1 */}
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 bg-indigo-100 p-2 rounded-full">
-                      <svg className="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">New Investment Opportunities</h4>
-                      <p className="text-sm text-gray-500 mt-1">Check out our latest investment recommendations and market insights.</p>
-                    </div>
-                  </div>
-                  
-                  {/* Update 2 */}
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 bg-green-100 p-2 rounded-full">
-                      <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Profile Completion</h4>
-                      <p className="text-sm text-gray-500 mt-1">Complete your profile to unlock personalized investment strategies.</p>
-                    </div>
-                  </div>
-                  
-                  {/* Update 3 */}
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 bg-blue-100 p-2 rounded-full">
-                      <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Market Updates</h4>
-                      <p className="text-sm text-gray-500 mt-1">Stay informed with real-time market updates and analysis.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
       case 'profile':
         return (
           <div className="space-y-6">
@@ -1170,7 +1095,7 @@ const ControlPanel = () => {
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-center mb-2">Raise a Query</h3>
-                  <p className="text-gray-600 text-center mb-4">Have a specific question? Our support team is ready to help.</p>
+                  <p className="text-gray-600 text-center mb-11">Have a specific question? Our support team is ready to help.</p>
                   <button 
                     onClick={() => setActiveModal('query')}
                     className="w-full py-2 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
@@ -1247,7 +1172,6 @@ const ControlPanel = () => {
 
   // Navigation items
   const navItems = [
-    { id: 'dashboard', text: 'Dashboard', icon: '📊' },
     { id: 'account', text: 'Account', icon: '👤' },
     { id: 'my-plans', text: 'My Plans & Subscriptions', icon: '💎' },
     { id: 'stock-recommendations', text: 'Stock Recommendations', icon: '📈' },
@@ -1328,4 +1252,4 @@ const ControlPanel = () => {
   );
 };
 
-export default ControlPanel;
+export default Settings;
