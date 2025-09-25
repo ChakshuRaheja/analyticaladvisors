@@ -347,17 +347,29 @@ const Subscription = () => {
   };
 
   // Function to calculate end date based on duration
-  const calculateEndDate = (duration) => {
-    const now = new Date();
+  const calculateEndDate = (duration, startDate) => {
+
+    let endDate = new Date();  
+    if(startDate?.toDate && typeof startDate.toDate === 'function'){
+      endDate = new Date(startDate.toDate());
+    }else{
+      endDate = new Date(startDate);
+    }
+
     switch(duration) {
       case 'Quarterly':
-        return new Date(now.setMonth(now.getMonth() + 3));
+        endDate.setMonth(endDate.getMonth() + 3);
+        break;
       case 'Half-Yearly':
-        return new Date(now.setMonth(now.getMonth() + 6));
+        endDate.setMonth(endDate.getMonth() + 6);
+        break;
       case 'Monthly':
       default:
-        return new Date(now.setMonth(now.getMonth() + 1));
+        endDate.setMonth(endDate.getMonth() + 1);
+        break;
     }
+
+    return endDate;
   };
 
   const handleSubscribe = async (plan) => {
@@ -533,14 +545,39 @@ const Subscription = () => {
       const userProfileSnap = await getDoc(userProfileRef);
       const hasCompletedProfile = userProfileSnap.exists() && userProfileSnap.data().riskProfile;
       
+      const getActiveSubscriptions = async () => {
+        const subscriptionsRef = collection(db, 'subscriptions');
+        const q  = query(
+          subscriptionsRef,
+          where('userId', '==', currentUser.uid),
+          where('status', '==', 'active'),
+          where('planId', '==',plan.id)
+        );
+
+        const now = new Date();
+        const querySnapshotForSubscriptions = await getDocs(q);
+        const activeSubscriptions = querySnapshotForSubscriptions.docs
+          .map(d => d.data())
+          .filter(sub => sub?.planId === plan.id && sub?.endDate.toDate() > now)
+          .sort((a, b) => b?.endDate.toDate() - a?.endDate.toDate());
+        
+        console.log('activeSubscriptions: ' + activeSubscriptions[0]);
+        return activeSubscriptions;
+      }
+
+      const latestActiveSubscription = await getActiveSubscriptions();
+      const now = new Date();
       // Generate a unique subscription ID
       const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       // Get price for the selected duration
       const subscriptionPrice = getPriceForDuration(plan, selectedDuration);
-      
+
+      // Start date
+      const latestStartDate = latestActiveSubscription[0] ? latestActiveSubscription[0].endDate : new Date();
+
       // Calculate end date based on selected duration
-      const endDate = calculateEndDate(selectedDuration);
+      const endDate = calculateEndDate(selectedDuration, latestStartDate);
       
       // Add subscription to the subscriptions collection
       await addDoc(collection(db, 'subscriptions'), {
@@ -551,7 +588,7 @@ const Subscription = () => {
         duration: selectedDuration,
         price: subscriptionPrice,
         status: 'active',
-        startDate: new Date(),
+        startDate: typeof latestStartDate?.toDate === 'function' ? latestStartDate.toDate() : latestStartDate,
         endDate: endDate,
         paymentId: paymentResponse.razorpay_payment_id,
         orderId: paymentResponse.razorpay_order_id,

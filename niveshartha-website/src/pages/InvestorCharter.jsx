@@ -7,9 +7,10 @@ const InvestorCharter = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Hero section */}
       <div className="bg-black text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Analytical Advisors<br />
+        <div className="max-w-7xl mx-auto pt-16 pb-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gray-400">
+            Analytical Advisors
+            <br />
             INVESTOR CHARTER
           </h1>
           <p className="text-sm text-gray-400">In respect of Research Analyst (RA)</p>

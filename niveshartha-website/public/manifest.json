@@ -1,6 +1,6 @@
 {
-  "name": "Niveshartha",
-  "short_name": "Niveshartha",
+  "name": "Analytical Advisors",
+  "short_name": "Analytical Advisors",
   "description": "Investment and financial advisory services",
   "start_url": "/",
   "display": "standalone",
@@ -8,7 +8,7 @@
   "theme_color": "#3399cc",
   "icons": [
     {
-      "src": "/vite.svg",
+      "src": "/logo1.png",
       "sizes": "192x192",
       "type": "image/svg+xml"
     }
