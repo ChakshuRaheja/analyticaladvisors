@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi';
-import { 
-  createUserWithEmailAndPassword, 
+import {  
   updateProfile, 
   RecaptchaVerifier, 
   signInWithPhoneNumber, 
   signInWithCredential, 
-  PhoneAuthProvider
+  PhoneAuthProvider,
+  EmailAuthProvider,
+  linkWithCredential
 } from 'firebase/auth';
 import { sendWelcomeEmail } from '../services/emailService';
 import { auth } from '../firebase/config';
@@ -217,9 +218,10 @@ const SignUp = () => {
       setIsSubmitting(true);
       setError('');
 
-      // Create user with email and password
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      
+      // Link email/password to the already signed-in phone-auth user
+      const emailCredential = EmailAuthProvider.credential(formData.email, formData.password);
+      const userCredential = await linkWithCredential(auth.currentUser, emailCredential);
+
       // Update user profile
       await updateProfile(userCredential.user, {
         displayName: `${formData.firstName} ${formData.lastName}`,
