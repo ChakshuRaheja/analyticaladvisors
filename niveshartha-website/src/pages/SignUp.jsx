@@ -103,6 +103,35 @@ const SignUp = () => {
     window.recaptchaVerifier = null;
   }, []);
 
+  useEffect(() => {
+    if (currentStep === 3) {
+      const handleBeforeUnload = (e) => {
+        e.preventDefault();
+        e.returnValue = ""; // Chrome requires returnValue to be set
+      };
+
+      const blockBack = () => {
+        window.history.pushState(null, "", window.location.href);
+      };
+
+      // Push fake state to disable back
+      window.history.pushState(null, "", window.location.href);
+      window.addEventListener("popstate", blockBack);
+      window.addEventListener("beforeunload", handleBeforeUnload);
+
+      return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+        window.removeEventListener("popstate", blockBack);
+      };
+    }
+  }, [currentStep]);
+
+  useEffect(() => {
+    if (currentStep === 3 && location.pathname !== "/signup") {
+      navigate("/signup", { replace: true });
+    }
+  }, [currentStep, location.pathname]);
+
   useEffect(()=> {
     const autoSendOTP = async (e) => {
   
@@ -174,7 +203,7 @@ const SignUp = () => {
       const userCredential = await signInWithCredential(auth, credential);
       
       // Sign out immediately after verification
-      await auth.signOut();
+      // await auth.signOut();
       
       setIsVerified(true);
       setIsPhoneVerified(true);
