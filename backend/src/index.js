@@ -90,7 +90,8 @@ const getCorsOptions = () => {
           'http://localhost:5175', // Your current port
           'http://localhost:3000', // Create React App default
           'http://localhost:3001',
-          'https://analyticaladvisors.web.app' // Production
+          'https://analyticaladvisors.in', // Production
+          'https://omkara-backend-725764883240.asia-south1.run.app' // Your backend URL
         ];
         
         // Allow if origin is in the allowed list or if it's a localhost origin
@@ -102,7 +103,7 @@ const getCorsOptions = () => {
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-request-id'],
       exposedHeaders: ['Content-Range', 'X-Content-Range'],
       maxAge: 600, // Cache preflight requests for 10 minutes
       optionsSuccessStatus: 204 // Return 204 for preflight requests
@@ -132,7 +133,7 @@ const getCorsOptions = () => {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-request-id'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
     maxAge: 86400, // Cache preflight requests for 24 hours in production
     optionsSuccessStatus: 204 // Return 204 for preflight requests
@@ -150,13 +151,15 @@ app.options('*', cors(corsOptions));
 
 // Add a middleware to handle preflight requests
 app.use((req, res, next) => {
+  // Set CORS headers for all responses
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, x-request-id');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Expose-Headers', 'x-request-id');
+  
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    // Set CORS headers for preflight requests
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-    res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Max-Age', '86400'); // 24 hours
     return res.status(204).end();
   }

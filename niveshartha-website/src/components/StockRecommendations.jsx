@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { useAuth } from '../context/AuthContext';
+
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -221,7 +223,8 @@ const planBadgeColorConfig = {
   red: 'bg-red-100 text-red-800',
 };
 
-const StockRecommendations = ({ currentUser, activeSubscriptions = [] }) => {
+const StockRecommendations = ({ activeSubscriptions = [] }) => {
+  const { currentUser } = useAuth();
   const { columnOrder, updateColumnOrder } = useColumnOrder();
   const navigate = useNavigate();
   const [stocks, setStocks] = useState({});
@@ -230,6 +233,7 @@ const StockRecommendations = ({ currentUser, activeSubscriptions = [] }) => {
   const [activeTab, setActiveTab] = useState('');
   const [kycStatus, setKycStatus] = useState(null);
   const [isCheckingKyc, setIsCheckingKyc] = useState(true);
+  const [showKycPopup, setShowKycPopup] = useState(false);
 
   // Use the activeSubscriptions prop passed from the parent component
   const activeSubs = React.useMemo(() => {
@@ -279,20 +283,73 @@ const StockRecommendations = ({ currentUser, activeSubscriptions = [] }) => {
 
 
   // Check KYC status when component mounts or user changes
-  useEffect(() => {
-    const checkKycStatus = async () => {
-      if (!currentUser) {
-        setIsCheckingKyc(false);
-        return;
-      }
-      // For now, we'll assume KYC is always verified to simplify logic.
-      // The actual KYC check logic can be re-inserted here later.
-      setKycStatus('verified');
+useEffect(() => {
+  const checkKycStatus = async () => {
+    if (!currentUser) {
       setIsCheckingKyc(false);
-    };
+      return;
+    }
+    
+    try {
+      const API_BASE_URL = 'http://localhost:3001'; // Adjust based on your backend URL
+      const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference_id: `KYC_${currentUser.uid}` }),
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      setKycStatus(result.status === 'approved' ? 'verified' : 'pending');
+    } catch (error) {
+      console.error('KYC status check failed:', error);
+      setKycStatus('pending');
+    } finally {
+      setIsCheckingKyc(false);
+    }
+  };
 
-    checkKycStatus();
-  }, [currentUser]);
+  checkKycStatus();
+}, [currentUser]);
+
+// KYC Verification Functions
+const initiateKYC = async () => {
+  try {
+    console.log('Initiating KYC for user:', currentUser.email);
+    
+    const API_BASE_URL = 'http://localhost:3001'; // Adjust based on your backend URL
+    const userName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
+    const kycData = {
+      customer_identifier:currentUser.email,
+      customer_name: userName,
+      reference_id: `KYC_${Date.now()}_${currentUser.uid}`,
+      request_details: {
+        user_id:currentUser.uid 
+      }
+    };
+    console.log('Sending KYC request with data:', kycData);
+
+    const response = await fetch(`${API_BASE_URL}/api/kyc/init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kycData)
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      setShowKycPopup(true);
+      console.log('KYC started successfully!');
+    } else {
+      alert('KYC failed: ' + result.message);
+    }
+  } catch (error) {
+    console.error('KYC error:', error);
+    alert('KYC failed: ' + error.message);
+  }
+};
+    
+   
 
   // Test function to fetch and log raw API response
   const testApiEndpoint = async () => {
@@ -753,7 +810,7 @@ const StockRecommendations = ({ currentUser, activeSubscriptions = [] }) => {
     }
 
     return (
-      <div className="bg-white shadow overflow-hidden sm:rounded-b-lg sm:rounded-tr-lg">
+      <div className="bg-white shadow overflow-hidden  sm:rounded-b-lg sm:rounded-tr-lg min-h-96">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -814,16 +871,105 @@ const StockRecommendations = ({ currentUser, activeSubscriptions = [] }) => {
   // Show loading state while checking KYC status
   if (isCheckingKyc) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
 
+  // Show KYC verification UI if not verified
+if (kycStatus !== 'verified') {
+  return (
+    <div className="container mx-auto px-4 py-16 pt-24 min-h-screen">
+      <div className="max-w-2xl mx-auto text-center">
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="mb-12">
+            <svg className="mx-auto h-16 w-16 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete KYC Verification</h2>
+          <p className="text-gray-600 mb-12">
+            To access your stock recommendations, please complete the KYC (Know Your Customer) verification process.
+          </p>
+          
+          <div className="space-y-4">
+            <button
+              onClick={initiateKYC}
+              className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Start KYC Verification
+            </button>
+            
+            <button
+              onClick={() => {
+                setIsCheckingKyc(true);
+                // Re-check KYC status
+                setTimeout(() => {
+                  const API_BASE_URL = 'http://localhost:3001';
+                  fetch(`${API_BASE_URL}/api/kyc/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reference_id: `KYC_${currentUser.uid}` }),
+                    credentials: 'include'
+                  })
+                  .then(res => res.json())
+                  .then(result => {
+                    setKycStatus(result.status === 'approved' ? 'verified' : 'pending');
+                    setIsCheckingKyc(false);
+                  })
+                  .catch(error => {
+                    console.error('KYC status check failed:', error);
+                    setKycStatus('pending');
+                    setIsCheckingKyc(false);
+                  });
+                }, 1000);
+              }}
+              className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+            >
+              Check Verification Status
+            </button>
+          </div>
+          
+          <p className="text-sm text-gray-500 mt-6">
+            KYC verification link has been sent to your email. Please check your inbox and complete the process.
+          </p>
+        </div>
+      </div>
+      
+      {/* KYC Success Popup */}
+      {showKycPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">KYC Request Sent!</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                We've sent a verification link to your email. Please check your inbox and complete the KYC process to unlock recommendations.
+              </p>
+              <button
+                onClick={() => setShowKycPopup(false)}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
   const subsToDisplay = activeSubs.length > 0 ? activeSubs : (activeTab ? [activeTab] : []);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 pt-20">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Stock Recommendations</h1>
         <p className="text-gray-600 mt-2">
