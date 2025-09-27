@@ -3,7 +3,6 @@ import { Navigate, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import ErrorBoundary from '../components/ErrorBoundary';
-import StockRecommendations from '../components/StockRecommendations';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
@@ -1174,7 +1173,7 @@ const Settings = () => {
   const navItems = [
     { id: 'account', text: 'Account', icon: '👤' },
     { id: 'my-plans', text: 'My Plans & Subscriptions', icon: '💎' },
-    { id: 'stock-recommendations', text: 'Stock Recommendations', icon: '📈' },
+    // { id: 'stock-recommendations', text: 'Stock Recommendations', icon: '📈' },
     { id: 'password', text: 'Change Password', icon: '🔒', hideFromNav: true }, // Hidden from main nav, accessible from Account
     { id: 'help', text: 'Help & Support', icon: '❓' },
   ];

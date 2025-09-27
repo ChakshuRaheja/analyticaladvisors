@@ -33,6 +33,7 @@ import TestPage from './pages/TestPage';
 import KycCallback from './pages/KycCallback';
 import BlogPage from './pages/BlogPage';
 import BlogDetailPage from './pages/BlogDetailPage';
+import StockRecommendations from './components/StockRecommendations';
 
 // Component to conditionally render the footer based on the current route
 const ConditionalFooter = () => {
@@ -90,6 +91,7 @@ function App() {
               <Route path="/test-complaints" element={<TestPage />} />
               <Route path="/kyc/callback" element={<KycCallback />} />
               <Route path="/blog" element={<BlogPage />} />
+              <Route path="/stock-recommendations" element={<PrivateRoute><StockRecommendations /></PrivateRoute>} />
               <Route path="/blog/:id" element={<BlogDetailPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

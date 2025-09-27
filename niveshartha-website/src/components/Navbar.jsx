@@ -10,6 +10,7 @@ const navLinks = [
   { path: '/portfolio-review', text: 'Portfolio Review' },
   { path: '/analysis', text: 'Analysis' },
   { path: '/subscription', text: 'Subscription' },
+  { path: '/stock-recommendations', text: 'Recommendations' },
   { path: '/contact', text: 'Contact' },
 ];
 

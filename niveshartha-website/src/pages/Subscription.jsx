@@ -78,6 +78,7 @@ const Subscription = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDuration, setSelectedDuration] = useState('Monthly');
   const location = useLocation();
+  const [showKycPopup, setShowKycPopup] = useState(false);
   const isSubscriptionPage = location.pathname === '/subscription';
 
   // Get Razorpay key from environment variables with fallback to test key
@@ -475,20 +476,23 @@ const Subscription = () => {
                   }
                 });
                 
-                // Redirect to KYC URL
-                if (kycResponse.kycUrl) {
-                  console.log('Redirecting to KYC:', kycResponse.kycUrl);
-                  window.location.href = kycResponse.kycUrl;
-                  return; // Prevent further execution
-                }
+                
+             if (kycResponse.success) {
+            console.log('KYC initiated successfully'); // e.g., 'requested'
+    // Optionally update UI or Firestore
+    setShowKycPopup(true);
+  } else {
+    console.error('KYC initiation failed:', kycResponse.message);
+    setError(`Payment successful but KYC initiation failed: ${kycResponse.message}`);
+  }
               } catch (kycError) {
                 console.error('KYC initiation failed:', kycError);
                 // Continue with normal flow if KYC fails
-                setError(`Payment successful but KYC initiation failed: ${kycError.message}`);
+                setError(`Payment successful but KYC initiation failed: ${kycError.message || 'Please try again later.'}`);
               }
             } catch (error) {
               console.error("Payment verification failed:", error);
-              setError(`Payment verification failed: ${error.message}`);
+              setError(`Payment verification failed: ${error.message || 'Please try again or contact support.'}`);
               setLoadingPlans(prev => ({ ...prev, [plan.id]: false }));
             }
           },
@@ -602,64 +606,63 @@ const Subscription = () => {
       // Refresh user subscriptions
       await fetchUserSubscriptions();
 
-      // Initiate KYC process
-      console.log('Payment successful, initiating KYC...');
-      setError('Payment successful! Redirecting to KYC verification...');
+//       // Initiate KYC process
+// console.log('Payment successful, initiating KYC...');
 
-      // Get user document and log details
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      const userData = userDoc.exists() ? userDoc.data() : {};
-      console.log('User document data:', userData);
+//       // Get user document and log details
+//       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+//       const userData = userDoc.exists() ? userDoc.data() : {};
+//       console.log('User document data:', userData);
       
-      // Combine first and last name if available, otherwise use displayName or fallback
-      const userName = userData.displayName || 
-                     (userData.firstName && userData.lastName ? 
-                      `${userData.firstName} ${userData.lastName}` : 
-                      'Valued Customer');
-      console.log('Derived userName:', userName);
+//       // Combine first and last name if available, otherwise use displayName or fallback
+//       const userName = userData.displayName || 
+//                      (userData.firstName && userData.lastName ? 
+//                       `${userData.firstName} ${userData.lastName}` : 
+//                       'Valued Customer');
+//       console.log('Derived userName:', userName);
 
-      // Log current user details
-      console.log('Current User:', {
-        uid: currentUser.uid,
-        email: currentUser.email,
-        displayName: currentUser.displayName
-      });
+//       // Log current user details
+//       console.log('Current User:', {
+//         uid: currentUser.uid,
+//         email: currentUser.email,
+//         displayName: currentUser.displayName
+//       });
 
-      // Prepare KYC data in the format expected by the backend
-      const kycData = {
-        customer_identifier: currentUser.email,  // Using email as the unique identifier
-        customer_name: userName,
-        reference_id: `KYC_${Date.now()}_${currentUser.uid}`,  // Create a unique reference ID
-        request_details: {
-          subscription_id: subscriptionId,
-          user_id: currentUser.uid
-        }
-      };
+//       // Prepare KYC data in the format expected by the backend
+//       const kycData = {
+//         customer_identifier: currentUser.email,  // Using email as the unique identifier
+//         customer_name: userName,
+//         reference_id: `KYC_${Date.now()}_${currentUser.uid}`,  // Create a unique reference ID
+//         request_details: {
+//           subscription_id: subscriptionId,
+//           user_id: currentUser.uid
+//         }
+//       };
 
-      // Debug log - show what we're sending
-      console.log('KYC Data being sent to backend:', JSON.stringify(kycData, null, 2));
+//       // Debug log - show what we're sending
+//       console.log('KYC Data being sent to backend:', JSON.stringify(kycData, null, 2));
       
-      // Validate required fields
-      const requiredFields = ['customer_identifier', 'customer_name', 'reference_id'];
-      const missingFields = requiredFields.filter(field => !kycData[field]);
+//       // Validate required fields
+//       const requiredFields = ['customer_identifier', 'customer_name', 'reference_id'];
+//       const missingFields = requiredFields.filter(field => !kycData[field]);
       
-      if (missingFields.length > 0) {
-        const errorMsg = `Missing required KYC fields: ${missingFields.join(', ')}`;
-        console.error(errorMsg);
-        throw new Error(errorMsg);
-      }
+//       if (missingFields.length > 0) {
+//         const errorMsg = `Missing required KYC fields: ${missingFields.join(', ')}`;
+//         console.error(errorMsg);
+//         throw new Error(errorMsg);
+//       }
 
-      // Ensure name is not empty after trimming
-      if (!kycData.customer_name || !kycData.customer_name.trim()) {
-        const errorMsg = 'Full name is required for KYC verification';
-        console.error(errorMsg);
-        throw new Error(errorMsg);
-      }
+//       // Ensure name is not empty after trimming
+//       if (!kycData.customer_name || !kycData.customer_name.trim()) {
+//         const errorMsg = 'Full name is required for KYC verification';
+//         console.error(errorMsg);
+//         throw new Error(errorMsg);
+//       }
 
-      const { kycUrl } = await initiateKYC(kycData);
-
-      // Redirect user to Digio for KYC
-      window.location.href = kycUrl;
+      
+// Redirect to stock recommendations page after successful payment
+            console.log('Payment successful, redirecting to stock recommendations...');
+         navigate('/stock-recommendations');
     } catch (error) {
       console.error('Error saving subscription:', error);
       setError('Payment successful but failed to activate subscription. Please contact support.');
@@ -669,6 +672,7 @@ const Subscription = () => {
   };
 
   return (
+    
     <div className={isSubscriptionPage ? "min-h-screen bg-gray-50 py-20" : "bg-teal-50 py-20"}>
       <div className="container mx-auto px-4">
         <ScrollAnimation animation="from-bottom" delay={0.2}>
