@@ -177,7 +177,6 @@ const Settings = () => {
         
       await updateDoc(doc(db, 'users', currentUser.uid), {
         phone: formattedPhone,
-        phone: formattedPhone,
         updatedAt: serverTimestamp()
       });
       
