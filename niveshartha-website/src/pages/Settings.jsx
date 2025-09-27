@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, Timestamp, serverTimestamp } from 'firebase/firestore';
-import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { RecaptchaVerifier, PhoneAuthProvider, updatePhoneNumber, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
 import SubscriptionInfo from '../components/SubscriptionInfo';
 import RiskProfiling from '../components/RiskProfiling';
@@ -49,15 +49,182 @@ const Settings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState({ text: '', type: '' });
   const [activeSubscriptions, setActiveSubscriptions] = useState([]);
+  const [originalPhoneNumber, setOriginalPhoneNumber] = useState('');
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
   const modalRef = useRef(null);
+  
+  // Phone verification state
+  const [isPhoneVerificationModalOpen, setIsPhoneVerificationModalOpen] = useState(false);
+  const [phoneVerificationStep, setPhoneVerificationStep] = useState('send'); // 'send' or 'verify'
+  const [newPhone, setNewPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
   
   // User data state
   const [userData, setUserData] = useState({
     displayName: currentUser?.displayName || '',
     email: currentUser?.email || '',
-    phoneNumber: currentUser?.phoneNumber || '',
+    phone: currentUser?.phone ? currentUser.phone.replace(/^\+91/, '') : '',
     address: ''
   });
+
+  // 1. Initialize reCAPTCHA (add this in useEffect when component mounts)
+  useEffect(() => {
+    if (!isPhoneVerificationModalOpen) return; 
+    if (!window.recaptchaVerifier && auth) {
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          'recaptcha-container',
+          { 
+            size: 'invisible',
+            'callback': () => {
+              // reCAPTCHA solved, will be called when the reCAPTCHA is verified
+            },
+            'expired-callback': () => {
+              // Reset reCAPTCHA?
+            }
+          }
+        );
+        window.recaptchaVerifier.render().then(widgetId => {
+          console.log('reCAPTCHA widget ready, ID:', widgetId);
+        });
+      } catch (err) {
+        console.error('Error initializing reCAPTCHA:', err);
+      }
+    }
+
+    return () => {
+      // Clean up when modal closes
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.warn('Error clearing reCAPTCHA:', e);
+        }
+        window.recaptchaVerifier = undefined;
+      }
+    };
+  }, [auth, isPhoneVerificationModalOpen]);
+
+  // 2. Send verification code function
+  const sendPhoneVerificationCode = async (phoneNumber) => {
+    try {
+      setIsVerifyingPhone(true);
+      
+      // Format phone number with country code
+      const formattedPhone = phoneNumber.startsWith('+91') 
+        ? phoneNumber 
+        : `+91${phoneNumber}`;
+      
+
+        const appVerifier = window.recaptchaVerifier;
+      // Send verification code
+      const provider = new PhoneAuthProvider(auth);
+      const verificationId = await provider.verifyPhoneNumber(formattedPhone, appVerifier);
+      
+      // Store confirmation result for later verification
+      window.verificationId = verificationId;
+      
+      setPhoneVerificationStep('verify');
+      setSaveMessage({
+        text: 'Verification code sent successfully!',
+        type: 'success'
+      });
+      
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      
+      let errorMessage = 'Failed to send verification code.';
+      
+      if (error.code === 'auth/invalid-phone-number') {
+        errorMessage = 'Invalid phone number format.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many requests. Please try again later.';
+      } else if (error.code === 'auth/app-not-authorized') {
+        errorMessage = 'This app is not authorized to use Firebase Authentication.';
+      }
+      
+      setSaveMessage({
+        text: errorMessage,
+        type: 'error'
+      });
+      
+      throw error;
+    } finally {
+      setIsVerifyingPhone(false);
+    }
+  };
+
+  // 3. Verify code and update phone number
+  const verifyPhoneNumber = async (verificationCode) => {
+    try {
+      setIsVerifyingPhone(true);
+      
+      // Get the phone credential
+      const phoneCredential = PhoneAuthProvider.credential(
+       window.verificationId,
+        verificationCode
+      );
+      
+      // Update the user's phone number
+      await updatePhoneNumber(auth.currentUser, phoneCredential);
+      
+      // Update Firestore with the new phone number
+      const formattedPhone = newPhone.startsWith('+91') 
+        ? newPhone 
+        : `+91${newPhone}`;
+        
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        phone: formattedPhone,
+        updatedAt: serverTimestamp()
+      });
+      
+      // Update local state
+      setUserData(prev => ({
+        ...prev,
+        phone: newPhone
+      }));
+      
+      setSaveMessage({
+        text: 'Phone number updated successfully!',
+        type: 'success'
+      });
+      
+      return true;
+      
+    } catch (error) {
+      console.error('Error verifying phone number:', error);
+      
+      let errorMessage = 'Invalid verification code.';
+      
+      if (error.code === 'auth/invalid-verification-code') {
+        errorMessage = 'The verification code is incorrect. Please try again.';
+      } else if (error.code === 'auth/code-expired') {
+        errorMessage = 'The verification code has expired. Please request a new one.';
+      } else if (error.code === 'auth/credential-already-in-use') {
+        errorMessage = 'This phone number is already associated with another account.';
+      }
+      
+      setSaveMessage({
+        text: errorMessage,
+        type: 'error'
+      });
+      
+      throw error;
+    } finally {
+      setIsVerifyingPhone(false);
+    }
+  };
+
+  // Close phone verification modal
+  const closePhoneVerificationModal = () => {
+    setIsPhoneVerificationModalOpen(false);
+    setPhoneVerificationStep('send');
+    setNewPhoneNumber('');
+    setVerificationCode('');
+    setSaveMessage({ text: '', type: '' });
+  };
 
   // Fetch user data from Firestore
   useEffect(() => {
@@ -70,7 +237,7 @@ const Settings = () => {
           const userData = userDoc.data();
           setUserData(prev => ({
             ...prev,
-            phoneNumber: userData.phone || prev.phoneNumber,
+            phone: userData.phone ? userData.phone.replace(/^\+91/, '') : prev.phone,
             address: userData.address || prev.address
           }));
         }
@@ -231,7 +398,7 @@ const Settings = () => {
       formData.append('_autoresponse', `Thank you for your ${activeModal === 'query' ? 'query' : activeModal === 'callback' ? 'callback request' : 'feedback'}. We'll get back to you soon!`);
       formData.append('name', supportFormData.name);
       formData.append('email', supportFormData.email);
-      formData.append('phone', supportFormData.phone || 'N/A');
+      formData.append('phone', supportFormData.phone ? `+91${supportFormData.phone}` : 'N/A');
       formData.append('subject', supportFormData.subject || 'N/A');
       formData.append('message', supportFormData.message);
       if (activeModal === 'callback') {
@@ -371,15 +538,30 @@ const Settings = () => {
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number {activeModal === 'callback' ? '*' : ''}
                   </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={supportFormData.phone}
-                    onChange={handleSupportInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    required={activeModal === 'callback'}
-                  />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500">+91</span>
+                    </div>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={supportFormData.phone}
+                      onChange={(e) => {
+                        // Allow only numbers and remove any non-digit characters
+                        const numericValue = e.target.value.replace(/\D/g, '');
+                        setSupportFormData(prev => ({
+                          ...prev,
+                          phone: numericValue
+                        }));
+                      }}
+                      className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      placeholder="1234567890"
+                      pattern="[0-9]{10}"
+                      title="Please enter a valid 10-digit phone number"
+                      required={activeModal === 'callback'}
+                    />
+                  </div>
                 </div>
                 
                 {activeModal !== 'feedback' && (
@@ -460,6 +642,124 @@ const Settings = () => {
       </div>
     );
   };
+
+  // Phone verification modal
+  const renderPhoneVerificationModal = () => {
+    if (!isPhoneVerificationModalOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800">Verify Phone Number</h3>
+              <button 
+                onClick={closePhoneVerificationModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {phoneVerificationStep === 'send' ? (
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  We'll send a verification code to your new phone number:
+                </p>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="font-medium text-lg">+91 {newPhone}</p>
+                </div>
+
+                <div id="recaptcha-container" className="mt-4"></div>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      await sendPhoneVerificationCode(newPhone);
+                    } catch (error) {
+                      setSaveMessage({
+                        text: 'Failed to send verification code. Please try again.',
+                        type: 'error'
+                      });
+                    }
+                  }}
+                  disabled={isVerifyingPhone}
+                  className="w-full py-3 px-6 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isVerifyingPhone ? 'Sending...' : 'Send Verification Code'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  Enter the 6-digit verification code sent to:
+                </p>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="font-medium text-lg">+91 {newPhone}</p>
+                </div>
+                
+                <div>
+                  <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-1">
+                    Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    id="verificationCode"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="123456"
+                    maxLength="6"
+                  />
+                </div>
+                
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setPhoneVerificationStep('send')}
+                    className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await verifyPhoneNumber(verificationCode);                        
+                        console.log('Phone verification successful');
+                        
+                        setSaveMessage({
+                          text: 'Phone number updated successfully!',
+                          type: 'success'
+                        });
+                        
+                        closePhoneVerificationModal();
+                        setIsEditing(false);
+                        
+                        // Reset message after 3 seconds
+                        setTimeout(() => setSaveMessage({ text: '', type: '' }), 3000);
+                        
+                      } catch (error) {
+                        console.error('Error verifying phone number:', error);
+                        setSaveMessage({
+                          text: 'Invalid verification code. Please try again.',
+                          type: 'error'
+                        });
+                      }
+                    }}
+                    disabled={isVerifyingPhone || verificationCode.length !== 6}
+                    className="flex-1 py-2 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isVerifyingPhone ? 'Verifying...' : 'Verify & Update'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
   // Add profile form state
   const [profileData, setProfileData] = useState({
     displayName: currentUser?.displayName || '',
@@ -495,19 +795,20 @@ const Settings = () => {
           console.log('Fetched user data from Firestore:', data);
           console.log('Current user auth data:', {
             displayName: currentUser.displayName,
-            phoneNumber: currentUser.phoneNumber,
+            phone: currentUser.phone,
             email: currentUser.email
           });
           
           const newUserData = {
             displayName: data.displayName || currentUser.displayName || '',
             email: currentUser.email || '',
-            phoneNumber: data.phoneNumber || currentUser.phoneNumber || '',
+            phone: (data.phone || currentUser.phone || '').replace(/^\+91/, ''),
             address: data.address || ''
           };
           
           console.log('Setting user data:', newUserData);
           setUserData(newUserData);
+          setOriginalPhoneNumber((data.phone || currentUser.phone || '').replace(/^\+91/, ''));
           setKycStatus(data.kycStatus || 'pending');
         }
 
@@ -686,14 +987,29 @@ const Settings = () => {
     e.preventDefault();
     if (!currentUser) return;
     
-    console.log('Saving account details with data:', userData);
+    console.log('Saving account details with data:', { userData,
+    originalPhoneNumber,
+    currentUser: currentUser.phone});
     setIsSaving(true);
     setSaveMessage({ text: '', type: '' });
     
     try {
+      // Check if phone number has changed
+      const currentPhone = (userData.phone || '').replace(/^\+91/, '');
+      const originalPhone = (originalPhoneNumber || '').replace(/^\\+91/, '');
+
+      // If phone number changed, require verification
+      if (originalPhone !== currentPhone && currentPhone) {
+        console.log('Phone number changed - opening verification modal');
+        setNewPhoneNumber(currentPhone);
+        setIsPhoneVerificationModalOpen(true);
+        setIsSaving(false);
+        return; // Stop here and let verification modal handle the rest
+      }
+      
       const updateData = {
         displayName: userData.displayName,
-        phoneNumber: userData.phoneNumber,
+        phone: userData.phone ? `+91${userData.phone}` : userData.phone,
         address: userData.address,
         updatedAt: serverTimestamp()
       };
@@ -750,7 +1066,7 @@ const Settings = () => {
           const resetData = {
             displayName: data.displayName || currentUser.displayName || '',
             email: currentUser.email || '',
-            phoneNumber: data.phoneNumber || currentUser.phoneNumber || '',
+            phone: (data.phone || currentUser.phone || '').replace(/^\+91/, ''),
             address: data.address || ''
           };
           console.log('Resetting form data to:', resetData);
@@ -758,6 +1074,7 @@ const Settings = () => {
             ...prev,
             ...resetData
           }));
+          setOriginalPhoneNumber((data.phone || currentUser.phone || '').replace(/^\\+91/, ''));
         } else {
           console.log('No user document found in Firestore');
         }
@@ -766,6 +1083,7 @@ const Settings = () => {
       }
     } else {
       console.log('Entering edit mode with current userData:', userData);
+      setOriginalPhoneNumber(userData.phone || '');
     }
     setIsEditing(!isEditing);
   };
@@ -941,16 +1259,32 @@ const Settings = () => {
                   <div className="flex flex-col sm:flex-row justify-between pb-2 border-b">
                     <label className="text-gray-600 mb-1 sm:mb-0">Mobile</label>
                     {isEditing ? (
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={userData.phoneNumber || ''}
-                        onChange={handleInputChange}
-                        className="px-2 py-1 border rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="+91 XXXXXXXXXX"
-                      />
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span className="text-gray-500">+91</span>
+                        </div>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={userData.phone ? userData.phone.replace(/^\+91/, '') : ''}
+                          onChange={(e) => {
+                            // Allow only numbers and remove any non-digit characters
+                            const numericValue = e.target.value.replace(/\D/g, '');
+                            setUserData(prev => ({
+                              ...prev,
+                              phone: numericValue
+                            }));
+                          }}
+                          className="pl-12 pr-2 py-1 border rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="1234567890"
+                          pattern="[0-9]{10}"
+                          title="Please enter a valid 10-digit phone number"
+                        />
+                      </div>
                     ) : (
-                      <span className="font-medium">{userData.phoneNumber || 'Not set'}</span>
+                      <span className="font-medium">
+                        {userData.phone ? userData.phone.replace(/^\+91/, '') : 'Not set'}
+                      </span>
                     )}
                   </div>
                   
@@ -1184,6 +1518,7 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {activeModal && renderModal()}
+      {renderPhoneVerificationModal()}
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-20 left-4 z-20">
         <button
