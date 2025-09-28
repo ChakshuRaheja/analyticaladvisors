@@ -72,8 +72,16 @@ exports.checkUserExists = functions.region('asia-south1').https.onRequest(async 
 
       // Check if phone exists
       if (phone) {
-        // Normalize phone number (remove any non-digit characters)
-        const normalizedPhone = phone.replace(/\D/g, '');
+        const digits = phone.replace(/\D/g, '');
+        let normalizedPhone;
+
+        if (digits.length === 10) {
+          normalizedPhone = `+91${digits}`;
+        } else if (digits.length === 12 && digits.startsWith('91')) {
+          normalizedPhone = `+${digits}`;
+        } else if (/^\+91\d{10}$/.test(phone)) {
+          normalizedPhone = phone;
+        }
         const phoneQuery = await query.where('phone', '==', normalizedPhone).limit(1).get();
         phoneExists = !phoneQuery.empty;
       }
