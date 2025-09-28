@@ -376,7 +376,7 @@ const SignUp = () => {
       }
 
       // Check if email or phone already exists
-      const { emailExists, phoneExists } = await checkExistingUser(formData.email, phoneNumber);
+      const { emailExists, phoneExists } = await checkExistingUser(formData.email, `+91${phoneNumber}`);
       
       if (emailExists && phoneExists) {
         throw new Error('Email and phone number are already registered');
