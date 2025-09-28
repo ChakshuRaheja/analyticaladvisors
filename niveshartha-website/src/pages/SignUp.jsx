@@ -370,13 +370,15 @@ const SignUp = () => {
 
       // Validate phone number (minimum 10 digits, only numbers)
       const phoneRegex = /^\d{10,15}$/;
-      const phoneNumber = formData.phone.replace(/\D/g, '');
-      if (!phoneRegex.test(phoneNumber)) {
+      const rawNumber = formData.phone.replace(/\D/g, '');
+      if (!phoneRegex.test(rawNumber)) {
         throw new Error('Please enter a valid phone number (10 digits)');
       }
 
+      const phoneNumber = `+91${rawNumber}`;
+
       // Check if email or phone already exists
-      const { emailExists, phoneExists } = await checkExistingUser(formData.email, `+91${phoneNumber}`);
+      const { emailExists, phoneExists } = await checkExistingUser(formData.email, phoneNumber);
       
       if (emailExists && phoneExists) {
         throw new Error('Email and phone number are already registered');
