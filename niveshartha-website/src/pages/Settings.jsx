@@ -579,7 +579,7 @@ const Settings = () => {
                         }));
                       }}
                       className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      placeholder="1234567890"
+                      placeholder={"Enter 10-digit phone number"}
                       pattern="[0-9]{10}"
                       title="Please enter a valid 10-digit phone number"
                       required={activeModal === 'callback'}
@@ -733,7 +733,7 @@ const Settings = () => {
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="123456"
+                    placeholder={"Enter 6-digit code" }
                     maxLength="6"
                   />
                 </div>
@@ -1324,7 +1324,7 @@ const Settings = () => {
                             }));
                           }}
                           className="pl-12 pr-2 py-1 border rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="1234567890"
+                          placeholder={"Enter 10-digit phone number"}
                           pattern="[0-9]{10}"
                           title="Please enter a valid 10-digit phone number"
                         />
