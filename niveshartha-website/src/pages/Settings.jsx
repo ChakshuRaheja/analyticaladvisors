@@ -87,7 +87,7 @@ const Settings = () => {
   const [userData, setUserData] = useState({
     displayName: currentUser?.displayName || '',
     email: currentUser?.email || '',
-    phone: currentUser?.phone ? currentUser.phone.replace(/^\+91/, '') : '',
+    phone: currentUser?.phone ? currentUser.phoneNumber.replace(/^\+91/, '') : '',
     address: ''
   });
 
@@ -818,20 +818,20 @@ const Settings = () => {
           console.log('Fetched user data from Firestore:', data);
           console.log('Current user auth data:', {
             displayName: currentUser.displayName,
-            phone: currentUser.phone,
+            phone: currentUser.phoneNumber,
             email: currentUser.email
           });
           
           const newUserData = {
             displayName: data.displayName || currentUser.displayName || '',
             email: currentUser.email || '',
-            phone: (data.phone || currentUser.phone || '').replace(/^\+91/, ''),
+            phone: (data.phone || currentUser.phoneNumber|| '').replace(/^\+91/, ''),
             address: data.address || ''
           };
           
           console.log('Setting user data:', newUserData);
           setUserData(newUserData);
-          setOriginalPhoneNumber((data.phone || currentUser.phone || '').replace(/^\+91/, ''));
+          setOriginalPhoneNumber((data.phone || currentUser.phoneNumber || '').replace(/^\+91/, ''));
           setKycStatus(data.kycStatus || 'pending');
         }
 
@@ -1012,7 +1012,7 @@ const Settings = () => {
     
     console.log('Saving account details with data:', { userData,
     originalPhoneNumber,
-    currentUser: currentUser.phone});
+    currentUser: currentUser.phoneNumber});
     setIsSaving(true);
     setSaveMessage({ text: '', type: '' });
     
@@ -1022,7 +1022,7 @@ const Settings = () => {
       const originalPhone = (originalPhoneNumber || '').replace(/^\+91/, '');
       const fullPhone = `+91${currentPhone}`;
 
-      if(currentUser.phone !== fullPhone){
+      if(currentUser.phoneNumber !== fullPhone){
         // If phone number changed, require verification
         if (originalPhone !== currentPhone && currentPhone) {
           try {
@@ -1114,7 +1114,7 @@ const Settings = () => {
           const resetData = {
             displayName: data.displayName || currentUser.displayName || '',
             email: currentUser.email || '',
-            phone: (data.phone || currentUser.phone || '').replace(/^\+91/, ''),
+            phone: (data.phone || currentUser.phoneNumber || '').replace(/^\+91/, ''),
             address: data.address || ''
           };
           console.log('Resetting form data to:', resetData);
@@ -1122,7 +1122,7 @@ const Settings = () => {
             ...prev,
             ...resetData
           }));
-          setOriginalPhoneNumber((data.phone || currentUser.phone || '').replace(/^\+91/, ''));
+          setOriginalPhoneNumber((data.phone || currentUser.phoneNumber|| '').replace(/^\+91/, ''));
         } else {
           console.log('No user document found in Firestore');
         }
