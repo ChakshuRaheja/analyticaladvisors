@@ -9,6 +9,29 @@ import { auth, db } from '../firebase/config';
 import SubscriptionInfo from '../components/SubscriptionInfo';
 import RiskProfiling from '../components/RiskProfiling';
 
+// cheUserExists Api Call function
+const checkExistingUser = async (phone) => {
+  try {
+    const response = await fetch('https://asia-south1-aerobic-acronym-466116-e1.cloudfunctions.net/checkUserExists', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phone }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to check user existence');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error checking user existence:', error);
+    throw new Error('Could not verify phone number: ' + error.message);
+  }
+};
+
 // Sidebar item component
 const SidebarItem = ({ icon, text, isActive, onClick, hasAccess = true }) => {
   if (!hasAccess) return null;
@@ -996,15 +1019,40 @@ const Settings = () => {
     try {
       // Check if phone number has changed
       const currentPhone = (userData.phone || '').replace(/^\+91/, '');
-      const originalPhone = (originalPhoneNumber || '').replace(/^\\+91/, '');
+      const originalPhone = (originalPhoneNumber || '').replace(/^\+91/, '');
+      const fullPhone = `+91${currentPhone}`;
 
-      // If phone number changed, require verification
-      if (originalPhone !== currentPhone && currentPhone) {
-        console.log('Phone number changed - opening verification modal');
-        setNewPhoneNumber(currentPhone);
-        setIsPhoneVerificationModalOpen(true);
-        setIsSaving(false);
-        return; // Stop here and let verification modal handle the rest
+      if(currentUser.phone !== fullPhone){
+        // If phone number changed, require verification
+        if (originalPhone !== currentPhone && currentPhone) {
+          try {
+            const checkResult = await checkExistingUser(fullPhone);
+            console.log('Phone check result:', checkResult);
+  
+            // If phone exists and it's not the current user's phone, block update
+            if (checkResult.phoneExists && originalPhone !== currentPhone) {
+              setSaveMessage({
+                text: 'This phone number is already registered with another account.',
+                type: 'error'
+              });
+              setIsSaving(false);
+              return;
+            }
+          } catch (err) {
+            setSaveMessage({
+              text: err.message || 'Error verifying phone number.',
+              type: 'error'
+            });
+            setIsSaving(false);
+            return;
+          }
+  
+          console.log('Phone number changed - opening verification modal');
+          setNewPhoneNumber(currentPhone);
+          setIsPhoneVerificationModalOpen(true);
+          setIsSaving(false);
+          return; // Stop here and let verification modal handle the rest
+        }
       }
       
       const updateData = {
@@ -1074,7 +1122,7 @@ const Settings = () => {
             ...prev,
             ...resetData
           }));
-          setOriginalPhoneNumber((data.phone || currentUser.phone || '').replace(/^\\+91/, ''));
+          setOriginalPhoneNumber((data.phone || currentUser.phone || '').replace(/^\+91/, ''));
         } else {
           console.log('No user document found in Firestore');
         }

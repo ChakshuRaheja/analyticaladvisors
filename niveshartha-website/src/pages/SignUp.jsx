@@ -251,16 +251,10 @@ const SignUp = () => {
       const emailCredential = EmailAuthProvider.credential(formData.email, formData.password);
       const userCredential = await linkWithCredential(auth.currentUser, emailCredential);
 
-      // Update user profile
-      await updateProfile(userCredential.user, {
-        displayName: `${formData.firstName} ${formData.lastName}`,
-        phoneNumber: formData.phone
-      });
-
       // Update user profile with display name
       await updateProfile(userCredential.user, {
         displayName: `${formData.firstName} ${formData.lastName}`,
-        phoneNumber: formData.phone
+        phoneNumber: `+91${formData.phone}`
       });
 
       // Create user document in Firestore
@@ -268,7 +262,7 @@ const SignUp = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        phone: formData.phone,
+        phone: `+91${formData.phone}`,
         emailVerified: false,
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
@@ -378,7 +372,7 @@ const SignUp = () => {
       const phoneRegex = /^\d{10,15}$/;
       const phoneNumber = formData.phone.replace(/\D/g, '');
       if (!phoneRegex.test(phoneNumber)) {
-        throw new Error('Please enter a valid phone number (10-15 digits)');
+        throw new Error('Please enter a valid phone number (10 digits)');
       }
 
       // Check if email or phone already exists
