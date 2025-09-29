@@ -162,7 +162,6 @@ const SignUp = () => {
               }
             });
           }
-          
     
           // Get the reCAPTCHA verifier
           const appVerifier = window.recaptchaVerifier;
@@ -181,7 +180,13 @@ const SignUp = () => {
           } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Too many attempts. Please try again later.';
           }
-          
+          showToast({
+            title: 'Verification Error',
+            description: errorMessage,
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
           setError(errorMessage, true);
         } finally {
           setLoading(false);
