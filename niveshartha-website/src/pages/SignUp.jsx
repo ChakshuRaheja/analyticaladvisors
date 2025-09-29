@@ -33,7 +33,7 @@ const SignUp = () => {
       acceptedTerms: false
     };
   };
-
+  
   const [formData, setFormData] = useState(loadFormData());
   const [error, setError] = useState({ message: '', isError: true });
   const [loading, setLoading] = useState(false);
@@ -51,6 +51,9 @@ const SignUp = () => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isPasswordCreated, setIsPasswordCreated] = useState(false);
   const [isAccountCreated, setIsAccountCreated] = useState(false);
+  const [otpResentOnce, setOtpResentOnce] = useState(false);
+  const [otpAutoSentOnce, setOtpAutoSentOnce] = useState(false);
+  const [resendTimer, setResendTimer] = useState(30);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -104,6 +107,15 @@ const SignUp = () => {
   }, []);
 
   useEffect(() => {
+    if (resendTimer > 0) {
+      const interval = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [resendTimer]);
+
+  useEffect(() => {
     if (currentStep === 3) {
       const handleBeforeUnload = (e) => {
         e.preventDefault();
@@ -136,7 +148,7 @@ const SignUp = () => {
     let timeoutId;
     const autoSendOTP = async (e) => {
   
-      if (currentStep === 2 && !otpSent && !loading){
+      if (currentStep === 2 && !otpSent && !loading && !otpAutoSentOnce){
         try {
           setError({ message: '', isError: true });
           setLoading(true);
@@ -172,6 +184,8 @@ const SignUp = () => {
           const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
           setVerificationId(confirmation.verificationId);
           setOtpSent(true);
+          setOtpAutoSentOnce(true);
+          setResendTimer(30);
           setError({ message: 'OTP sent successfully!', isError: false });
         } catch (error) {
           console.error('Error sending OTP:', error);
@@ -182,12 +196,12 @@ const SignUp = () => {
           } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Too many attempts. Please try again later.';
           }
-          toast.error(`Verification Error: ${errorMessage}`, {
-            position: "top-center",
-            autoClose: 5000,
-            pauseOnHover: true,
-            draggable: true,
-          });
+          // toast.error(`Verification Error: ${errorMessage}`, {
+          //   position: "top-center",
+          //   autoClose: 5000,
+          //   pauseOnHover: true,
+          //   draggable: true,
+          // });
           setError(errorMessage, true);
         } finally {
           setLoading(false);
@@ -195,9 +209,61 @@ const SignUp = () => {
       }
     };
     
-    timeoutId = setTimeout(autoSendOTP, 1000);
+    if (!otpAutoSentOnce) {
+      timeoutId = setTimeout(autoSendOTP, 1000);
+    }
     return () => clearTimeout(timeoutId);
   }, [currentStep, otpSent, loading, formData.phone])
+
+  const handleResendOTP = async () => {
+    if (otpResentOnce) return;
+
+    try {
+      setLoading(true);
+      setError({ message: '', isError: false });
+
+      // Format phone
+      const formattedPhoneNumber = formData.phone.startsWith('+') ? formData.phone : `+91${formData.phone}`;
+
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+          callback: () => console.log('reCAPTCHA solved'),
+          'expired-callback': () => {
+            toast.warning('Session expired. Please send the OTP again.', {
+              position: "top-center",
+              autoClose: 5000,
+              pauseOnHover: true,
+              draggable: true,
+            });
+          },
+        });
+
+        await window.recaptchaVerifier.render(); // Only render if it's new
+      }
+
+      const appVerifier = window.recaptchaVerifier;
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
+
+      setVerificationId(confirmation.verificationId);
+      setOtpSent(true);
+      setOtpResentOnce(true);
+      setResendTimer(30);
+      setError({ message: 'OTP resent successfully', isError: false });
+    } catch (error) {
+      console.error('Error resending OTP:', error);
+      toast.error('Failed to resend OTP. Please try again later.', {
+        position: "top-center",
+        autoClose: 5000,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      setError({ message: 'Failed to resend OTP.', isError: true });
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleVerifyOTP = async () => {
     if (!otp.trim()) {
@@ -233,7 +299,7 @@ const SignUp = () => {
         errorMessage = 'OTP has expired. Please request a new one.';
       }
       
-      setError(errorMessage);
+      setError({ message: errorMessage, isError: true });
     } finally {
       setLoading(false);
     }
@@ -550,6 +616,28 @@ const SignUp = () => {
                     />
                   </div>
                 </div>
+
+                {/* Resend OTP Button */}
+                {otpAutoSentOnce && (
+                    <button
+                      onClick={handleResendOTP}
+                      disabled={resendTimer > 0 || loading || otpResentOnce}
+                      className={`w-full py-3 rounded-lg transition-colors duration-200 ${
+                        resendTimer > 0 || loading || otpResentOnce
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {resendTimer > 0
+                        ? `Resend OTP (${resendTimer}s)`
+                        : loading
+                          ? 'Resending...'
+                          : otpResentOnce
+                            ? 'OTP Resent'
+                            : 'Resend OTP'
+                      }
+                    </button>
+                  )}
 
                 <button
                   onClick={handleVerifyOTP}
