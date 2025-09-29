@@ -143,20 +143,26 @@ const SignUp = () => {
           const formattedPhoneNumber = formData.phone.startsWith('+') ? formData.phone : `+91${formData.phone}`;
           
           // Clear any existing reCAPTCHA verifier
-          if (window.recaptchaVerifier) {
-            window.recaptchaVerifier.clear();
+          if (!window.recaptchaVerifier) {
+            // Setup new reCAPTCHA verifier
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+              'size': 'invisible',
+              'callback': () => {
+                console.log('reCAPTCHA solved');
+              },
+              'expired-callback': () => {
+                showToast({
+                  title: 'Session expired',
+                  description: 'Please send the OTP again.',
+                  status: 'warning',
+                  duration: 5000,
+                  isClosable: true,
+                });
+                console.warn('reCAPTCHA expired');
+              }
+            });
           }
           
-          // Setup new reCAPTCHA verifier
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible',
-            'callback': () => {
-              // reCAPTCHA solved, will be called when the reCAPTCHA is verified
-            },
-            'expired-callback': () => {
-              // Reset reCAPTCHA?
-            }
-          });
     
           // Get the reCAPTCHA verifier
           const appVerifier = window.recaptchaVerifier;
