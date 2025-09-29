@@ -161,6 +161,8 @@ const SignUp = () => {
                 console.warn('reCAPTCHA expired');
               }
             });
+            
+            await window.recaptchaVerifier.render();
           }
     
           // Get the reCAPTCHA verifier
