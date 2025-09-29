@@ -27,8 +27,9 @@ const getEnv = (key, fallback = '') => {
 
 // Get API base URL with fallback
 const getApiBaseUrl = () => {
-  return getEnv('REACT_APP_API_BASE_URL', 'http://localhost:3001');
+  return import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 };
+
 
 // Use the API base URL
 const API_BASE_URL = getApiBaseUrl();
@@ -464,32 +465,33 @@ const Subscription = () => {
               // Save subscription to Firestore
               await saveSubscription(plan, response);
               
-              // Initiate KYC process after successful payment
-              try {
-                const kycResponse = await initiateKYC({
-                  customer_identifier: currentUser.email,
-                  customer_name: currentUser.displayName || 'Customer',
-                  reference_id: `KYC_${Date.now()}_${currentUser.uid}`,
-                  request_details: {
-                    subscription_plan: plan.id,
-                    payment_id: response.razorpay_payment_id
-                  }
-                });
-                
-                
-             if (kycResponse.success) {
-            console.log('KYC initiated successfully'); // e.g., 'requested'
-    // Optionally update UI or Firestore
-    setShowKycPopup(true);
-  } else {
-    console.error('KYC initiation failed:', kycResponse.message);
-    setError(`Payment successful but KYC initiation failed: ${kycResponse.message}`);
+              // Initiate KYC process after successful payment (only for first-time users)
+try {
+  // Check if user has already completed KYC/eSign process
+  const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+  const userData = userDoc.exists() ? userDoc.data() : {};
+  
+  if (!userData.kycEsignCompleted || !userData.kycEsignCompletedAt) {
+    const kycResponse = await initiateKYC({
+      customer_identifier: currentUser.email,
+      customer_name: currentUser.displayName || 'Customer',
+      reference_id: `KYC_${Date.now()}_${currentUser.uid}`,
+      request_details: {
+        subscription_plan: plan.id,
+        payment_id: response.razorpay_payment_id
+      }
+    });
+    
+    if (kycResponse.success) {
+      console.log('KYC initiated successfully');
+      setShowKycPopup(true);
+    } else {
+      console.error('KYC initiation failed:', kycResponse.message);
+    }
   }
-              } catch (kycError) {
-                console.error('KYC initiation failed:', kycError);
-                // Continue with normal flow if KYC fails
-                setError(`Payment successful but KYC initiation failed: ${kycError.message || 'Please try again later.'}`);
-              }
+} catch (kycError) {
+  console.error('KYC initiation failed:', kycError);
+}
             } catch (error) {
               console.error("Payment verification failed:", error);
               setError(`Payment verification failed: ${error.message || 'Please try again or contact support.'}`);
