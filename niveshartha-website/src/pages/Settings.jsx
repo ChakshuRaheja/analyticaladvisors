@@ -7,6 +7,7 @@ import { doc, getDoc, updateDoc, collection, query, where, getDocs, Timestamp, s
 import { RecaptchaVerifier, PhoneAuthProvider, updatePhoneNumber, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
 import SubscriptionInfo from '../components/SubscriptionInfo';
+import { toast } from 'react-toastify';
 import RiskProfiling from '../components/RiskProfiling';
 
 // cheUserExists Api Call function
@@ -105,12 +106,11 @@ const Settings = () => {
               console.log('reCAPTCHA solved');
             },
             'expired-callback': () => {
-              showToast({
-                title: 'Session expired',
-                description: 'Please send the OTP again.',
-                status: 'warning',
-                duration: 5000,
-                isClosable: true,
+              toast.warning('Session expired. Please send the OTP again.', {
+                position: "top-center",
+                autoClose: 5000,
+                pauseOnHover: true,
+                draggable: true,
               });
             }
           }

@@ -133,6 +133,7 @@ const SignUp = () => {
   }, [currentStep, location.pathname]);
 
   useEffect(()=> {
+    let timeoutId;
     const autoSendOTP = async (e) => {
   
       if (currentStep === 2 && !otpSent && !loading){
@@ -151,13 +152,12 @@ const SignUp = () => {
                 console.log('reCAPTCHA solved');
               },
               'expired-callback': () => {
-                showToast({
-                  title: 'Session expired',
-                  description: 'Please send the OTP again.',
-                  status: 'warning',
-                  duration: 5000,
-                  isClosable: true,
-                });
+                toast.warning('Session expired. Please send the OTP again.', {
+                position: "top-center",
+                autoClose: 5000,
+                pauseOnHover: true,
+                draggable: true,
+              });
                 console.warn('reCAPTCHA expired');
               }
             });
@@ -182,12 +182,11 @@ const SignUp = () => {
           } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Too many attempts. Please try again later.';
           }
-          showToast({
-            title: 'Verification Error',
-            description: errorMessage,
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
+          toast.error(`Verification Error: ${errorMessage}`, {
+            position: "top-center",
+            autoClose: 5000,
+            pauseOnHover: true,
+            draggable: true,
           });
           setError(errorMessage, true);
         } finally {
@@ -196,7 +195,8 @@ const SignUp = () => {
       }
     };
     
-    autoSendOTP();
+    timeoutId = setTimeout(autoSendOTP, 1000);
+    return () => clearTimeout(timeoutId);
   }, [currentStep, otpSent, loading, formData.phone])
 
   const handleVerifyOTP = async () => {
