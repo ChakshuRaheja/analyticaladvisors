@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { SocialMediaBaseUrls } from '../constants/systemEnums';
+import { useNavigationBlock } from '../context/NavigationBlockContext';
 
 const Footer = () => {
+  const { handleInterceptNavigation } = useNavigationBlock();
   return (
     <footer className="bg-black text-white">
       <div className="container mx-auto py-12 px-4">
@@ -49,16 +51,16 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="text-gray-400 hover:text-white transition-colors">Home</Link>
+                <button onClick={() => handleInterceptNavigation('/')} className="text-gray-400 hover:text-white transition-colors">Home</button>
               </li>
               <li>
-                <Link to="/about" className="text-gray-400 hover:text-white transition-colors">About Us</Link>
+                <button onClick={() => handleInterceptNavigation('/about')} className="text-gray-400 hover:text-white transition-colors">About Us</button>
               </li>
               <li>
-                <Link to="/subscription" className="text-gray-400 hover:text-white transition-colors">Subscription</Link>
+                <button onClick={() => handleInterceptNavigation('/subscription')} className="text-gray-400 hover:text-white transition-colors">Subscription</button>
               </li>
               <li>
-                <Link to="/contact" className="text-gray-400 hover:text-white transition-colors">Contact Us</Link>
+                <button onClick={() => handleInterceptNavigation('/contact')} className="text-gray-400 hover:text-white transition-colors">Contact Us</button>
               </li>
             </ul>
           </div>
@@ -68,19 +70,19 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/terms" className="text-gray-400 hover:text-white transition-colors">Terms & Conditions</Link>
+                <button onClick={() => handleInterceptNavigation("/terms")} className="text-gray-400 hover:text-white transition-colors">Terms & Conditions</button>
               </li>
               <li>
-                <Link to="/privacy-policy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link>
+                <button onClick={() => handleInterceptNavigation("/privacy-policy")} className="text-gray-400 hover:text-white transition-colors">Privacy Policy</button>
               </li>
               <li>
-                <Link to="/disclaimer" className="text-gray-400 hover:text-white transition-colors">Disclaimer</Link>
+                <button onClick={() => handleInterceptNavigation("/disclaimer")} className="text-gray-400 hover:text-white transition-colors">Disclaimer</button>
               </li>
               <li>
-                <Link to="/investor-charter" className="text-gray-400 hover:text-white transition-colors">Investor Charter</Link>
+                <button onClick={() => handleInterceptNavigation("/investor-charter")} className="text-gray-400 hover:text-white transition-colors">Investor Charter</button>
               </li>
               <li>
-                <Link to="/investor-grievance" className="text-gray-400 hover:text-white transition-colors">Investor Grievance</Link>
+                <button onClick={() => handleInterceptNavigation("/investor-grievance")} className="text-gray-400 hover:text-white transition-colors">Investor Grievance</button>
               </li>
               <li>
                 <a href="https://smartodr.in/login" className="text-gray-400 hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">Raise A Dispute</a>

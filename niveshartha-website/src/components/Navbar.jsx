@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useNavigationBlock } from '../context/NavigationBlockContext';
+
 
 // Navbar links configuration
 const navLinks = [

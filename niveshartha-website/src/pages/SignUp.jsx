@@ -17,6 +17,8 @@ import { doc, setDoc, serverTimestamp, getDocs, query, where, collection } from 
 import { db, functions } from '../firebase/config';
 import { toast } from 'react-toastify';
 import { httpsCallable } from 'firebase/functions';
+import { useNavigationBlock } from '../context/NavigationBlockContext';
+
 
 const SignUp = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -33,7 +35,7 @@ const SignUp = () => {
       acceptedTerms: false
     };
   };
-
+  
   const [formData, setFormData] = useState(loadFormData());
   const [error, setError] = useState({ message: '', isError: true });
   const [loading, setLoading] = useState(false);
@@ -48,12 +50,20 @@ const SignUp = () => {
   const [passwordStrengthText, setPasswordStrengthText] = useState('');
   const [passwordStrengthColor, setPasswordStrengthColor] = useState('text-red-500');
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [isPasswordCreated, setIsPasswordCreated] = useState(false);
   const [isAccountCreated, setIsAccountCreated] = useState(false);
+  const [otpResentOnce, setOtpResentOnce] = useState(false);
+  const [otpAutoSentOnce, setOtpAutoSentOnce] = useState(false);
+  const [resendTimer, setResendTimer] = useState(30);
   const navigate = useNavigate();
   const location = useLocation();
+  const [nextPath, setNextPath] = useState(null);
 
+
+  const { setIsBlocking, showConfirmModal, confirmNavigation, cancelNavigation } = useNavigationBlock();
+  
+    useEffect(() => {
+      setIsBlocking(currentStep === 3);
+    }, [currentStep]);
   // Save form data to session storage whenever it changes
   useEffect(() => {
     sessionStorage.setItem('signupFormData', JSON.stringify(formData));
@@ -104,10 +114,27 @@ const SignUp = () => {
   }, []);
 
   useEffect(() => {
+    if (resendTimer > 0) {
+      const interval = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [resendTimer]);
+
+  useEffect(() => {
     if (currentStep === 3) {
-      const handleBeforeUnload = (e) => {
+      const handleBeforeUnload = async (e) => {
         e.preventDefault();
         e.returnValue = ""; // Chrome requires returnValue to be set
+        if (auth.currentUser) {
+          try {
+            await auth.currentUser.delete();
+            console.log('Abandoned user deleted');
+          } catch (deleteError) {
+            console.warn('Failed to delete abandoned user:', deleteError);
+          }
+        }
       };
 
       const blockBack = () => {
@@ -126,17 +153,11 @@ const SignUp = () => {
     }
   }, [currentStep]);
 
-  useEffect(() => {
-    if (currentStep === 3 && location.pathname !== "/signup") {
-      navigate("/signup", { replace: true });
-    }
-  }, [currentStep, location.pathname]);
-
   useEffect(()=> {
     let timeoutId;
     const autoSendOTP = async (e) => {
   
-      if (currentStep === 2 && !otpSent && !loading){
+      if (currentStep === 2 && !otpSent && !loading && !otpAutoSentOnce){
         try {
           setError({ message: '', isError: true });
           setLoading(true);
@@ -172,6 +193,8 @@ const SignUp = () => {
           const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
           setVerificationId(confirmation.verificationId);
           setOtpSent(true);
+          setOtpAutoSentOnce(true);
+          setResendTimer(30);
           setError({ message: 'OTP sent successfully!', isError: false });
         } catch (error) {
           console.error('Error sending OTP:', error);
@@ -182,12 +205,12 @@ const SignUp = () => {
           } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Too many attempts. Please try again later.';
           }
-          toast.error(`Verification Error: ${errorMessage}`, {
-            position: "top-center",
-            autoClose: 5000,
-            pauseOnHover: true,
-            draggable: true,
-          });
+          // toast.error(`Verification Error: ${errorMessage}`, {
+          //   position: "top-center",
+          //   autoClose: 5000,
+          //   pauseOnHover: true,
+          //   draggable: true,
+          // });
           setError(errorMessage, true);
         } finally {
           setLoading(false);
@@ -195,9 +218,61 @@ const SignUp = () => {
       }
     };
     
-    timeoutId = setTimeout(autoSendOTP, 1000);
+    if (!otpAutoSentOnce) {
+      timeoutId = setTimeout(autoSendOTP, 1000);
+    }
     return () => clearTimeout(timeoutId);
   }, [currentStep, otpSent, loading, formData.phone])
+
+  const handleResendOTP = async () => {
+    if (otpResentOnce) return;
+
+    try {
+      setLoading(true);
+      setError({ message: '', isError: false });
+
+      // Format phone
+      const formattedPhoneNumber = formData.phone.startsWith('+') ? formData.phone : `+91${formData.phone}`;
+
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+          callback: () => console.log('reCAPTCHA solved'),
+          'expired-callback': () => {
+            toast.warning('Session expired. Please send the OTP again.', {
+              position: "top-center",
+              autoClose: 5000,
+              pauseOnHover: true,
+              draggable: true,
+            });
+          },
+        });
+
+        await window.recaptchaVerifier.render(); // Only render if it's new
+      }
+
+      const appVerifier = window.recaptchaVerifier;
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
+
+      setVerificationId(confirmation.verificationId);
+      setOtpSent(true);
+      setOtpResentOnce(true);
+      setResendTimer(30);
+      setError({ message: 'OTP resent successfully', isError: false });
+    } catch (error) {
+      console.error('Error resending OTP:', error);
+      toast.error('Failed to resend OTP. Please try again later.', {
+        position: "top-center",
+        autoClose: 5000,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      setError({ message: 'Failed to resend OTP.', isError: true });
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleVerifyOTP = async () => {
     if (!otp.trim()) {
@@ -233,7 +308,7 @@ const SignUp = () => {
         errorMessage = 'OTP has expired. Please request a new one.';
       }
       
-      setError(errorMessage);
+      setError({ message: errorMessage, isError: true });
     } finally {
       setLoading(false);
     }
@@ -277,6 +352,7 @@ const SignUp = () => {
         email: formData.email,
         phone: `+91${formData.phone}`,
         emailVerified: false,
+        profileSetupComplete: true,
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
         isActive: true,
@@ -551,6 +627,28 @@ const SignUp = () => {
                   </div>
                 </div>
 
+                {/* Resend OTP Button */}
+                {otpAutoSentOnce && (
+                    <button
+                      onClick={handleResendOTP}
+                      disabled={resendTimer > 0 || loading || otpResentOnce}
+                      className={`w-full py-3 rounded-lg transition-colors duration-200 ${
+                        resendTimer > 0 || loading || otpResentOnce
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {resendTimer > 0
+                        ? `Resend OTP (${resendTimer}s)`
+                        : loading
+                          ? 'Resending...'
+                          : otpResentOnce
+                            ? 'OTP Resent'
+                            : 'Resend OTP'
+                      }
+                    </button>
+                  )}
+
                 <button
                   onClick={handleVerifyOTP}
                   disabled={!otpSent || loading || !otp}
@@ -700,6 +798,34 @@ const SignUp = () => {
                 <p className="mt-2 text-gray-600">Processing...</p>
               </div>
             )}
+
+            {showConfirmModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md mx-auto shadow-lg">
+                  <h2 className="text-xl font-bold mb-4">Confirm Navigation</h2>
+                  <p className="mb-6">
+                    Password creation is required to complete account setup. Leaving now will delete your account.
+                    Do you want to leave?
+                  </p>
+                  <div className="flex justify-end gap-4">
+                    <button
+                      className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                      onClick={cancelNavigation}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                      onClick={confirmNavigation}
+                    >
+                      Yes, Leave
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+
           </div>
         </ScrollAnimation>
       </div>
