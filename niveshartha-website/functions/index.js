@@ -5,7 +5,8 @@ const cors = require('cors')({
   origin: [
     'https://analyticaladvisors.in',
     'https://www.analyticaladvisors.in',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://localhost:5175'
   ],
   methods: ['POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -101,7 +102,9 @@ exports.sendWelcomeEmailHTTP = functions.region('asia-south1').https.onRequest(a
   const allowedOrigins = [
     'https://analyticaladvisors.in',
     'https://www.analyticaladvisors.in',
-    'http://localhost:3000'  // For local development
+    'http://localhost:3000',
+    'http://localhost:5175' // For local development
+    
   ];
   
   const origin = req.headers.origin;

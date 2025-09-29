@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = 'https://omkara-backend-725764883240.asia-south1.run.app';
+
 export const initiateKYC = async (data) => {
   try {
     const res = await fetch(`${API_BASE_URL}/api/kyc/init`, {
@@ -14,18 +15,20 @@ export const initiateKYC = async (data) => {
   }
 };
 
-
 export const verifyKYCStatus = async (requestID) => {
-  const res = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({requestID}),
-    credentials: 'include'
-  });
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestID }), // Send { requestID: "value" }
+      credentials: 'include'
+    });
 
-  const result = await res.json();
-  if (!res.ok) throw new Error(result.message || 'KYC verification failed');
-  return result; // Return whole result, including data/status
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || 'KYC verification failed');
+    return result;
+  } catch (error) {
+    console.error('KYC Verify Error:', error);
+    throw error;
+  }
 };
-
-
