@@ -102,10 +102,16 @@ const Settings = () => {
           { 
             size: 'invisible',
             'callback': () => {
-              // reCAPTCHA solved, will be called when the reCAPTCHA is verified
+              console.log('reCAPTCHA solved');
             },
             'expired-callback': () => {
-              // Reset reCAPTCHA?
+              showToast({
+                title: 'Session expired',
+                description: 'Please send the OTP again.',
+                status: 'warning',
+                duration: 5000,
+                isClosable: true,
+              });
             }
           }
         );
