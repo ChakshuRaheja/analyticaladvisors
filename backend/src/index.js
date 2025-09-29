@@ -5,7 +5,6 @@ console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
 
 // Required environment variables
 const requiredEnvVars = [
-  'PORT',
   'RAZORPAY_KEY_ID',
   'RAZORPAY_KEY_SECRET',
   'CORS_ORIGIN',
@@ -47,6 +46,7 @@ const kycRoutes = require('./routes/kyc.routes');
 const emailRoutes = require('./routes/email.routes');
 const contactRoutes = require('./routes/contact.routes');
 const excelRoutes = require('./routes/excel.routes');
+const esignRoutes = require('./routes/esign.routes');
 
 // Create Express app
 const app = express();
@@ -182,11 +182,12 @@ app.use('/api/kyc', kycRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/excel', excelRoutes);
+app.use('/api/esign', esignRoutes);
 
 // Basic route for testing
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Welcome to Omkara Capital Backend API',
+    message: 'Welcome to Analytical Advisors Backend',
     environment: process.env.NODE_ENV,
     corsOrigin: process.env.CORS_ORIGIN
   });
