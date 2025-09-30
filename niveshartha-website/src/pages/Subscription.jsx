@@ -371,6 +371,11 @@ const Subscription = () => {
         break;
     }
 
+    // Subtract 1 day
+    endDate.setDate(endDate.getDate() - 1);
+
+    // Set time to 23:59:59.999
+    endDate.setHours(23, 59, 59, 999);
     return endDate;
   };
 
