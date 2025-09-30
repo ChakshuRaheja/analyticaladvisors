@@ -332,22 +332,27 @@ useEffect(() => {
   detectSubscriptions();
 }, [currentUser]);
 
-  // Effect to set the initial active tab based on subscriptions
+  // Effect to set the initial active tab when component mounts or activeSubs changes
   useEffect(() => {
-    if (activeSubs.length > 0) {
-      // If activeTab is not set or not in activeSubs, set it to the first available subscription
-      if (!activeTab || !activeSubs.includes(activeTab)) {
-        console.log('Setting active tab to first available subscription:', activeSubs[0]);
-        setActiveTab(activeSubs[0]);
-      }
-    } else {
-      console.log('No active subscriptions found');
-      setActiveTab('');
+    if (activeSubs.length > 0 && !activeTab) {
+      console.log('Setting initial active tab to first subscription:', activeSubs[0]);
+      setActiveTab(activeSubs[0]);
+    } else if (activeTab && !activeSubs.includes(activeTab)) {
+      // If current activeTab is not in activeSubs, set it to first available subscription
+      console.log('Current tab not in active subscriptions, resetting to first available');
+      setActiveTab(activeSubs[0] || '');
     }
-  }, [activeSubs, activeTab]);
+  }, [activeSubs]); // Only run when activeSubs changes
 
+  // Handle tab change
+  const handleTabChange = (plan) => {
+    console.log('Tab changed to:', plan);
+    if (activeSubs.includes(plan)) {
+      setActiveTab(plan);
+    }
+  };
 
-// Check KYC status when component mounts or user changes
+  // Check KYC status when component mounts or user changes
 useEffect(() => {
   const checkKycStatus = async () => {
     if (!currentUser) {
@@ -787,17 +792,6 @@ useEffect(() => {
   }
 }, [activeTab, kycStatus, esignStatus]);
 
-  // Handle tab change
-  const handleTabChange = (plan) => {
-    if (kycStatus !== 'verified' || esignStatus !== 'verified') return;
-    setActiveTab(plan);
-    
-    // Fetch data for the selected tab if not already loaded
-    if (!stocks[plan] && !loading[plan]) {
-      fetchSubscriptionData(plan);
-    }
-  };
-
   const fetchSubscriptionData = async (plan) => {
     console.log(`[${plan}] Starting optimized data fetch`);
     setLoading((prev) => ({ ...prev, [plan]: true }));
@@ -1093,13 +1087,17 @@ useEffect(() => {
     const color = config.color || 'blue';
     const isActive = activeTab === plan;
     const colorClasses = colorConfig[color] || colorConfig.blue;
-    const classes = `px-4 py-2 text-sm font-medium rounded-t-lg focus:outline-none transition-colors duration-200 ${isActive ? colorClasses.active : colorClasses.inactive}`;
-
+    const baseClasses = 'px-4 py-2 text-sm font-medium rounded-t-lg focus:outline-none transition-colors duration-200';
+    const activeClasses = isActive ? colorClasses.active : colorClasses.inactive;
+    const disabledClasses = !activeSubs.includes(plan) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
+    
     return (
       <button
         key={plan}
         onClick={() => handleTabChange(plan)}
-        className={classes}
+        disabled={!activeSubs.includes(plan)}
+        className={`${baseClasses} ${activeClasses} ${disabledClasses}`}
+        aria-current={isActive ? 'page' : undefined}
       >
         {config.name || plan.replace(/_/g, ' ')}
       </button>
@@ -1203,7 +1201,7 @@ useEffect(() => {
                     colSpan={config.columns.length} 
                     className="px-6 py-4 text-center text-sm text-gray-500"
                   >
-                    No stock recommendations found.
+                    No  recommendations found.
                   </td>
                 </tr>
               )}
