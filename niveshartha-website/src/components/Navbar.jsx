@@ -52,13 +52,21 @@ function HideOnScroll({ children }) {
 
 // NavLink component with animations
 const NavLink = ({ path, text, isActive, isMobile, onClick, hasDropdown, toggleDropdown, isDropdownOpen }) => {
+  const navigate = useNavigate();
   const handleClick = (e) => {
+    e.preventDefault();
+
     if (hasDropdown) {
-      e.preventDefault();
       e.stopPropagation();
       toggleDropdown();
     } else if (onClick) {
-      onClick();
+      const blocked = onClick(e);
+      if (!blocked) {
+        navigate(path);
+      
+      }
+    }else {
+      navigate(path);
     }
   };
 
@@ -98,7 +106,7 @@ const NavLink = ({ path, text, isActive, isMobile, onClick, hasDropdown, toggleD
       ) : (
         <RouterLink
           to={path}
-          onClick={onClick}
+          onClick={handleClick}
           className={`
             block py-2 px-4
             ${isMobile 
@@ -130,7 +138,7 @@ function Navbar() {
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const servicesMenuRef = useRef(null);
-
+  const { handleInterceptNavigation } = useNavigationBlock();
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
@@ -203,8 +211,11 @@ function Navbar() {
   };
 
   const handleDropdownItemClick = (path) => {
+    const blocked = handleInterceptNavigation(path);
     setServicesMenuOpen(false);
-    navigate(path);
+    if (!blocked) {
+      navigate(path); 
+    }
   };
 
   return (
@@ -222,6 +233,13 @@ function Navbar() {
             <div className="flex-shrink-0">
               <RouterLink
                 to="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const blocked = handleInterceptNavigation('/');
+                  if (!blocked) {
+                    navigate('/');
+                  }
+                }}
                 className="flex items-center space-x-2"
               >
                 <img 
@@ -315,6 +333,10 @@ function Navbar() {
                     text={link.text}
                     isActive={location.pathname === link.path}
                     isMobile={false}
+                    onClick={() => {
+                      const blocked = handleInterceptNavigation(link.path);
+                      return blocked;
+                    }}
                   />
                 )
               ))}
@@ -429,7 +451,14 @@ function Navbar() {
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <RouterLink
               to="/"
-              onClick={handleDrawerToggle}
+              onClick={(e) => {
+                e.preventDefault();
+                const blocked = handleInterceptNavigation('/');
+                handleDrawerToggle();
+                if (!blocked) {
+                  navigate('/');
+                }
+              }}
               className="text-xl font-bold text-black hover:text-[#008080] transition-colors duration-300"
             >
               <span className="text-black">Analytical</span>
@@ -455,7 +484,11 @@ function Navbar() {
                     text="All Services" // Display text for mobile
                     isActive={location.pathname === '/services'}
                     isMobile={true}
-                    onClick={() => setDrawerOpen(false)}
+                    onClick={() =>{
+                      const blocked = handleInterceptNavigation('/services');
+                      setDrawerOpen(false);
+                      return blocked;
+                    }}
                   />,
                   <NavLink
                     key="/portfolio-review" // Path for 'Portfolio Review'
@@ -463,7 +496,11 @@ function Navbar() {
                     text="Portfolio Review" // Display text for mobile
                     isActive={location.pathname === '/portfolio-review'}
                     isMobile={true}
-                    onClick={() => setDrawerOpen(false)}
+                    onClick={() => {
+                      const blocked =handleInterceptNavigation('/portfolio-review');
+                      setDrawerOpen(false);
+                      return blocked;
+                    }}
                   />,
                 ];
               }
@@ -475,7 +512,11 @@ function Navbar() {
                   text={link.text}
                   isActive={location.pathname === link.path}
                   isMobile={true}
-                  onClick={() => setDrawerOpen(false)}
+                  onClick={() => {
+                      const blocked = handleInterceptNavigation(link.path);
+                      setDrawerOpen(false);
+                      return blocked;
+                    }}
                 />
               );
             })}
@@ -485,7 +526,11 @@ function Navbar() {
                 text="Settings"
                 isActive={location.pathname === '/settings'}
                 isMobile={true}
-                onClick={() => setDrawerOpen(false)}
+                onClick={() => {
+                      const blocked = handleInterceptNavigation('/settings');
+                      setDrawerOpen(false);
+                      return blocked;
+                    }}
               />
             )}
           </div>

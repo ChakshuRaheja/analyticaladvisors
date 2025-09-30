@@ -14,8 +14,10 @@ export const NavigationBlockProvider = ({ children }) => {
     if (isBlocking) {
       setShowConfirmModal(true);
       setNextPath(path);
+      return true;
     } else {
       navigate(path);
+      return false;
     }
   };
 
