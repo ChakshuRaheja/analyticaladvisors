@@ -128,6 +128,10 @@ const Analysis = () => {
   const [ccSearchTerm, setCcSearchTerm] = useState('');
   const [ccCurrentPage, setCcCurrentPage] = useState(1);
   const ccItemsPerPage = 10;
+  // Add these state variables
+const [ccExpiryFilter, setCcExpiryFilter] = useState('');
+const [ccIndustryFilter, setCcIndustryFilter] = useState(''); // Optional: if you want industry filter as well
+  
 
   // Initialize visible columns when report data is loaded
   useEffect(() => {
@@ -453,6 +457,7 @@ const Analysis = () => {
   const clearCcFilters = () => {
     setCcSearchTerm('');
     setCcCurrentPage(1);
+    setCcExpiryFilter(''); 
   };
 
   // Helper function to format column names for better display
@@ -567,13 +572,23 @@ const Analysis = () => {
     if (activeReport === REPORT_TYPES.COVERED_CALL) {
       return (
         <CoveredCallReport 
-          reportData={ccAnalysisData}
-          searchTerm={ccSearchTerm}
-          setSearchTerm={setCcSearchTerm}
-          currentPage={ccCurrentPage}
-          setCurrentPage={setCcCurrentPage}
-          itemsPerPage={ccItemsPerPage}
-        />
+  reportData={ccAnalysisData}
+  searchTerm={ccSearchTerm}
+  setSearchTerm={setCcSearchTerm}
+  currentPage={ccCurrentPage}
+  setCurrentPage={setCcCurrentPage}
+  itemsPerPage={ccItemsPerPage}
+  industryFilter={ccIndustryFilter}
+  setIndustryFilter={setCcIndustryFilter}
+  expiryFilter={ccExpiryFilter}
+  setExpiryFilter={setCcExpiryFilter}
+  onClearFilters={() => {
+    setCcSearchTerm('');
+    setCcExpiryFilter('');
+    setCcIndustryFilter('');
+    setCcCurrentPage(1);
+  }}
+/>
       );
     }
     
