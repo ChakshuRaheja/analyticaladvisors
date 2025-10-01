@@ -518,41 +518,6 @@ const Home = ({ faqOnly = false }) => {
       {/* Client Complaints Section */}
       <ClientComplaints />
 
-      {/* Blog section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
-              Stay Ahead in the Market
-            </h2>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
-              Track key movements in the Indian stock market. Insights, updates, and trends 
-              — all in one place.
-            </p>
-            <Link 
-              to="/blog" 
-              className="inline-flex items-center text-[#008080] font-semibold hover:text-[#006666] transition-colors group"
-            >
-              Market News
-              <svg 
-                className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24" 
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M14 5l7 7m0 0l-7 7m7-7H3" 
-                />
-              </svg>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
       <section id="faq" className="py-20 bg-white-50">
         <div className="container mx-auto px-4">

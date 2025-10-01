@@ -8,7 +8,6 @@ import { useNavigationBlock } from '../context/NavigationBlockContext';
 // Navbar links configuration
 const navLinks = [
   // { path: '/', text: 'Home' },
-  { path: '/about', text: 'About' },
   { path: '/portfolio-review', text: 'Portfolio Review' },
   { path: '/analysis', text: 'Analysis' },
   { path: '/subscription', text: 'Subscription' },
@@ -139,6 +138,9 @@ function Navbar() {
   const profileMenuRef = useRef(null);
   const servicesMenuRef = useRef(null);
   const { handleInterceptNavigation } = useNavigationBlock();
+  const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
+  const aboutMenuRef = useRef(null);
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
@@ -156,6 +158,9 @@ function Navbar() {
       }
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setProfileMenuOpen(false);
+      }
+      if (aboutMenuRef.current && !aboutMenuRef.current.contains(event.target)) {
+        setAboutMenuOpen(false);
       }
     };
 
@@ -190,6 +195,20 @@ function Navbar() {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
+    }
+  };
+
+  const handleAboutClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAboutMenuOpen(!aboutMenuOpen);
+  };
+
+  const handleAboutDropdownItemClick = (path) => {
+    const blocked = handleInterceptNavigation(path);
+    setAboutMenuOpen(false);
+    if (!blocked) {
+      navigate(path);
     }
   };
 
@@ -257,6 +276,62 @@ function Navbar() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
+              {/* about dropdown */}
+              <div className="relative" ref={aboutMenuRef}>
+                <motion.button
+                  onClick={() => setAboutMenuOpen((prev) => !prev)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  // className="flex items-center space-x-2 text-gray-700 hover:text-[#008080] focus:outline-none"
+                  className={`
+                    relative block py-2 px-4
+                    ${['/about', '/blog'].includes(location.pathname)
+                      ? 'text-[#008080] font-extrabold after:opacity-100'
+                      : 'text-gray-700 hover:text-[#008080] font-bold hover:after:opacity-100'
+                    }
+                    after:content-['']
+                    after:absolute
+                    after:ml-4
+                    after:-bottom-1
+                    after:w-[2ch]
+                    after:h-[2px]
+                    after:bg-[#008080]
+                    after:opacity-0
+                    after:transition-opacity
+                    after:duration-200
+                    flex items-center
+                    transition-colors duration-200 rounded-md
+                  `}
+                  >
+                    About
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className={`h-4 w-4 ml-1 transition-transform duration-200 ${aboutMenuOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </motion.button>
+                {aboutMenuOpen && (
+                  <div className="absolute left-0 mt-2 w-44 py-2 bg-white rounded-md shadow-xl z-50 border border-gray-100">
+                    <button 
+                      onClick={() => handleAboutDropdownItemClick('/about')}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
+                    >
+                      About Us
+                    </button>
+                    <button 
+                      onClick={() => handleAboutDropdownItemClick('/blog')}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
+                    >
+                      Blog
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {navLinks.map((link) => (
                 link.text === 'Services' ? (
                   <div key={link.path} className="relative" ref={servicesMenuRef}>
@@ -474,6 +549,32 @@ function Navbar() {
             </button>
           </div>
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3" onClick={(e) => e.stopPropagation()}>
+            <NavLink
+              key="/about"
+              path="/about"
+              text="About Us"
+              isActive={location.pathname === '/about'}
+              isMobile={true}
+              onClick={() => {
+                const blocked = handleInterceptNavigation('/about');
+                setDrawerOpen(false);
+                return blocked;
+              }}
+            />
+
+            <NavLink
+              key="/blog"
+              path="/blog"
+              text="Blog"
+              isActive={location.pathname === '/blog'}
+              isMobile={true}
+              onClick={() => {
+                const blocked = handleInterceptNavigation('/blog');
+                setDrawerOpen(false);
+                return blocked;
+              }}
+            />
+
             {navLinks.flatMap((link) => {
               if (link.path === '/services') {
                 // Special handling for 'Services' link in mobile view
