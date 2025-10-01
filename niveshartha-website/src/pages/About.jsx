@@ -33,6 +33,14 @@ const About = () => {
               <p className="text-gray-700 mb-10 text-center font-semibold text-xl italic">
                 "Can we make investing simpler, honest, and human?"
               </p>
+
+              <div className="flex-shrink-0 h-full rounded-2xl overflow-hidden shadow-2xl mx-10 my-10">
+                <img 
+                  src="/images/about_us_image.jpg" 
+                  alt="Our Trader" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
               
               <h3 className="text-2xl font-bold mb-4">The First Spark</h3>
               
