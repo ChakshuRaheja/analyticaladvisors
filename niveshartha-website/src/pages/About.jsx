@@ -34,12 +34,11 @@ const About = () => {
                 "Can we make investing simpler, honest, and human?"
               </p>
 
-              <div className="flex-shrink-0 h-full rounded-2xl overflow-hidden shadow-2xl mx-10 my-10">
-                <img 
-                  src="/images/about_us_image.jpg" 
-                  alt="Our Trader" 
-                  className="w-full h-full object-cover"
-                />
+              <div className="flex justify-center">
+                <img src="/images/about_us_image.jpg" 
+                alt="Our Trader" 
+                class="w-[58%] h-full object-cover flex-shrink-0 h-full rounded-2xl overflow-hidden shadow-2xl mx-10 my-10">
+                </img>
               </div>
               
               <h3 className="text-2xl font-bold mb-4">The First Spark</h3>

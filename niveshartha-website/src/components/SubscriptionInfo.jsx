@@ -157,8 +157,9 @@ const SubscriptionInfo = () => {
       <div className="space-y-6">
         {sortedSubscriptions.map((subscription) => {
           // Calculate days remaining
+          const startDate = new Date(subscription.startDate);
           const endDate = new Date(subscription.endDate);
-          const today = new Date();
+          const today = startDate > new Date() ? startDate : new Date();
           const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
           
           return (
