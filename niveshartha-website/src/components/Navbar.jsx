@@ -247,7 +247,7 @@ function Navbar() {
         }
       `}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-center items-center h-20">
             {/* Logo and Brand Name */}
             <div className="flex-shrink-0">
               <RouterLink
@@ -277,7 +277,7 @@ function Navbar() {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               {/* about dropdown */}
-              <div className="relative" ref={aboutMenuRef}>
+              <div className="relative ml-5" ref={aboutMenuRef}>
                 <motion.button
                   onClick={() => setAboutMenuOpen((prev) => !prev)}
                   whileHover={{ scale: 1.05 }}
@@ -494,7 +494,7 @@ function Navbar() {
                       className="text-white bg-[#008080] hover:bg-[#006666] hover:text-white px-4 py-2 rounded-md font-bold transition-all duration-300 shadow-md whitespace-nowrap"
 
                     >
-                      Start Free
+                      Sign Up
                     </RouterLink>
                   </motion.div>
                 </div>
