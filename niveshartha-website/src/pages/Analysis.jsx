@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import ScrollAnimation from '../components/ScrollAnimation';
 import IntrinsicValueTool from '../components/IntrinsicValueTool';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 import { 
   NFOMasterReport, 
@@ -81,6 +83,46 @@ const LoginPrompt = () => {
   );
 };
 
+const SubscriptionRequiredOverlay = ({ onSubscribe }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl text-center"
+      >
+        <div className="mb-6">
+          <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Premium Feature Locked</h2>
+          <p className="text-gray-600 mb-6">
+            Unlock the full potential of our DIY Stock Screener with a subscription. Get access to advanced analysis tools and insights.
+          </p>
+        </div>
+        
+        <div className="flex flex-col space-y-3">
+          <button
+            onClick={onSubscribe}
+            className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors w-full"
+          >
+            Subscribe Now
+          </button>
+          <Link 
+            to="/subscription"
+            className="px-6 py-3 bg-white text-indigo-600 font-medium rounded-lg border border-indigo-600 hover:bg-indigo-50 transition-colors w-full block"
+          >
+            View Plans
+          </Link>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+
 const Analysis = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -97,6 +139,8 @@ const Analysis = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const [hasDiySubscription, setHasDiySubscription] = useState(false);
+   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const itemsPerPage = 10;
   
   // Column selector state
@@ -128,10 +172,117 @@ const Analysis = () => {
   const [ccSearchTerm, setCcSearchTerm] = useState('');
   const [ccCurrentPage, setCcCurrentPage] = useState(1);
   const ccItemsPerPage = 10;
-  // Add these state variables
-const [ccExpiryFilter, setCcExpiryFilter] = useState('');
-const [ccIndustryFilter, setCcIndustryFilter] = useState(''); // Optional: if you want industry filter as well
+  const [ccExpiryFilter, setCcExpiryFilter] = useState('');
+  const [ccIndustryFilter, setCcIndustryFilter] = useState('');
   
+// Check subscription status when component mounts or user changes
+useEffect(() => {
+  const checkSubscription = async () => {
+    if (!currentUser) {
+      setHasDiySubscription(false);
+      setCheckingSubscription(false);
+      return;
+    }
+
+    try {
+      // First check if we have subscription data in the user object (from AuthContext)
+      if (currentUser.subscriptions) {
+        const hasActiveSubscription = currentUser.subscriptions.diyScreener === 'active' || 
+                                    currentUser.subscriptions.premium === 'active';
+        setHasDiySubscription(hasActiveSubscription);
+        setCheckingSubscription(false);
+        if (hasActiveSubscription) return; // Skip Firestore check if we already have a valid subscription
+      }
+
+      // Fallback to Firestore check if not in user object or no active subscription found
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        // Check both subscription formats (array and object)
+        if (userData.subscriptions && Array.isArray(userData.subscriptions)) {
+          const now = new Date();
+          const hasActiveSubscription = userData.subscriptions.some(sub => {
+            if (!sub) return false;
+            const endDate = sub.endDate?.toDate ? sub.endDate.toDate() : new Date(sub.endDate);
+            return (sub.planId === 'diy-screener' || sub.planId === 'premium') && endDate > now;
+          });
+          setHasDiySubscription(hasActiveSubscription);
+        } else if (userData.subscriptions && typeof userData.subscriptions === 'object') {
+          // Handle object format subscriptions
+          const hasActiveSubscription = userData.subscriptions.diyScreener === 'active' || 
+                                      userData.subscriptions.premium === 'active';
+          setHasDiySubscription(hasActiveSubscription);
+        } else {
+          setHasDiySubscription(false);
+        }
+      } else {
+        setHasDiySubscription(false);
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      // In production, you might want to block access on error
+      // In development, you might want to allow access for testing
+      setHasDiySubscription(process.env.NODE_ENV === 'development');
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
+
+  checkSubscription();
+  
+  // Set up a listener for real-time updates if user is authenticated
+  if (currentUser) {
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    
+    // Initial check
+    getDoc(userDocRef).then((doc) => {
+      if (doc.exists()) {
+        updateSubscriptionStatus(doc.data());
+      }
+    }).catch(console.error);
+    
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(userDocRef, (doc) => {
+      if (doc.exists()) {
+        updateSubscriptionStatus(doc.data());
+      }
+    }, (error) => {
+      console.error('Error in real-time subscription listener:', error);
+    });
+    
+    // Cleanup function
+    return () => unsubscribe();
+  }
+  
+  // Helper function to update subscription status
+  function updateSubscriptionStatus(userData) {
+    if (!userData.subscriptions) {
+      setHasDiySubscription(false);
+      return;
+    }
+    
+    if (Array.isArray(userData.subscriptions)) {
+      const now = new Date();
+      const hasActive = userData.subscriptions.some(sub => {
+        if (!sub) return false;
+        const endDate = sub.endDate?.toDate ? sub.endDate.toDate() : new Date(sub.endDate);
+        return (sub.planId === 'diy-screener' || sub.planId === 'premium') && endDate > now;
+      });
+      setHasDiySubscription(hasActive);
+    } else if (typeof userData.subscriptions === 'object') {
+      const hasActive = 
+        userData.subscriptions.diyScreener === 'active' || 
+        userData.subscriptions.premium === 'active';
+      setHasDiySubscription(hasActive);
+    } else {
+      setHasDiySubscription(false);
+    }
+  }
+}, [currentUser]);
+
+const handleSubscribeClick = () => {
+  navigate('/subscription#diy-screener');
+};
 
   // Initialize visible columns when report data is loaded
   useEffect(() => {
@@ -170,6 +321,7 @@ const [ccIndustryFilter, setCcIndustryFilter] = useState(''); // Optional: if yo
       setError(null);
       
       try {
+        
         if (activeReport === REPORT_TYPES.NFO_MASTER) {
           // Fetch data from the provided API with additional options
           const response = await fetch('https://analytics-advisor-backend-1-583205731005.us-central1.run.app/get_stocks_master', {
@@ -214,6 +366,7 @@ const [ccIndustryFilter, setCcIndustryFilter] = useState(''); // Optional: if yo
                   setReportData(formattedData);
                 }
               } 
+              
               // If data is a direct object
               else {
                 const formattedData = Object.keys(data).map(key => ({
@@ -634,19 +787,36 @@ const [ccIndustryFilter, setCcIndustryFilter] = useState(''); // Optional: if yo
     };
   }, []);
 
-  // Render the main component
+  if (checkingSubscription) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  // Determine if subscription overlay should be shown for Analysis page
+  // Show overlay if user is logged in but doesn't have an active subscription
+  const showSubscriptionOverlay = currentUser && !hasDiySubscription;
+  const showLoginPrompt = !currentUser;
+
   return (
-    <div className="min-h-screen bg-gray-50 relative flex flex-col">
-      {/* Authentication check - Show login prompt if not authenticated */}
-      {!currentUser && <LoginPrompt />}
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Show login prompt if not authenticated */}
+      {showLoginPrompt && <LoginPrompt />}
       
-      {/* Content with blur effect when not authenticated */}
-      <div className={`flex-1 flex flex-col ${!currentUser ? 'filter blur-[3px] pointer-events-none' : ''}`}>
+      {/* Show subscription overlay if subscription required */}
+      {showSubscriptionOverlay && <SubscriptionRequiredOverlay onSubscribe={handleSubscribeClick} />}
+      
+      {/* Content with blur effect when not authenticated or subscription required */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+        (showLoginPrompt || showSubscriptionOverlay) ? 'filter blur-[3px] pointer-events-none' : ''
+      }`}>
+      
         {/* Sidebar toggle button - visible on all screen sizes */}
         <div className={`fixed top-20 ${isSidebarOpen ? 'left-64' : 'left-4'} z-20 transition-all duration-300`}>
           <button
             onClick={toggleSidebar}
-            className="p-2 rounded-md bg-white shadow-md text-gray-700 hover:bg-gray-100"
             aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
             {isSidebarOpen ? (
@@ -725,32 +895,31 @@ const [ccIndustryFilter, setCcIndustryFilter] = useState(''); // Optional: if yo
 
         {/* Main content - adjusts width based on sidebar state */}
         <main 
-          className={`
-            transition-all duration-300 
-            ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'} 
-            pt-20 px-4 sm:px-6 lg:px-8 
-            flex-1 overflow-y-auto
-          `}
-          style={{
-            WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
-            scrollBehavior: 'smooth', // Smooth scrolling for modern browsers
-          }}
-        >
-          <div className={`mx-auto ${isSidebarOpen ? 'max-w-6xl' : 'max-w-full'}`}>
-            <div className="flex items-center justify-between mb-7">
-              {/* <h1 className="text-3xl px-12 font-bold">Cash Secure Put Analysis</h1> */}
-              <div className="text-sm text-gray-500 ml-auto">
-                Last updated: {(() => {
-                  const yesterday = new Date();
-                  yesterday.setDate(yesterday.getDate() - 1);
-                  return yesterday.toLocaleDateString('en-GB');
-                })()}
-              </div>
-            </div>
-            
-            {renderReportContent()}
-          </div>
-        </main>
+  className={`
+    transition-all duration-300 
+    ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'} 
+    pt-20 px-4 sm:px-6 lg:px-8 
+    flex-1 overflow-y-auto
+  `}
+  style={{
+    WebkitOverflowScrolling: 'touch',
+    scrollBehavior: 'smooth',
+  }}
+>
+  <div className={`mx-auto ${isSidebarOpen ? 'max-w-6xl' : 'max-w-full'}`}>
+    <div className="flex items-center justify-between mb-7">
+      <div className="text-sm text-gray-500 ml-auto">
+        Last updated: {(() => {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          return yesterday.toLocaleDateString('en-GB');
+        })()}
+      </div>
+    </div>
+    
+    {renderReportContent()}
+  </div>
+</main>
       </div>
     </div>
   );

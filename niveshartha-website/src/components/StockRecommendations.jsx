@@ -113,7 +113,7 @@ const SUBSCRIPTION_CONFIG = {
     endpoint: API_CONFIG.endpoints.swing_equity,
     color: 'blue',
     columns: [
-      { id: 'srNo', label: 'Sr. No', sortable: true },
+      // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
       { id: 'action', label: 'Action', sortable: true },
       { id: 'entryDate', label: 'Entry Date', sortable: true },
@@ -132,7 +132,7 @@ const SUBSCRIPTION_CONFIG = {
     endpoint: API_CONFIG.endpoints.swing_commodity,
     color: 'green',
     columns: [
-      { id: 'srNo', label: 'Sr. No', sortable: true },
+      // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'commodity', label: 'Commodity', sortable: true },
       { id: 'action', label: 'Action', sortable: true },
       { id: 'entryDate', label: 'Entry Date', sortable: true },
@@ -152,7 +152,7 @@ const SUBSCRIPTION_CONFIG = {
     endpoint: API_CONFIG.endpoints.equity_investing,
     color: 'purple',
     columns: [
-      { id: 'srNo', label: 'Sr. No', sortable: true },
+      // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
       { id: 'entryDate', label: 'Entry Date', sortable: true },
       { id: 'price', label: 'Price', sortable: true },
@@ -170,7 +170,7 @@ const SUBSCRIPTION_CONFIG = {
     endpoint: API_CONFIG.endpoints.stock_of_month,
     color: 'red',
     columns: [
-      { id: 'srNo', label: 'Sr. No', sortable: true },
+      // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
       { id: 'entryDate', label: 'Entry Date', sortable: true },
       { id: 'price', label: 'Price', sortable: true },
@@ -242,13 +242,14 @@ const StockRecommendations = ({ activeSubscriptions = [] }) => {
   const [isCheckingKyc, setIsCheckingKyc] = useState(true);
   const [showKycPopup, setShowKycPopup] = useState(false);
   const [esignStatus, setEsignStatus] = useState(null);
-const [isCheckingEsign, setIsCheckingEsign] = useState(false);
-const [showEsignPopup, setShowEsignPopup] = useState(false);
-const [kycStatusMessage, setKycStatusMessage] = useState('');
-const [showKycStatusPopup, setShowKycStatusPopup] = useState(false);
-const [esignStatusMessage, setEsignStatusMessage] = useState('');
-const [showEsignStatusPopup, setShowEsignStatusPopup] = useState(false);
-const [kycEsignCompleted, setKycEsignCompleted] = useState(false);
+  const [isCheckingEsign, setIsCheckingEsign] = useState(false);
+  const [showEsignPopup, setShowEsignPopup] = useState(false);
+  const [kycStatusMessage, setKycStatusMessage] = useState('');
+  const [showKycStatusPopup, setShowKycStatusPopup] = useState(false);
+  const [esignStatusMessage, setEsignStatusMessage] = useState('');
+  const [showEsignStatusPopup, setShowEsignStatusPopup] = useState(false);
+  const [kycEsignCompleted, setKycEsignCompleted] = useState(false);
+  const [userData, setUserData] = useState(null);
 
 
   // Use the activeSubscriptions prop passed from the parent component
@@ -352,9 +353,27 @@ useEffect(() => {
     }
   };
 
+  // Fetch user data when component mounts
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!currentUser) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          setUserData(userDoc.data());
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, [currentUser]);
+
   // Check KYC status when component mounts or user changes
-useEffect(() => {
-  const checkKycStatus = async () => {
+  useEffect(() => {
+    const checkKycStatus = async () => {
     if (!currentUser) {
       setIsCheckingKyc(false);
       return;
@@ -609,6 +628,12 @@ const initiateKYC = async () => {
         updatedAt: new Date().toISOString()
       });
       
+      // Refresh user data
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (userDoc.exists()) {
+        setUserData(userDoc.data());
+      }
+      
       setShowKycPopup(true);
       console.log('KYC initiated and stored in Firebase:', result.requestId);
     } else {
@@ -649,6 +674,12 @@ const handleInitiateEsign = async () => {
         updatedAt: new Date().toISOString()
       });
 
+      // Refresh user data
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (userDoc.exists()) {
+        setUserData(userDoc.data());
+      }
+
       setShowEsignPopup(true);
       console.log('eSign initiated and stored in Firebase:', result.requestId);
     } else {
@@ -673,18 +704,8 @@ const checkEsignStatusFromFirebase = async () => {
       console.log('No eSign data found in Firebase');
       setEsignStatus('not_started');
       setIsCheckingEsign(false);
-      return;
+      return 'not_started';
     }
-    // Add this code when both KYC and eSign are verified
-if (kycStatus === 'verified' && esignStatus === 'verified') {
-  const userRef = doc(db, 'users', currentUser.uid);
-  await updateDoc(userRef, {
-    kycEsignCompleted: true,
-    kycEsignCompletedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
-  setKycEsignCompleted(true);
-}
 
     // Use stored requestId for verification
     const result = await verifyEsignStatus(esignData.requestId);
@@ -707,7 +728,6 @@ if (kycStatus === 'verified' && esignStatus === 'verified') {
         ...esignData,
         status: status,
         lastChecked: new Date().toISOString(),
-        // Store the complete response for debugging
         lastResponse: result
       },
       esignStatus: status,
@@ -715,11 +735,30 @@ if (kycStatus === 'verified' && esignStatus === 'verified') {
     });
 
     setEsignStatus(status);
+    
+    // Set the status message
+    if (status === 'verified') {
+      setEsignStatusMessage('eSign verification completed successfully! Your stock recommendations are now unlocked.');
+      // Update KYC eSign completion status if both are verified
+      if (kycStatus === 'verified') {
+        await updateDoc(userRef, {
+          kycEsignCompleted: true,
+          kycEsignCompletedAt: new Date().toISOString()
+        });
+        setKycEsignCompleted(true);
+      }
+    } else {
+      setEsignStatusMessage('Your eSign verification is still pending. Please check your email and complete the signing process using the link we sent you.');
+    }
+    
     console.log('eSign status updated to:', status);
+    return status;
 
   } catch (error) {
     console.error('eSign status check failed:', error);
     setEsignStatus('pending');
+    setEsignStatusMessage('Unable to check eSign status. Please try again.');
+    return 'error';
   } finally {
     setIsCheckingEsign(false);
   }
@@ -1246,64 +1285,56 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
           </p>
           
           <div className="space-y-4">
-            <button
-              onClick={initiateKYC}
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-            >
-              Start KYC Verification
-            </button>
-            
-            <button
-  onClick={async () => {
-    try {
-      console.log('🔍 [DEBUG] Check Verification Status clicked');
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      const userData = userDoc.exists() ? userDoc.data() : {};
-      const kycData = userData.kycData;
-      
-      console.log('🔍 [DEBUG] Full user data:', userData);
-      console.log('🔍 [DEBUG] KYC data:', kycData);
-      console.log('🔍 [DEBUG] KYC data keys:', kycData ? Object.keys(kycData) : 'No KYC data');
-      console.log('🔍 [DEBUG] requestId value:', kycData?.requestId);
-      console.log('🔍 [DEBUG] Available fields:', kycData ? Object.keys(kycData).join(', ') : 'No fields');
-      await checkKycStatusFromFirebase();
-      console.log('🔍 [DEBUG] After status check, kycStatus:', kycStatus);
-      
-      // Check if KYC is still not verified after status check
-      if (kycStatus !== 'verified') {
-        console.log('🔍 [DEBUG] KYC not verified, showing popup');
-        if (kycStatus === 'not_started') {
-          setKycStatusMessage('Please start KYC verification first. Click "Start KYC Verification" to begin the process.');
-        } else if (kycStatus === 'pending') {
-          setKycStatusMessage('Your KYC verification is still in progress. Please complete the verification process using the link sent to your email.');
-        }
-        setShowKycStatusPopup(true);
-      } else {
-        console.log('🔍 [DEBUG] KYC is verified, showing success');
-        // KYC is verified, show success and move to eSign
-        setKycStatusMessage('KYC verification completed successfully! Please complete eSign verification to access your recommendations.');
-        setShowKycStatusPopup(true);
-        // Trigger eSign status check
-        setTimeout(() => {
-          checkEsignStatusFromFirebase();
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('🔍 [DEBUG] Error in status check:', error);
-      setKycStatusMessage('Unable to check KYC status. Please try again.');
-      setShowKycStatusPopup(true);
-    }
-  }}
-  className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
->
-  Check Verification Status
-</button>
+            {!userData?.kycData?.requestId ? (
+              <button
+                onClick={initiateKYC}
+                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Start KYC Verification
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🔍 [DEBUG] Check Verification Status clicked');
+                    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                    const userData = userDoc.exists() ? userDoc.data() : {};
+                    const kycData = userData.kycData;
+                    
+                    console.log('🔍 [DEBUG] Full user data:', userData);
+                    console.log('🔍 [DEBUG] KYC data:', kycData);
+                    await checkKycStatusFromFirebase();
+                    
+                    if (kycStatus === 'pending') {
+                      setKycStatusMessage('Your KYC verification is still in progress. Please complete the verification process using the link sent to your email.');
+                      setShowKycStatusPopup(true);
+                    } else if (kycStatus === 'verified') {
+                      setKycStatusMessage('KYC verification completed successfully! Please complete eSign verification to access your recommendations.');
+                      setShowKycStatusPopup(true);
+                      // Trigger eSign status check
+                      setTimeout(() => {
+                        checkEsignStatusFromFirebase();
+                      }, 2000);
+                    }
+                  } catch (error) {
+                    console.error('🔍 [DEBUG] Error in status check:', error);
+                    setKycStatusMessage('Unable to check KYC status. Please try again.');
+                    setShowKycStatusPopup(true);
+                  }
+                }}
+                className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+              >
+                Proceed to Esign verification 
+              </button>
+            )}
             
           </div>
           
-          <p className="text-sm text-gray-500 mt-6">
-            KYC verification link has been sent to your email. Please check your inbox and complete the process.
-          </p>
+          {userData?.kycData?.requestId && (
+            <p className="text-sm text-gray-500 mt-6">
+              KYC verification link has been sent to your email. Please check your inbox and complete the process.
+            </p>
+          )}
         </div>
       </div>
       
@@ -1332,54 +1363,31 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
         </div>
       )}
       {/* KYC Status Popup */}
-{showKycStatusPopup && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-      <div className="text-center">
-        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-          <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+      {showKycStatusPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">KYC Status Update</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                {kycStatusMessage}
+              </p>
+              <button
+                onClick={() => setShowKycStatusPopup(false)}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">KYC Status Update</h3>
-        <p className="text-sm text-gray-500 mb-6">
-          {kycStatusMessage}
-        </p>
-        <button
-          onClick={() => setShowKycStatusPopup(false)}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-        >
-          Got it!
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
-{/* eSign Status Popup */}
-{showEsignStatusPopup && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-      <div className="text-center">
-        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-          <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">eSign Status Update</h3>
-        <p className="text-sm text-gray-500 mb-6">
-          {esignStatusMessage}
-        </p>
-        <button
-          onClick={() => setShowEsignStatusPopup(false)}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-        >
-          Got it!
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      {/* eSign Status Popup - Removed duplicate popup */}
     </div>
   );
 }
@@ -1403,46 +1411,74 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
           </p>
           
           <div className="space-y-4">
-            <button
-              onClick={handleInitiateEsign}
-              className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-            >
-              Start eSign Verification
-            </button>
-            
-            <button
-  onClick={async () => {
-    try {
-      await checkEsignStatusFromFirebase();
-      
-      // Check if eSign is still not verified after status check
-      if (esignStatus !== 'verified') {
-        if (esignStatus === 'not_started') {
-          setEsignStatusMessage('Please start eSign verification first. Click "Start eSign Verification" to begin the process.');
-        } else if (esignStatus === 'pending') {
-          setEsignStatusMessage('Your eSign verification is still in progress. Please complete the signing process using the link sent to your email.');
-        }
-        setShowEsignStatusPopup(true);
-      } else {
-        // eSign is verified, show success
-        setEsignStatusMessage('eSign verification completed successfully! Your stock recommendations are now unlocked.');
-        setShowEsignStatusPopup(true);
-      }
-    } catch (error) {
-      setEsignStatusMessage('Unable to check eSign status. Please try again.');
-      setShowEsignStatusPopup(true);
-    }
-  }}
-  className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
->
-  Check eSign Status
-</button>
+            {!userData?.esignData?.requestId ? (
+              <button
+                onClick={handleInitiateEsign}
+                className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+              >
+                Start eSign Verification
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('Button clicked. Current state before check:', { 
+                      showEsignStatusPopup, 
+                      esignStatus,
+                      esignStatusMessage 
+                    });
+                    console.log('Calling checkEsignStatusFromFirebase...');
+                    const status = await checkEsignStatusFromFirebase();
+                    console.log('Received status from checkEsignStatusFromFirebase:', status);
+                    
+                    // Set appropriate status message based on the returned status
+                    if (status === 'verified') {
+                      setEsignStatusMessage('eSign verification completed successfully! Your stock recommendations are now unlocked.');
+                    } else if (status === 'pending') {
+                      setEsignStatusMessage('Your eSign verification is still pending. Please check your email and complete the signing process using the link we sent you.');
+                    } else {
+                      setEsignStatusMessage('Please complete the eSign verification to access your recommendations.');
+                    }
+                    
+                    // Make sure the popup is shown
+                    console.log('Status from checkEsignStatusFromFirebase:', status);
+                    console.log('Current state before update:', {
+                      currentEsignStatus: esignStatus,
+                      currentMessage: esignStatusMessage,
+                      currentShowPopup: showEsignStatusPopup
+                    });
+                    
+                    // Force update the state to ensure the popup is shown
+                    console.log('Setting showEsignStatusPopup to true and updating message');
+                    setShowEsignStatusPopup(true);
+                    
+                    // Log after state update (this will show in the next render)
+                    setTimeout(() => {
+                      console.log('State after update (in timeout):', {
+                        esignStatus,
+                        esignStatusMessage,
+                        showEsignStatusPopup
+                      });
+                    }, 0);
+                  } catch (error) {
+                    console.error('Error checking eSign status:', error);
+                    setEsignStatusMessage('Unable to check eSign status. Please try again.');
+                    setShowEsignStatusPopup(true);
+                  }
+                }}
+                className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+              >
+                Proceed to Recommendations
+              </button>
+            )}
             
           </div>
           
-          <p className="text-sm text-gray-500 mt-6">
-            eSign verification link has been sent to your email. Please check your inbox and complete the process.
-          </p>
+          {userData?.esignData?.requestId && (
+            <p className="text-sm text-gray-500 mt-6">
+              eSign verification link has been sent to your email. Please check your inbox and complete the process.
+            </p>
+          )}
         </div>
       </div>
       
@@ -1478,14 +1514,47 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
 
   const subsToDisplay = activeSubs.length > 0 ? activeSubs : (activeTab ? [activeTab] : []);
 
+  console.log('Rendering component. showEsignStatusPopup:', showEsignStatusPopup, 'esignStatusMessage:', esignStatusMessage);
+  
   return (
-    <div className="container mx-auto px-4 py-8 pt-20">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Stock Recommendations</h1>
-        <p className="text-gray-600 mt-2">
-          View and analyze  recommendations across your subscription plans.
-        </p>
-      </div>
+    <>
+      {/* eSign Status Popup - Moved to root level */}
+      {showEsignStatusPopup && (
+        <div style={{ position: 'fixed', top: '10px', left: '10px', zIndex: 9999, background: 'red', color: 'white', padding: '10px' }}>
+          Debug: Popup should be visible
+        </div>
+      )}
+      {showEsignStatusPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">eSign Status Update</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                {esignStatusMessage}
+              </p>
+              <button
+                onClick={() => setShowEsignStatusPopup(false)}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="container mx-auto px-4 py-8 pt-20">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Stock Recommendations</h1>
+          <p className="text-gray-600 mt-2">
+            View and analyze recommendations across your subscription plans.
+          </p>
+        </div>
 
       {subsToDisplay.length > 0 ? (
         <div>
@@ -1538,7 +1607,8 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
