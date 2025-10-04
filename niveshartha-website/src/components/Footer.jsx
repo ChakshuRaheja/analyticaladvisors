@@ -57,7 +57,7 @@ const Footer = () => {
                 <button onClick={() => handleInterceptNavigation('/about')} className="text-gray-400 hover:text-white transition-colors">About Us</button>
               </li>
               <li>
-                <button onClick={() => handleInterceptNavigation('/subscription')} className="text-gray-400 hover:text-white transition-colors">Subscription</button>
+                <button onClick={() => handleInterceptNavigation('/subscription')} className="text-gray-400 hover:text-white transition-colors">Subscriptions</button>
               </li>
               <li>
                 <button onClick={() => handleInterceptNavigation('/contact')} className="text-gray-400 hover:text-white transition-colors">Contact Us</button>
