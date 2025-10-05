@@ -4,7 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import ScrollAnimation from '../components/ScrollAnimation';
 import IntrinsicValueTool from '../components/IntrinsicValueTool';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  onSnapshot, 
+  collection, 
+  query, 
+  where, 
+  getDocs 
+} from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 import { 
@@ -126,6 +134,7 @@ const SubscriptionRequiredOverlay = ({ onSubscribe }) => {
 const Analysis = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
   const [activeTab, setActiveTab] = useState('reports');
   const [activeReport, setActiveReport] = useState(REPORT_TYPES.NFO_MASTER);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -174,109 +183,164 @@ const Analysis = () => {
   const ccItemsPerPage = 10;
   const [ccExpiryFilter, setCcExpiryFilter] = useState('');
   const [ccIndustryFilter, setCcIndustryFilter] = useState('');
-  
-// Check subscription status when component mounts or user changes
-useEffect(() => {
-  const checkSubscription = async () => {
-    if (!currentUser) {
-      setHasDiySubscription(false);
-      setCheckingSubscription(false);
-      return;
-    }
-
-    try {
-      // First check if we have subscription data in the user object (from AuthContext)
-      if (currentUser.subscriptions) {
-        const hasActiveSubscription = currentUser.subscriptions.diyScreener === 'active' || 
-                                    currentUser.subscriptions.premium === 'active';
-        setHasDiySubscription(hasActiveSubscription);
-        setCheckingSubscription(false);
-        if (hasActiveSubscription) return; // Skip Firestore check if we already have a valid subscription
-      }
-
-      // Fallback to Firestore check if not in user object or no active subscription found
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        // Check both subscription formats (array and object)
-        if (userData.subscriptions && Array.isArray(userData.subscriptions)) {
-          const now = new Date();
-          const hasActiveSubscription = userData.subscriptions.some(sub => {
-            if (!sub) return false;
-            const endDate = sub.endDate?.toDate ? sub.endDate.toDate() : new Date(sub.endDate);
-            return (sub.planId === 'diy-screener' || sub.planId === 'premium') && endDate > now;
-          });
-          setHasDiySubscription(hasActiveSubscription);
-        } else if (userData.subscriptions && typeof userData.subscriptions === 'object') {
-          // Handle object format subscriptions
-          const hasActiveSubscription = userData.subscriptions.diyScreener === 'active' || 
-                                      userData.subscriptions.premium === 'active';
-          setHasDiySubscription(hasActiveSubscription);
-        } else {
-          setHasDiySubscription(false);
-        }
-      } else {
+  // Check subscription status when component mounts or user changes
+  useEffect(() => {
+    const checkSubscription = async () => {
+      console.log('Starting subscription check...');
+      if (!currentUser) {
+        console.log('No user logged in, setting hasDiySubscription to false');
         setHasDiySubscription(false);
+        setCheckingSubscription(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-      // In production, you might want to block access on error
-      // In development, you might want to allow access for testing
-      setHasDiySubscription(process.env.NODE_ENV === 'development');
-    } finally {
-      setCheckingSubscription(false);
-    }
-  };
 
-  checkSubscription();
-  
-  // Set up a listener for real-time updates if user is authenticated
-  if (currentUser) {
-    const userDocRef = doc(db, 'users', currentUser.uid);
-    
-    // Initial check
-    getDoc(userDocRef).then((doc) => {
-      if (doc.exists()) {
-        updateSubscriptionStatus(doc.data());
+      try {
+        console.log('Checking for active DIY Stock Screener subscription for user:', currentUser.uid);
+        
+        // First check the user document for subscription info
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          console.log('User data from Firestore:', userData);
+          
+          // Check if user has active subscription in user document
+          if (userData.subscriptions) {
+            const hasActive = userData.subscriptions.diyScreener === 'active' || 
+                            userData.subscriptions.premium === 'active';
+            console.log('Subscription status from user document:', hasActive);
+            setHasDiySubscription(hasActive);
+            if (hasActive) {
+              setCheckingSubscription(false);
+              return; // Exit early if we found an active subscription
+            }
+          }
+        }
+        
+        // If no subscription found in user document, check the subscriptions collection
+        const subscriptionsRef = collection(db, 'subscriptions');
+        const q = query(
+          subscriptionsRef,
+          where('userId', '==', currentUser.uid),
+          where('planName', 'in', ['DIY Stock Screener', 'Premium']),
+          where('status', '==', 'active'),
+          where('endDate', '>', new Date())
+        );
+
+        const querySnapshot = await getDocs(q);
+        console.log('Found', querySnapshot.size, 'active subscriptions');
+        
+        const hasActiveSubscription = !querySnapshot.empty;
+        console.log('Has active subscription from subscriptions collection:', hasActiveSubscription);
+        
+        setHasDiySubscription(hasActiveSubscription);
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+        // In production, default to false to block access
+        setHasDiySubscription(process.env.NODE_ENV === 'development');
+      } finally {
+        setCheckingSubscription(false);
       }
-    }).catch(console.error);
+    };
+
+    checkSubscription();
     
-    // Set up real-time listener
-    const unsubscribe = onSnapshot(userDocRef, (doc) => {
-      if (doc.exists()) {
-        updateSubscriptionStatus(doc.data());
-      }
-    }, (error) => {
-      console.error('Error in real-time subscription listener:', error);
-    });
-    
-    // Cleanup function
-    return () => unsubscribe();
-  }
+    // Set up a real-time listener for subscription updates
+    if (currentUser) {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const userUnsubscribe = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+          const userData = doc.data();
+          if (userData.subscriptions) {
+            const hasActive = userData.subscriptions.diyScreener === 'active' || 
+                            userData.subscriptions.premium === 'active';
+            console.log('Real-time update from user document:', hasActive);
+            setHasDiySubscription(hasActive);
+          }
+        }
+      });
+      
+      const subscriptionsRef = collection(db, 'subscriptions');
+      const q = query(
+        subscriptionsRef,
+        where('userId', '==', currentUser.uid),
+        where('planName', 'in', ['DIY Stock Screener', 'Premium']),
+        where('status', '==', 'active'),
+        where('endDate', '>', new Date())
+      );
+
+      const subscriptionUnsubscribe = onSnapshot(q, (querySnapshot) => {
+        const hasActive = !querySnapshot.empty;
+        console.log('Real-time update from subscriptions collection:', hasActive);
+        setHasDiySubscription(hasActive);
+      }, (error) => {
+        console.error('Error in subscription listener:', error);
+      });
+
+      // Clean up both listeners
+      return () => {
+        userUnsubscribe();
+        subscriptionUnsubscribe();
+      };
+    }
   
   // Helper function to update subscription status
   function updateSubscriptionStatus(userData) {
-    if (!userData.subscriptions) {
-      setHasDiySubscription(false);
-      return;
+    console.log('Updating subscription status with data:', userData);
+    
+    // Check for subscriptions in the root level (for older format)
+    if (userData.subscriptions) {
+      if (Array.isArray(userData.subscriptions)) {
+        const now = new Date();
+        const hasActive = userData.subscriptions.some(sub => {
+          if (!sub) return false;
+          try {
+            const endDate = sub.endDate?.toDate ? sub.endDate.toDate() : new Date(sub.endDate);
+            const isValid = (sub.planId === 'diy-screener' || sub.planId === 'premium') && endDate > now;
+            console.log(`Subscription check - Plan: ${sub.planId}, End Date: ${endDate}, Is Valid: ${isValid}`);
+            return isValid;
+          } catch (error) {
+            console.error('Error processing subscription:', { sub, error });
+            return false;
+          }
+        });
+        console.log('Has active subscription (array check):', hasActive);
+        setHasDiySubscription(hasActive);
+        return;
+      } else if (typeof userData.subscriptions === 'object') {
+        const hasActive = 
+          userData.subscriptions.diyScreener === 'active' || 
+          userData.subscriptions.premium === 'active';
+        console.log('Has active subscription (object check):', hasActive);
+        setHasDiySubscription(hasActive);
+        return;
+      }
     }
     
-    if (Array.isArray(userData.subscriptions)) {
-      const now = new Date();
-      const hasActive = userData.subscriptions.some(sub => {
-        if (!sub) return false;
-        const endDate = sub.endDate?.toDate ? sub.endDate.toDate() : new Date(sub.endDate);
-        return (sub.planId === 'diy-screener' || sub.planId === 'premium') && endDate > now;
-      });
-      setHasDiySubscription(hasActive);
-    } else if (typeof userData.subscriptions === 'object') {
-      const hasActive = 
-        userData.subscriptions.diyScreener === 'active' || 
-        userData.subscriptions.premium === 'active';
-      setHasDiySubscription(hasActive);
-    } else {
-      setHasDiySubscription(false);
+    // Check for subscription data in the root level (new format)
+    if (userData.planId === 'diy-screener' || userData.planId === 'premium') {
+      try {
+        const now = new Date();
+        const endDate = userData.endDate?.toDate ? userData.endDate.toDate() : new Date(userData.endDate);
+        const isActive = userData.status === 'active' && endDate > now;
+        
+        console.log('Subscription check (root level):', {
+          planId: userData.planId,
+          status: userData.status,
+          endDate,
+          currentTime: now,
+          isActive
+        });
+        
+        setHasDiySubscription(isActive);
+        return;
+      } catch (error) {
+        console.error('Error processing root level subscription:', error);
+      }
     }
+    
+    // If we get here, no valid subscription was found
+    console.log('No active subscription found in user data');
+    setHasDiySubscription(false);
   }
 }, [currentUser]);
 
@@ -776,6 +840,19 @@ const handleSubscribeClick = () => {
     );
   };
 
+  // Show subscription overlay if user is logged in but doesn't have subscription
+  useEffect(() => {
+    const shouldShowOverlay = currentUser && !checkingSubscription && !hasDiySubscription;
+    console.log('Subscription overlay check:', { 
+      hasUser: !!currentUser, 
+      checkingSubscription, 
+      hasDiySubscription,
+      showOverlay: shouldShowOverlay
+    });
+    
+    setShowSubscriptionOverlay(!!shouldShowOverlay);
+  }, [currentUser, checkingSubscription, hasDiySubscription]);
+
   // Fix body scrolling when component mounts/unmounts
   useEffect(() => {
     // Enable body scrolling when component mounts
@@ -787,31 +864,23 @@ const handleSubscribeClick = () => {
     };
   }, []);
 
-  if (checkingSubscription) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  // Determine if subscription overlay should be shown for Analysis page
-  // Show overlay if user is logged in but doesn't have an active subscription
-  const showSubscriptionOverlay = currentUser && !hasDiySubscription;
-  const showLoginPrompt = !currentUser;
-
   return (
-    <div className="min-h-screen bg-gray-50 relative">
-      {/* Show login prompt if not authenticated */}
-      {showLoginPrompt && <LoginPrompt />}
+    <div className="min-h-screen bg-gray-50">
+      {/* Show login prompt if user is not logged in */}
+      {!currentUser && <LoginPrompt />}
       
-      {/* Show subscription overlay if subscription required */}
+      {/* Show loading spinner while checking subscription */}
+      {checkingSubscription && (
+        <div className="fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+        </div>
+      )}
+      
+      {/* Show subscription overlay if subscription is required */}
       {showSubscriptionOverlay && <SubscriptionRequiredOverlay onSubscribe={handleSubscribeClick} />}
       
-      {/* Content with blur effect when not authenticated or subscription required */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${
-        (showLoginPrompt || showSubscriptionOverlay) ? 'filter blur-[3px] pointer-events-none' : ''
-      }`}>
+      {/* Main content with blur effect when subscription is required */}
+      <div className={`transition-all duration-300 ${showSubscriptionOverlay ? 'filter blur-sm' : ''}`}>
       
         {/* Sidebar toggle button - visible on all screen sizes */}
         <div className={`fixed top-20 ${isSidebarOpen ? 'left-64' : 'left-4'} z-20 transition-all duration-300`}>

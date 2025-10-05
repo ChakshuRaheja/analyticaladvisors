@@ -668,8 +668,14 @@ try {
 
       
 // Redirect to stock recommendations page after successful payment
-            console.log('Payment successful, redirecting to stock recommendations...');
-         navigate('/stock-recommendations');
+        // Redirect based on plan type
+if (plan.id === 'diy-screener') {
+  console.log('Payment successful, redirecting to Analysis page...');
+  navigate('/analysis');
+} else {
+  console.log('Payment successful, redirecting to stock recommendations...');
+  navigate('/stock-recommendations');
+}
     } catch (error) {
       console.error('Error saving subscription:', error);
       setError('Payment successful but failed to activate subscription. Please contact support.');
