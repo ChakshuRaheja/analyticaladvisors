@@ -627,10 +627,13 @@ function Navbar() {
                 text="Settings"
                 isActive={location.pathname === '/settings'}
                 isMobile={true}
-                onClick={() => {
+                onClick={(e) => {
+                      e.preventDefault();
                       const blocked = handleInterceptNavigation('/settings');
                       setDrawerOpen(false);
-                      return blocked;
+                      if (!blocked) {
+                        navigate('/settings');
+                      }
                     }}
               />
             )}
