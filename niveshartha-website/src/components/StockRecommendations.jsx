@@ -1281,7 +1281,7 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
           
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete KYC Verification</h2>
           <p className="text-gray-600 mb-12">
-            To access your stock recommendations, please complete the KYC (Know Your Customer) verification process.
+            To access your recommendations, please complete the KYC (Know Your Customer) verification process.
           </p>
           
           <div className="space-y-4">
@@ -1518,12 +1518,6 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
   
   return (
     <>
-      {/* eSign Status Popup - Moved to root level */}
-      {showEsignStatusPopup && (
-        <div style={{ position: 'fixed', top: '10px', left: '10px', zIndex: 9999, background: 'red', color: 'white', padding: '10px' }}>
-          Debug: Popup should be visible
-        </div>
-      )}
       {showEsignStatusPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
@@ -1548,9 +1542,9 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
         </div>
       )}
       
-      <div className="container mx-auto px-4 py-8 pt-20">
+      <div className="container mx-auto px-4 py-72 pt-20">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Stock Recommendations</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Recommendations</h1>
           <p className="text-gray-600 mt-2">
             View and analyze recommendations across your subscription plans.
           </p>

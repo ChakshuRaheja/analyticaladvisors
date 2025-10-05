@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi';
 import {  
@@ -35,6 +35,13 @@ const SignUp = () => {
       acceptedTerms: false
     };
   };
+
+  const hasFatalErrorRef = useRef(false);
+
+  const errorShownRef = useRef({
+    'auth/invalid-phone-number': false,
+    'auth/too-many-requests': false,
+  });
   
   const [formData, setFormData] = useState(loadFormData());
   const [error, setError] = useState({ message: '', isError: true });
@@ -108,10 +115,78 @@ const SignUp = () => {
     };
   }, [location.pathname]);
 
+  const setupRecaptcha = async () => {
+    const recaptchaWrapper = document.getElementById("recaptcha-wrapper");
+    
+    if (!recaptchaWrapper) {
+      throw new Error("Recaptcha wrapper not found");
+    }
+
+    // Clear old recaptcha if any
+    recaptchaWrapper.innerHTML = "";
+
+    // Create a unique container id
+    const containerId = `recaptcha-container${Math.floor(Math.random() * 1000000)}`;
+    const newContainer = document.createElement("div");
+    newContainer.id = containerId;
+    recaptchaWrapper.appendChild(newContainer);
+
+    // Create new verifier
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+      size: "invisible",
+      callback: () => console.log("reCAPTCHA solved"),
+      "expired-callback": () => {
+        toast.warning("Session expired. Please send the OTP again.", {
+          position: "top-center",
+          autoClose: 5000,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      },
+    });
+
+    try {
+      await window.recaptchaVerifier.render();
+      console.log("setupRecaptcha: verifier rendered successfully", window.recaptchaVerifier);
+    } catch (renderErr) {
+      console.error("Error rendering reCAPTCHA:", renderErr);
+      if (!renderErr.message?.includes("already been rendered")) {
+        throw renderErr;
+      }
+    }
+
+    return window.recaptchaVerifier;
+  };
+
+
   useEffect(() => {
-    // Clear any existing reCAPTCHA verifier
-    window.recaptchaVerifier = null;
+    return () => {
+      if (window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.warn('Error clearing recaptcha on cleanup:', e);
+        }
+        window.recaptchaVerifier = null;
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    if (currentStep === 1 && window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier.clear();
+      } catch (e) {
+        console.warn('Error clearing recaptcha when going back:', e);
+      }
+      window.recaptchaVerifier = null;
+      
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (recaptchaContainer) {
+        recaptchaContainer.innerHTML = '';
+      }
+    }
+  }, [currentStep]);
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -155,40 +230,25 @@ const SignUp = () => {
 
   useEffect(()=> {
     let timeoutId;
+
     const autoSendOTP = async (e) => {
-  
       if (currentStep === 2 && !otpSent && !loading && !otpAutoSentOnce){
+
         try {
-          setError({ message: '', isError: true });
+          setError({ message: '', isError: false });
           setLoading(true);
           // Format phone number
           const formattedPhoneNumber = formData.phone.startsWith('+') ? formData.phone : `+91${formData.phone}`;
-          
-          // Clear any existing reCAPTCHA verifier
+          const recaptchaContainer = document.getElementById('recaptcha-container');
+
           if (!window.recaptchaVerifier) {
-            // Setup new reCAPTCHA verifier
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-              'size': 'invisible',
-              'callback': () => {
-                console.log('reCAPTCHA solved');
-              },
-              'expired-callback': () => {
-                toast.warning('Session expired. Please send the OTP again.', {
-                position: "top-center",
-                autoClose: 5000,
-                pauseOnHover: true,
-                draggable: true,
-              });
-                console.warn('reCAPTCHA expired');
-              }
-            });
-            
-            await window.recaptchaVerifier.render();
+            await setupRecaptcha();
           }
     
           // Get the reCAPTCHA verifier
           const appVerifier = window.recaptchaVerifier;
-          
+          console.log("autoSendOTP: using verifier:", appVerifier);
+          console.log("autoSendOTP: formatted phone:", formattedPhoneNumber);
           // Send OTP
           const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
           setVerificationId(confirmation.verificationId);
@@ -205,24 +265,45 @@ const SignUp = () => {
           } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Too many attempts. Please try again later.';
           }
-          // toast.error(`Verification Error: ${errorMessage}`, {
-          //   position: "top-center",
-          //   autoClose: 5000,
-          //   pauseOnHover: true,
-          //   draggable: true,
-          // });
-          setError(errorMessage, true);
+          if (!errorShownRef.current[error.code]) {
+            toast.error(`Verification Error: ${errorMessage}`, {
+              position: "top-center",
+              autoClose: 7000,
+              pauseOnHover: true,
+              draggable: true,
+            });
+            errorShownRef.current[error.code] = true;
+          }
+          setError({ message: errorMessage, isError: true });
+
+          if (window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') {
+            try {
+              window.recaptchaVerifier.clear();
+            } catch (e) {
+              console.warn('Error clearing recaptcha after error:', e);
+            }
+            window.recaptchaVerifier = null;
+          }
+          const recaptchaContainer = document.getElementById('recaptcha-container');
+          if (recaptchaContainer) {
+            recaptchaContainer.innerHTML = '';
+          }
+          
+          // Go back to step 1 to re-enter phone number
+          setCurrentStep(1);
         } finally {
           setLoading(false);
         }
       }
     };
     
-    if (!otpAutoSentOnce) {
+    if (!otpAutoSentOnce && currentStep === 2) {
       timeoutId = setTimeout(autoSendOTP, 1000);
     }
-    return () => clearTimeout(timeoutId);
-  }, [currentStep, otpSent, loading, formData.phone])
+    return () => {
+      clearTimeout(timeoutId);
+    }
+  }, [currentStep, otpSent, loading, formData.phone, otpAutoSentOnce])
 
   const handleResendOTP = async () => {
     if (otpResentOnce) return;
@@ -234,22 +315,7 @@ const SignUp = () => {
       // Format phone
       const formattedPhoneNumber = formData.phone.startsWith('+') ? formData.phone : `+91${formData.phone}`;
 
-      if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-          callback: () => console.log('reCAPTCHA solved'),
-          'expired-callback': () => {
-            toast.warning('Session expired. Please send the OTP again.', {
-              position: "top-center",
-              autoClose: 5000,
-              pauseOnHover: true,
-              draggable: true,
-            });
-          },
-        });
-
-        await window.recaptchaVerifier.render(); // Only render if it's new
-      }
+      await setupRecaptcha();
 
       const appVerifier = window.recaptchaVerifier;
       const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
@@ -476,6 +542,12 @@ const SignUp = () => {
       } else if (phoneExists) {
         throw new Error('This phone number is already registered');
       }
+
+      setOtpAutoSentOnce(false);
+      setOtpResentOnce(false);
+      setOtpSent(false);
+      setOtp('');
+      setVerificationId('');
       
       // If no duplicates, proceed to OTP verification
       setCurrentStep(2);
@@ -620,7 +692,13 @@ const SignUp = () => {
                       type="text"
                       placeholder={"Enter 6-digit code" }
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // Allow only digits and limit to 6 characters
+                        if (/^\d{0,6}$/.test(val)) {
+                          setOtp(val);
+                        }
+                      }}
                       disabled={!otpSent}
                       required
                     />
@@ -829,9 +907,9 @@ const SignUp = () => {
           </div>
         </ScrollAnimation>
       </div>
-
-      {/* Hidden reCAPTCHA container */}
-      <div id="recaptcha-container"></div>
+      <div id="recaptcha-wrapper">
+        <div id="recaptcha-container" />
+      </div>
     </div>
   );
 };
