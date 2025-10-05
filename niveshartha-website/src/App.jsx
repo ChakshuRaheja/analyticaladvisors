@@ -27,7 +27,7 @@ import Disclaimer from './pages/Disclaimer';
 import InvestorCharter from './pages/InvestorCharter';
 import InvestorGrievance from './pages/InvestorGrievance';
 import ScrollToTop from './components/ScrollToTop';
-import Dashboard from './pages/Dashboard';
+// import Dashboard from './pages/Dashboard';
 import ApiTest from './components/ApiTest';
 import TestPage from './pages/TestPage';
 import KycCallback from './pages/KycCallback';
@@ -89,7 +89,7 @@ function App() {
                 <Route path="/investor-charter" element={<InvestorCharter />} />
                 <Route path="/investor-grievance" element={<InvestorGrievance />} />
                 <Route path="/analysis" element={<PrivateRoute><Analysis /></PrivateRoute>} />
-                <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                {/* <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} /> */}
                 <Route path="/api-test" element={<ApiTest />} />
                 <Route path="/test-complaints" element={<TestPage />} />
                 <Route path="/kyc/callback" element={<KycCallback />} />

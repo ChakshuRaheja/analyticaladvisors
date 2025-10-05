@@ -18,21 +18,53 @@ const SubscriptionInfo = () => {
       }
 
       try {
-        // Query subscriptions collection for user's subscriptions
         const subscriptionsRef = collection(db, 'subscriptions');
         const q = query(subscriptionsRef, where("userId", "==", currentUser.uid));
         const querySnapshot = await getDocs(q);
         
         const userSubscriptions = [];
         querySnapshot.forEach((doc) => {
-          // Convert Firestore timestamp to JS Date if needed
-          const data = doc.data();
-          userSubscriptions.push({
-            id: doc.id,
-            ...data,
-            startDate: data.startDate instanceof Date ? data.startDate : data.startDate.toDate(),
-            endDate: data.endDate instanceof Date ? data.endDate : data.endDate.toDate()
-          });
+          try {
+            const data = doc.data();
+            const subscriptionData = {
+              id: doc.id,
+              ...data
+            };
+
+            // Safely handle startDate
+            if (data.startDate) {
+              if (data.startDate.toDate && typeof data.startDate.toDate === 'function') {
+                subscriptionData.startDate = data.startDate.toDate();
+              } else if (data.startDate instanceof Date) {
+                subscriptionData.startDate = data.startDate;
+              } else if (data.startDate.seconds) {
+                // Handle case where it's a Firestore timestamp object
+                subscriptionData.startDate = new Date(data.startDate.seconds * 1000);
+              } else if (typeof data.startDate === 'string') {
+                // Handle ISO string dates
+                subscriptionData.startDate = new Date(data.startDate);
+              }
+            }
+
+            // Safely handle endDate
+            if (data.endDate) {
+              if (data.endDate.toDate && typeof data.endDate.toDate === 'function') {
+                subscriptionData.endDate = data.endDate.toDate();
+              } else if (data.endDate instanceof Date) {
+                subscriptionData.endDate = data.endDate;
+              } else if (data.endDate.seconds) {
+                // Handle case where it's a Firestore timestamp object
+                subscriptionData.endDate = new Date(data.endDate.seconds * 1000);
+              } else if (typeof data.endDate === 'string') {
+                // Handle ISO string dates
+                subscriptionData.endDate = new Date(data.endDate);
+              }
+            }
+
+            userSubscriptions.push(subscriptionData);
+          } catch (error) {
+            console.error('Error processing subscription:', doc.id, error);
+          }
         });
         
         setSubscriptions(userSubscriptions);

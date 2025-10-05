@@ -1191,7 +1191,7 @@ const Settings = () => {
         return (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">My Plans & Subscriptions</h2>
+              
               {/* <button
                 onClick={() => navigate('/subscription')}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"

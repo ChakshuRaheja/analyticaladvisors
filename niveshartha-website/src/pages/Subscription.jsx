@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import ScrollAnimation from '../components/ScrollAnimation';
 import { doc, setDoc, collection, addDoc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { createOrder, verifyPayment, loadRazorpayScript } from '../services/payment.service';
 import { initiateKYC } from '../services/kyc.service';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import FreeTrialCard from '../components/FreeTrialCard';
 
 // Helper function to safely get environment variables
 const getEnv = (key, fallback = '') => {
@@ -24,7 +25,6 @@ const getEnv = (key, fallback = '') => {
   }
   return fallback;
 };
-
 // Get API base URL with fallback
 const getApiBaseUrl = () => {
   return import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
@@ -81,6 +81,38 @@ const Subscription = () => {
   const location = useLocation();
   const [showKycPopup, setShowKycPopup] = useState(false);
   const isSubscriptionPage = location.pathname === '/subscription';
+  const [hasActiveTrial, setHasActiveTrial] = useState(false);
+const [trialEndDate, setTrialEndDate] = useState(null);
+
+
+// Check if user has an active trial
+useEffect(() => {
+  const checkTrialStatus = async () => {
+    if (!currentUser?.uid) return;
+    
+    try {
+      const subscriptionsRef = collection(db, 'subscriptions');
+      const q = query(
+        subscriptionsRef,
+        where("userId", "==", currentUser.uid),
+        where("isTrial", "==", true),
+        where("endDate", ">", new Date().toISOString())
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const hasTrial = !querySnapshot.empty;
+      setHasActiveTrial(hasTrial);
+      
+      if (hasTrial && querySnapshot.docs[0]?.data()?.endDate) {
+        setTrialEndDate(querySnapshot.docs[0].data().endDate);
+      }
+    } catch (error) {
+      console.error('Error checking trial status:', error);
+    }
+  };
+
+  checkTrialStatus();
+}, [currentUser]);
 
   // Get Razorpay key from environment variables with fallback to test key
   const razorpayKeyId = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_OoxElqgmaEVe1I'; // Fallback to test key
@@ -133,18 +165,34 @@ const Subscription = () => {
         setLoading(true);
         setError('');
 
-        // Fetch subscriptions from Firestore
         const subscriptionsRef = collection(db, 'subscriptions');
         const q = query(subscriptionsRef, where("userId", "==", currentUser.uid));
         const querySnapshot = await getDocs(q);
         
         const subscriptions = [];
         querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const startDate = data.startDate 
+            ? (typeof data.startDate.toDate === 'function' 
+                ? data.startDate.toDate() 
+                : (data.startDate instanceof Date 
+                    ? data.startDate 
+                    : new Date(data.startDate)))
+            : null;
+          
+          const endDate = data.endDate 
+            ? (typeof data.endDate.toDate === 'function' 
+                ? data.endDate.toDate() 
+                : (data.endDate instanceof Date 
+                    ? data.endDate 
+                    : new Date(data.endDate)))
+            : null;
+
           subscriptions.push({
             id: doc.id,
-            ...doc.data(),
-            startDate: doc.data().startDate?.toDate(),
-            endDate: doc.data().endDate?.toDate()
+            ...data,
+            startDate: startDate,
+            endDate: endDate
           });
         });
         
@@ -601,70 +649,16 @@ try {
         status: 'active',
         startDate: typeof latestStartDate?.toDate === 'function' ? latestStartDate.toDate() : latestStartDate,
         endDate: endDate,
-        paymentId: paymentResponse.razorpay_payment_id,
-        orderId: paymentResponse.razorpay_order_id,
-        signature: paymentResponse.razorpay_signature,
-        timestamp: new Date(),
-        features: plan.features // Store features for reference
+        // paymentId: paymentResponse.razorpay_payment_id,
+        // orderId: paymentResponse.razorpay_order_id,
+        // signature: paymentResponse.razorpay_signature,
+        // timestamp: new Date(),
       });
 
       console.log('Subscription saved successfully');
       
       // Refresh user subscriptions
       await fetchUserSubscriptions();
-
-//       // Initiate KYC process
-// console.log('Payment successful, initiating KYC...');
-
-//       // Get user document and log details
-//       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-//       const userData = userDoc.exists() ? userDoc.data() : {};
-//       console.log('User document data:', userData);
-      
-//       // Combine first and last name if available, otherwise use displayName or fallback
-//       const userName = userData.displayName || 
-//                      (userData.firstName && userData.lastName ? 
-//                       `${userData.firstName} ${userData.lastName}` : 
-//                       'Valued Customer');
-//       console.log('Derived userName:', userName);
-
-//       // Log current user details
-//       console.log('Current User:', {
-//         uid: currentUser.uid,
-//         email: currentUser.email,
-//         displayName: currentUser.displayName
-//       });
-
-//       // Prepare KYC data in the format expected by the backend
-//       const kycData = {
-//         customer_identifier: currentUser.email,  // Using email as the unique identifier
-//         customer_name: userName,
-//         reference_id: `KYC_${Date.now()}_${currentUser.uid}`,  // Create a unique reference ID
-//         request_details: {
-//           subscription_id: subscriptionId,
-//           user_id: currentUser.uid
-//         }
-//       };
-
-//       // Debug log - show what we're sending
-//       console.log('KYC Data being sent to backend:', JSON.stringify(kycData, null, 2));
-      
-//       // Validate required fields
-//       const requiredFields = ['customer_identifier', 'customer_name', 'reference_id'];
-//       const missingFields = requiredFields.filter(field => !kycData[field]);
-      
-//       if (missingFields.length > 0) {
-//         const errorMsg = `Missing required KYC fields: ${missingFields.join(', ')}`;
-//         console.error(errorMsg);
-//         throw new Error(errorMsg);
-//       }
-
-//       // Ensure name is not empty after trimming
-//       if (!kycData.customer_name || !kycData.customer_name.trim()) {
-//         const errorMsg = 'Full name is required for KYC verification';
-//         console.error(errorMsg);
-//         throw new Error(errorMsg);
-//       }
 
       
 // Redirect to stock recommendations page after successful payment
@@ -717,7 +711,10 @@ if (plan.id === 'diy-screener') {
                 </div>
               )}
             </div>
-          )}
+          )} 
+          {!trialEndDate && <FreeTrialCard />}
+
+
 
 
           <div className="text-center mb-8">

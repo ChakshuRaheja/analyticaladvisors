@@ -141,7 +141,7 @@ const SUBSCRIPTION_CONFIG = {
       { id: 'target', label: 'Target', sortable: true },
       { id: 'exitPrice', label: 'Exit Price', sortable: true },
       { id: 'stopLoss', label: 'Stop Loss', sortable: true },
-      { id: 'pl', label: 'P/L', sortable: true },
+      { id: 'P/L', label: 'P/L', sortable: true },
       { id: 'margin', label: 'Margin', sortable: true },
       { id: 'update', label: 'Update', sortable: true },
       { id: 'status', label: 'Status', sortable: true }
@@ -251,6 +251,24 @@ const StockRecommendations = ({ activeSubscriptions = [] }) => {
   const [kycEsignCompleted, setKycEsignCompleted] = useState(false);
   const [userData, setUserData] = useState(null);
 
+  const hasActiveTrial = async () => {
+    if (!currentUser?.uid) return false;
+    try {
+      const subscriptionsRef = collection(db, 'subscriptions');
+      const q = query(
+        subscriptionsRef, 
+        where('userId', '==', currentUser.uid),
+        where('isTrial', '==', true),
+        where('endDate', '>', new Date().toISOString())
+      );
+      const querySnapshot = await getDocs(q);
+      return !querySnapshot.empty;
+    } catch (error) {
+      console.error('Error checking for active trial:', error);
+      return false;
+    }
+  };
+
 
   // Use the activeSubscriptions prop passed from the parent component
   // ✅ Replace this entire section (lines 247-320)
@@ -258,76 +276,59 @@ const [activeSubs, setActiveSubs] = useState([]);
 
 useEffect(() => {
   const detectSubscriptions = async () => {
-    // First, check if we have activeSubscriptions from props
-    if (activeSubscriptions && activeSubscriptions.length > 0) {
-      console.log('Using activeSubscriptions from props:', activeSubscriptions);
-      setActiveSubs(activeSubscriptions);
+    if (!currentUser) {
+      setActiveSubs([]);
       return;
     }
-    
-    // Fallback to checking currentUser.subscriptionData
-    if (!currentUser || !currentUser.subscriptionData) {
-      console.log('No subscription data available in user document');
+  
+    try {
+      // Check for active trial first
+      const isTrialActive = await hasActiveTrial();
       
-      // Third fallback: Query subscriptions collection directly from Firestore
-      if (currentUser?.uid) {
-        console.log('🔍 Attempting to query subscriptions from Firestore...');
+      if (isTrialActive) {
+        console.log('✅ Active trial found, activating all plans');
+        // Define all plan IDs that should be active during trial
+        const allPlans = [
+          'swing_equity',
+          'swing_commodity',
+          'equity_investing',
+          'stock_of_month'
+        ];
+        setActiveSubs(allPlans);
         
-        try {
-          const subscriptionsRef = collection(db, 'subscriptions');
-          const q = query(
-            subscriptionsRef, 
-            where('userId', '==', currentUser.uid),
-            where('status', '==', 'active')
-          );
-          const querySnapshot = await getDocs(q);
-          
-          const plans = new Set();
-          querySnapshot.forEach((doc) => {
-            const subData = doc.data();
-            if (subData.planId) {
-              const normalizedPlanId = subData.planId.replace(/-/g, '_');
-              if (SUBSCRIPTION_CONFIG[normalizedPlanId]) {
-                plans.add(normalizedPlanId);
-              }
-            }
-          });
-          
-          const finalPlans = Array.from(plans);
-          if (finalPlans.length > 0) {
-            console.log('✅ Found active subscriptions from Firestore:', finalPlans);
-            setActiveSubs(finalPlans);
-          } else {
-            console.log('❌ No active subscriptions found in Firestore');
-            setActiveSubs([]);
-          }
-        } catch (error) {
-          console.error('❌ Error querying subscriptions from Firestore:', error);
-          setActiveSubs([]);
+        // Set the first plan as active tab if none is set
+        if (!activeTab && allPlans.length > 0) {
+          setActiveTab(allPlans[0]);
         }
-      } else {
-        setActiveSubs([]);
+        return;
       }
-      return;
+  
+      // If no trial, check for regular subscriptions
+      if (activeSubscriptions && activeSubscriptions.length > 0) {
+        console.log('Using activeSubscriptions from props:', activeSubscriptions);
+        setActiveSubs(activeSubscriptions);
+        return;
+      }
+      
+      // Fallback to checking currentUser.subscriptionData if needed
+      if (currentUser.subscriptionData) {
+        const activeSubs = Object.entries(currentUser.subscriptionData)
+          .filter(([_, sub]) => sub.status === 'active' && new Date(sub.endDate) > new Date())
+          .map(([planId]) => planId);
+        
+        if (activeSubs.length > 0) {
+          setActiveSubs(activeSubs);
+          return;
+        }
+      }
+  
+      // No active subscriptions found
+      setActiveSubs([]);
+      
+    } catch (error) {
+      console.error('Error detecting subscriptions:', error);
+      setActiveSubs([]);
     }
-
-    // Original logic for currentUser.subscriptionData
-    const plans = new Set();
-    const subsData = currentUser.subscriptionData;
-    const subscriptions = Array.isArray(subsData) ? subsData : Object.values(subsData);
-
-    subscriptions.forEach(sub => {
-      if (sub && sub.status === 'active' && sub.planId) {
-        const normalizedPlanId = sub.planId.replace(/-/g, '_');
-        if (SUBSCRIPTION_CONFIG[normalizedPlanId]) {
-          plans.add(normalizedPlanId);
-        }
-      }
-    });
-
-    const finalPlans = Array.from(plans);
-    console.log('Final active plans from subscription data:', finalPlans);
-    setActiveSubs(finalPlans);
   };
 
   detectSubscriptions();
@@ -376,6 +377,13 @@ useEffect(() => {
     const checkKycStatus = async () => {
     if (!currentUser) {
       setIsCheckingKyc(false);
+      return;
+    }
+
+    const isTrialActive = await hasActiveTrial();
+    if (activeSubs.length === 0 && !isTrialActive) {
+      setIsCheckingKyc(false);
+      setKycStatus('no_subscriptions');
       return;
     }
     
