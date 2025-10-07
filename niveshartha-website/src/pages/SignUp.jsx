@@ -426,33 +426,18 @@ const SignUp = () => {
       });
 
       // Send welcome email
-      try {
-        console.log('Attempting to send welcome email to:', formData.email);
-        await sendWelcomeEmail({
-          to: formData.email,
-          name: `${formData.firstName} ${formData.lastName}`
-        });
-        
-        console.log('Welcome email sent successfully to:', formData.email);
-        // Show success message
-        toast.success('Welcome email sent! Please check your inbox.', {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true
-        });
-        
-      } catch (emailError) {
-        console.error('Error sending welcome email:', emailError);
-        // Continue with signup even if email fails
-        toast.warning('Account created, but there was an issue sending the welcome email.', {
-          position: "top-center",
-          autoClose: 5000
-        });
-      }
-      
+     // Send welcome email
+try {
+  console.log('Attempting to send welcome email to:', formData.email);
+  await sendWelcomeEmail({
+    to: formData.email,
+    name: `${formData.firstName} ${formData.lastName}`
+  });
+  console.log('Welcome email sent successfully to:', formData.email);
+} catch (emailError) {
+  console.error('Error sending welcome email:', emailError);
+  // Silently continue even if email fails
+}
       // Sign out the user after account creation
       await auth.signOut();
       setIsAccountCreated(true);

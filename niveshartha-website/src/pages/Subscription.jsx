@@ -656,6 +656,53 @@ try {
       });
 
       console.log('Subscription saved successfully');
+
+      try {
+        // Get user data
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const userData = userDoc.exists() ? userDoc.data() : {};
+        
+        // Map plan IDs to template IDs
+        const templateMap = {
+          'swing-equity': 3,        // Swing Trading Equity
+          'swing-commodity': 4,     // Swing Trading Commodity
+          'equity-investing': 5,    // Equity Investing
+          'stock-of-month': 6,      // Stock of the Month
+          'diy-screener': 7,        // DIY Stock Screener
+        };
+      
+        // Get the template ID for the plan, default to 2 (Free Trial) if not found
+        const templateId = templateMap[plan.id] || 2;
+      
+        // Prepare email data
+        const emailData = {
+          to: currentUser.email,
+          name: currentUser.displayName || 'Valued Customer',
+          templateId: templateId,
+          additionalParams: {
+            planName: plan.name,
+          }
+        };
+      
+        // Send the email using the email service
+        await fetch('https://asia-south1-aerobic-acronym-466116-e1.cloudfunctions.net/sendSubscriptionEmailHTTP', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: emailData.to,
+            name: emailData.name,
+            templateId: emailData.templateId,
+            params: emailData.additionalParams
+          })
+        });
+      
+        console.log('Subscription confirmation email sent successfully');
+      } catch (emailError) {
+        console.error('Failed to send subscription email:', emailError);
+        // Don't fail the subscription if email sending fails
+      }
       
       // Refresh user subscriptions
       await fetchUserSubscriptions();
