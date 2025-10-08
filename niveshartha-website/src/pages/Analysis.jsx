@@ -2,8 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import ScrollAnimation from '../components/ScrollAnimation';
-import IntrinsicValueTool from '../components/IntrinsicValueTool';
 import { 
   doc, 
   getDoc, 
@@ -183,19 +181,43 @@ const Analysis = () => {
   const ccItemsPerPage = 10;
   const [ccExpiryFilter, setCcExpiryFilter] = useState('');
   const [ccIndustryFilter, setCcIndustryFilter] = useState('');
+
+  const hasActiveTrial = async () => {
+    if (!currentUser?.uid) return false;
+    try {
+      const subscriptionsRef = collection(db, 'subscriptions');
+      const q = query(
+        subscriptionsRef, 
+        where('userId', '==', currentUser.uid),
+        where('isTrial', '==', true),
+        where('endDate', '>', new Date().toISOString())
+      );
+      const querySnapshot = await getDocs(q);
+      return !querySnapshot.empty;
+    } catch (error) {
+      console.error('Error checking trial:', error);
+      return false;
+    }
+  };
   // Check subscription status when component mounts or user changes
   useEffect(() => {
     const checkSubscription = async () => {
       console.log('Starting subscription check...');
       if (!currentUser) {
-        console.log('No user logged in, setting hasDiySubscription to false');
         setHasDiySubscription(false);
         setCheckingSubscription(false);
         return;
       }
-
+    
       try {
-        console.log('Checking for active DIY Stock Screener subscription for user:', currentUser.uid);
+        // Check for active trial first
+        const isTrialActive = await hasActiveTrial();
+        if (isTrialActive) {
+          console.log('✅ Active trial found, granting access to analysis');
+          setHasDiySubscription(true);
+          setCheckingSubscription(false);
+          return;
+        }
         
         // First check the user document for subscription info
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
@@ -246,19 +268,18 @@ const Analysis = () => {
     
     // Set up a real-time listener for subscription updates
     if (currentUser) {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const userUnsubscribe = onSnapshot(userDocRef, (doc) => {
-        if (doc.exists()) {
-          const userData = doc.data();
-          if (userData.subscriptions) {
-            const hasActive = userData.subscriptions.diyScreener === 'active' || 
-                            userData.subscriptions.premium === 'active';
-            console.log('Real-time update from user document:', hasActive);
-            setHasDiySubscription(hasActive);
-          }
-        }
-      });
-      
+      // Inside the main useEffect, find the onSnapshot code and update it to:
+const userDocRef = doc(db, 'users', currentUser.uid);
+const userUnsubscribe = onSnapshot(userDocRef, async (doc) => {
+  if (doc.exists()) {
+    const userData = doc.data();
+    const isTrialActive = await hasActiveTrial();
+    const hasActiveSub = userData.subscriptions && 
+                       (userData.subscriptions.diyScreener === 'active' || 
+                        userData.subscriptions.premium === 'active');
+    setHasDiySubscription(hasActiveSub || isTrialActive);
+  }
+});      
       const subscriptionsRef = collection(db, 'subscriptions');
       const q = query(
         subscriptionsRef,

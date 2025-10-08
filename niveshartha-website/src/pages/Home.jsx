@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import ScrollAnimation from '../components/ScrollAnimation';
-import PhoneAnimation from '../components/PhoneAnimation';
 import ImageCarousel from '../components/ImageCarousel';
 import SimpleClientComplaints from '../components/SimpleClientComplaints';
 import ClientComplaints from '../components/ClientComplaints';
@@ -569,10 +568,10 @@ const Home = ({ faqOnly = false }) => {
             </p>
             <div className="flex justify-center">
               <Link
-                to={currentUser ? "/dashboard" : "/signup"}
+                to={currentUser ? "/Settings" : "/signup"}
                 className="px-10 py-4 bg-white text-[#008080] font-bold rounded-lg hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
-                {currentUser ? 'Go to Dashboard' : 'Get Started Now'}
+                {currentUser ? 'Go to Settings' : 'Get Started Now'}
               </Link>
             </div>  
           </div>

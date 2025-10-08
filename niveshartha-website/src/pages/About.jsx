@@ -9,18 +9,27 @@ const About = () => {
         <div className="absolute inset-0 bg-[url('/images/about-bg.jpg')] bg-cover bg-center opacity-20" />
         <div className="container mx-auto px-4 relative z-10">
           <ScrollAnimation animation="from-bottom" delay={0.2}>
-            <div className="flex flex-col md:flex-row items-center max-w-3xl mx-auto py-12 m-14">
+            <div className="flex flex-col md:flex-row items-center max-w-5xl mx-auto py-12 m-14 gap-5">
               <img
                 src="/images/about_us_image.jpg"
                 alt="About Us"
                 className="w-full md:w-1/3 rounded-2xl shadow-2xl object-cover mb-6 md:mb-0 md:mr-8"
               />
-              <div className="md:w-2/3 text-gray-200 space-y-2 text-lg">
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                <p>Praesent commodo cursus magna, vel scelerisque nisl consectetur.</p>
-                <p>Donec ullamcorper nulla non metus auctor fringilla.</p>
-                <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
-                <p>Vestibulum id ligula porta felis euismod semper.</p>
+              <div className="md:w-2/3 text-white font-sans space-y-* text-lg leading-loose">
+                <p className='mb-6'>
+                  <strong className="text-xl font-semibold text-white">Vinay Suneja</strong> is a post-graduate in Management Information Systems from USA, He has been a prominent figure in stock market analysis with over 10 years extensive experience, he specializes in 
+                  <strong className="font-semibold text-white"> Option Trading</strong> in  
+                  <strong className="font-semibold text-white"> Equity and Commodity market</strong> and uses his extensive 
+                  <strong className="font-semibold text-white"> Data Analytics Skills</strong> to provide 
+                  <strong className="font-semibold text-white"> Research Based recommendations</strong> for the Indian Market. He is also a proponent of 
+                  <strong className="font-semibold text-white"> DIY Investing</strong> and therefore provides tools for investors and traders to do their own research before investing/trading.
+                  <br />
+                </p>
+                <p>
+                  <span className="font-semibold text-white">
+                    As a SEBI registered research analyst (INH000020183), Vinay Suneja offers high-quality market insights and educational resources to traders and investors across the country.
+                  </span>
+                </p>
               </div>
             </div>
           </ScrollAnimation>
@@ -34,7 +43,7 @@ const About = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <div className="container mx-auto px-8 max-w-4xl">
+          <div className="container mx-auto px-8 max-w-6xl">
             <div className="prose prose-lg max-w-none">
 
               <h2 className="text-3xl font-bold mb-6 text-center">About Us — Analytical Advisors</h2>

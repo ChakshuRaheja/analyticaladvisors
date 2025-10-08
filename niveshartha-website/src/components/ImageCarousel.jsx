@@ -219,4 +219,4 @@ const ImageCarousel = ({ images, interval = 5000, fullPage = true }) => {
   );
 };
 
-export default ImageCarousel; 
+export default ImageCarousel;

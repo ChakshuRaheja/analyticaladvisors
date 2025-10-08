@@ -187,10 +187,6 @@ exports.sendWelcomeEmailHTTP = functions.region('asia-south1').https.onRequest(a
 
     // Prepare email data for Brevo with template
     const emailData = {
-      sender: {
-        name: 'Analytical Advisors',
-        email: 'support@analyticaladvisors.in'
-      },
       to: [{
         email: to,
         name: name
@@ -199,7 +195,6 @@ exports.sendWelcomeEmailHTTP = functions.region('asia-south1').https.onRequest(a
       templateId: 1, // Replace with your actual Brevo template ID
       params: {
         name: name,
-        welcomeMessage: 'Thank you for joining Analytical Advisors! We are excited to have you on board.',
         year: new Date().getFullYear(),
         // Add any other parameters your Brevo template expects
       },
@@ -273,6 +268,97 @@ exports.sendWelcomeEmailHTTP = functions.region('asia-south1').https.onRequest(a
   }
 });
 
+exports.sendSubscriptionEmailHTTP = functions.region('asia-south1').https.onRequest(async (req, res) => {
+  // CORS headers
+  const allowedOrigins = [
+    'https://analyticaladvisors.in',
+    'https://www.analyticaladvisors.in',
+    'http://localhost:3000',
+    'http://localhost:5175'
+  ];
+
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+  }
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Max-Age', '3600');
+    return res.status(204).send('');
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
+
+  try {
+    const { to, name, templateId, params = {} } = req.body;
+    
+    if (!to) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: to'
+      });
+    }
+
+    // Map template IDs based on your email service
+    const templateMap = {
+      '2FreeTrial': 2,
+      '3SwingTradingEquity': 3,
+      '4SwingTradingCommodity': 4,
+      '5EquityInvesting': 5,
+      '6StockoftheMonth': 6,
+      '7DIYStockScreener': 7,
+    };
+
+    const selectedTemplateId = templateId || 2; // Default to Free Trial if no template ID provided
+
+    const emailData = {
+      to: [{
+        email: to,
+        name: name || ''
+      }],
+      templateId: selectedTemplateId,
+      params: {
+        name: name || 'Valued Customer',
+        year: new Date().getFullYear(),
+        startDate: new Date().toLocaleDateString(),
+        ...params
+      },
+      tags: [
+        'subscription',
+        'automated-email'
+      ]
+    };
+
+    // Send email using Brevo API
+    const response = await brevoClient.post('/smtp/email', emailData);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription email sent successfully',
+      messageId: response.data.messageId
+    });
+    
+  } catch (error) {
+    console.error('Error sending subscription email:', {
+      error: error.message,
+      stack: error.stack,
+      requestBody: req.body
+    });
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to send subscription email',
+      message: error.message
+    });
+  }
+});
+
+
 // Keep the original callable function for backward compatibility
 // Update subscription status function
 exports.updateSubscriptionStatus = functions.region('asia-south1').https.onRequest(async (req, res) => {
@@ -316,47 +402,4 @@ exports.updateSubscriptionStatus = functions.region('asia-south1').https.onReque
       });
     }
   });
-});
-
-exports.sendWelcomeEmail = functions.region('asia-south1').https.onCall(async (data, context) => {
-  try {
-    // Reuse the same logic as the HTTP function but return the result
-    const { to, subject = 'Welcome to Analytical Advisors!', template = 'welcome', data: templateData } = data;
-    const { name } = templateData || {};
-    
-    if (!to || !name) {
-      throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
-    }
-
-    const emailData = {
-      sender: {
-        name: 'Analytical Advisors',
-        email: 'support@analyticaladvisors.in'
-      },
-      to: [{
-        email: to,
-        name: name
-      }],
-      subject: subject,
-      templateId: 1, // Replace with your actual Brevo template ID
-      params: {
-        name: name,
-        welcomeMessage: 'Thank you for joining Analytical Advisors! We are excited to have you on board.',
-        year: new Date().getFullYear(),
-        // Add any other parameters your Brevo template expects
-      },
-      tags: [template, 'welcome-email']
-    };
-
-    const response = await brevoClient.post('/smtp/email', emailData);
-    
-    if (response.status === 201) {
-      return { success: true, message: 'Welcome email sent successfully' };
-    } else {
-      throw new functions.https.HttpsError('internal', 'Failed to send welcome email');
-    }
-  } catch (error) {
-    console.error('Error in sendWelcomeEmail callable:', error);
-    throw new functions.https.HttpsError('internal', error.message);
-  }
 });

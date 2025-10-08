@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { initiateEsign as initiateEsignService, verifyEsignStatus } from '../services/esign.service';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs 
-} from 'firebase/firestore';
-
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -141,7 +134,7 @@ const SUBSCRIPTION_CONFIG = {
       { id: 'target', label: 'Target', sortable: true },
       { id: 'exitPrice', label: 'Exit Price', sortable: true },
       { id: 'stopLoss', label: 'Stop Loss', sortable: true },
-      { id: 'pl', label: 'P/L', sortable: true },
+      { id: 'P/L', label: 'P/L', sortable: true },
       { id: 'margin', label: 'Margin', sortable: true },
       { id: 'update', label: 'Update', sortable: true },
       { id: 'status', label: 'Status', sortable: true }
@@ -251,84 +244,118 @@ const StockRecommendations = ({ activeSubscriptions = [] }) => {
   const [kycEsignCompleted, setKycEsignCompleted] = useState(false);
   const [userData, setUserData] = useState(null);
 
+  const hasActiveTrial = async () => {
+    if (!currentUser?.uid) return false;
+    try {
+      const subscriptionsRef = collection(db, 'subscriptions');
+      const q = query(
+        subscriptionsRef, 
+        where('userId', '==', currentUser.uid),
+        where('isTrial', '==', true),
+        where('endDate', '>', new Date().toISOString())
+      );
+      const querySnapshot = await getDocs(q);
+      return !querySnapshot.empty;
+    } catch (error) {
+      console.error('Error checking for active trial:', error);
+      return false;
+    }
+  };
+  const getActivePaidSubscriptions = async (currentUser) => {
+    if (!currentUser?.uid) return [];
+  
+    try {
+      const subscriptionsRef = collection(db, 'subscriptions');
+      const q = query(
+        subscriptionsRef,
+        where('userId', '==', currentUser.uid),
+        where('status', '==', 'active'),   // only active subscriptions
+        where('endDate', '>', new Date())  // still valid
+      );
+  
+      const snapshot = await getDocs(q);
+  
+      const plans = new Set();
+  
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        if (data.planId) {
+          const normalizedPlanId = data.planId.replace(/-/g, '_');
+          if (SUBSCRIPTION_CONFIG[normalizedPlanId]) {
+            plans.add(data.planId); // add original plan name
+          }
+        }
+      });
+  
+      // Convert Set to array and return
+      return Array.from(plans);
+    } catch (error) {
+      console.error("Error fetching active paid subscriptions:", error);
+      return [];
+    }
+  };
+  
+  
 
   // Use the activeSubscriptions prop passed from the parent component
   // ✅ Replace this entire section (lines 247-320)
 const [activeSubs, setActiveSubs] = useState([]);
 
 useEffect(() => {
-  const detectSubscriptions = async () => {
-    // First, check if we have activeSubscriptions from props
+// In the detectSubscriptions function, modify it like this:
+const detectSubscriptions = async () => {
+  if (!currentUser) {
+    setActiveSubs([]);
+    return;
+  }
+
+  try {
+    // First check for active subscriptions from props (for paid plans)
     if (activeSubscriptions && activeSubscriptions.length > 0) {
       console.log('Using activeSubscriptions from props:', activeSubscriptions);
       setActiveSubs(activeSubscriptions);
+      // Set the first subscription as active tab if none is set
+      if (!activeTab && activeSubscriptions.length > 0) {
+        setActiveTab(activeSubscriptions[0]);
+      }
+      return;
+    }
+
+    // If no active subscriptions from props, check for trial
+    const isTrialActive = await hasActiveTrial();
+    if (isTrialActive) {
+      console.log('✅ Active trial found, activating all plans');
+      const allPlans = [
+        'swing_equity',
+        'swing_commodity',
+        'equity_investing',
+        'stock_of_month'
+      ];
+      setActiveSubs(allPlans);
+      if (!activeTab && allPlans.length > 0) {
+        setActiveTab(allPlans[0]);
+      }
+      return;
+    }
+
+    // Fallback to checking currentUser.subscriptionData if needed
+    const paidSubs = await getActivePaidSubscriptions(currentUser);
+    if (paidSubs.length > 0) {
+      setActiveSubs(paidSubs);
+      if (!activeTab) setActiveTab(paidSubs[0]);
       return;
     }
     
-    // Fallback to checking currentUser.subscriptionData
-    if (!currentUser || !currentUser.subscriptionData) {
-      console.log('No subscription data available in user document');
-      
-      // Third fallback: Query subscriptions collection directly from Firestore
-      if (currentUser?.uid) {
-        console.log('🔍 Attempting to query subscriptions from Firestore...');
-        
-        try {
-          const subscriptionsRef = collection(db, 'subscriptions');
-          const q = query(
-            subscriptionsRef, 
-            where('userId', '==', currentUser.uid),
-            where('status', '==', 'active')
-          );
-          const querySnapshot = await getDocs(q);
-          
-          const plans = new Set();
-          querySnapshot.forEach((doc) => {
-            const subData = doc.data();
-            if (subData.planId) {
-              const normalizedPlanId = subData.planId.replace(/-/g, '_');
-              if (SUBSCRIPTION_CONFIG[normalizedPlanId]) {
-                plans.add(normalizedPlanId);
-              }
-            }
-          });
-          
-          const finalPlans = Array.from(plans);
-          if (finalPlans.length > 0) {
-            console.log('✅ Found active subscriptions from Firestore:', finalPlans);
-            setActiveSubs(finalPlans);
-          } else {
-            console.log('❌ No active subscriptions found in Firestore');
-            setActiveSubs([]);
-          }
-        } catch (error) {
-          console.error('❌ Error querying subscriptions from Firestore:', error);
-          setActiveSubs([]);
-        }
-      } else {
-        setActiveSubs([]);
-      }
-      return;
-    }
 
-    // Original logic for currentUser.subscriptionData
-    const plans = new Set();
-    const subsData = currentUser.subscriptionData;
-    const subscriptions = Array.isArray(subsData) ? subsData : Object.values(subsData);
-
-    subscriptions.forEach(sub => {
-      if (sub && sub.status === 'active' && sub.planId) {
-        const normalizedPlanId = sub.planId.replace(/-/g, '_');
-        if (SUBSCRIPTION_CONFIG[normalizedPlanId]) {
-          plans.add(normalizedPlanId);
-        }
-      }
-    });
-
-    const finalPlans = Array.from(plans);
-    console.log('Final active plans from subscription data:', finalPlans);
-    setActiveSubs(finalPlans);
-  };
+    // No active subscriptions found
+    console.log('No active subscriptions or trial found');
+    setActiveSubs([]);
+    
+  } catch (error) {
+    console.error('Error detecting subscriptions:', error);
+    setActiveSubs([]);
+  }
+};
 
   detectSubscriptions();
 }, [currentUser]);
@@ -376,6 +403,13 @@ useEffect(() => {
     const checkKycStatus = async () => {
     if (!currentUser) {
       setIsCheckingKyc(false);
+      return;
+    }
+
+    const isTrialActive = await hasActiveTrial();
+    if (activeSubs.length === 0 && !isTrialActive) {
+      setIsCheckingKyc(false);
+      setKycStatus('no_subscriptions');
       return;
     }
     
@@ -837,8 +871,12 @@ useEffect(() => {
     setErrors((prev) => ({ ...prev, [plan]: '' }));
 
     try {
-      const endpoint = SUBSCRIPTION_CONFIG[plan]?.endpoint || API_CONFIG.endpoints[plan] || plan;
-      const fullUrl = endpoint.startsWith('http') ? endpoint : `${API_CONFIG.baseUrl}${endpoint}`;
+      const normalizedPlan = plan.replace(/-/g, '_');
+    const endpoint = API_CONFIG.endpoints[normalizedPlan];
+      if (!endpoint) {
+        throw new Error(`No endpoint configured for plan: ${plan}`);
+      }
+      const fullUrl = `${API_CONFIG.baseUrl}${endpoint}`;
       
       console.log(`[${plan}] Fetching data from: ${fullUrl}`);
 
@@ -961,18 +999,21 @@ useEffect(() => {
           },
           // Swing Equity mapping
           swing_equity: {
-            'Stock': 'stock',
-            'Action (Buy / Sell)': 'action',
-            'Entry Date': 'entryDate',
-            'Exit Date': 'exitDate',
-            'Exit Price': 'exitPrice',
-             'P/L %': 'pl',
-            'Recommended Price': 'price',
-            'Sr. No.': 'srNo',
-            'Status': 'status',
-            'Stop Loss': 'stopLoss',
-            'Target Price': 'target',
-            'Upate on Recommenation': 'update'
+            swing_equity: {
+              'Stock': 'stock',
+              'Action (Buy / Sell)': 'action',
+              'Entry Date': 'entryDate',
+              'Exit Date': 'exitDate',
+              'Exit Price': 'exitPrice',
+              'P/L %': 'pl',
+              'Recommended Price': 'price',
+              'Sr. No.': 'srNo',
+              'Status': 'status',
+              'Stop Loss': 'stopLoss',
+              'Target Price': 'target',
+              'Update on Recommenation': 'update'
+            }
+            
           },
           // Swing Commodity mapping
           swing_commodity: {
@@ -1028,30 +1069,30 @@ useEffect(() => {
           mappedItem[ourField] = item[apiField] !== undefined ? item[apiField] : 'N/A';
         }
 
-        // Handle plan-specific fields and data formatting
-        if (plan === 'swing_equity' || plan === 'swing_commodity') {
-          // Ensure action is properly formatted
-          if (mappedItem.action === 'N/A' && item['Action (Buy / Sell)']) {
-            mappedItem.action = item['Action (Buy / Sell)'];
-          }
+        // // Handle plan-specific fields and data formatting
+        // if (plan === 'swing_equity' || plan === 'swing_commodity') {
+        //   // Ensure action is properly formatted
+        //   if (mappedItem.action === 'N/A' && item['Action (Buy / Sell)']) {
+        //     mappedItem.action = item['Action (Buy / Sell)'];
+        //   }
           
-          // Format numbers to 2 decimal places
-          if (mappedItem.price && mappedItem.price !== 'N/A') {
-            mappedItem.price = parseFloat(mappedItem.price).toFixed(2);
-          }
-          if (mappedItem.target && mappedItem.target !== 'N/A') {
-            mappedItem.target = parseFloat(mappedItem.target).toFixed(2);
-          }
-          if (mappedItem.stopLoss && mappedItem.stopLoss !== 'N/A') {
-            mappedItem.stopLoss = parseFloat(mappedItem.stopLoss).toFixed(2);
-          }
-          if (mappedItem.exitPrice && mappedItem.exitPrice !== 'N/A') {
-            mappedItem.exitPrice = parseFloat(mappedItem.exitPrice).toFixed(2);
-          }
-          if (mappedItem.pl && mappedItem.pl !== 'N/A') {
-            mappedItem.pl = parseFloat(mappedItem.pl).toFixed(2);
-          }
-        }
+        //   // Format numbers to 2 decimal places
+        //   if (mappedItem.price && mappedItem.price !== 'N/A') {
+        //     mappedItem.price = parseFloat(mappedItem.price).toFixed(2);
+        //   }
+        //   if (mappedItem.target && mappedItem.target !== 'N/A') {
+        //     mappedItem.target = parseFloat(mappedItem.target).toFixed(2);
+        //   }
+        //   if (mappedItem.stopLoss && mappedItem.stopLoss !== 'N/A') {
+        //     mappedItem.stopLoss = parseFloat(mappedItem.stopLoss).toFixed(2);
+        //   }
+        //   if (mappedItem.exitPrice && mappedItem.exitPrice !== 'N/A') {
+        //     mappedItem.exitPrice = parseFloat(mappedItem.exitPrice).toFixed(2);
+        //   }
+        //   if (mappedItem.pl && mappedItem.pl !== 'N/A') {
+        //     mappedItem.pl = parseFloat(mappedItem.pl).toFixed(2);
+        //   }
+        // }
         
         // Special handling for commodity tab
         if (plan === 'swing_commodity') {
@@ -1151,7 +1192,8 @@ useEffect(() => {
         </div>
       );
     }
-    const config = SUBSCRIPTION_CONFIG[activeTab];
+    const normalizedTab = activeTab.replace(/-/g, '_');
+const config = SUBSCRIPTION_CONFIG[normalizedTab];
     const tabStocks = stocks[activeTab] || [];
     const isLoading = loading[activeTab];
     const error = errors[activeTab];

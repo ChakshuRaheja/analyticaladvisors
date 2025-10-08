@@ -10,7 +10,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="col-span-1 md:col-span-1">
-            <h3 className="text-xl font-bold mb-4">Analytical Advisors</h3>
+            <h3 className="text-gray-400 hover:text-white transition-colors text-xl font-bold mb-4">Analytical Advisors</h3>
             <p className="text-gray-400 mb-4">
               Transforming investment experiences with advanced technology and expert guidance.
             </p>
@@ -48,7 +48,7 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+            <h3 className=" text-gray-400 hover:text-white transition-colors text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
                 <button onClick={() => handleInterceptNavigation('/')} className="text-gray-400 hover:text-white transition-colors">Home</button>
@@ -67,7 +67,7 @@ const Footer = () => {
 
           {/* Legal Pages */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Legal</h3>
+            <h3 className="text-gray-400 hover:text-white transition-colors text-lg font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
                 <button onClick={() => handleInterceptNavigation("/terms")} className="text-gray-400 hover:text-white transition-colors">Terms & Conditions</button>
@@ -92,7 +92,7 @@ const Footer = () => {
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Get in Touch</h3>
+            <h3 className="text-gray-400 hover:text-white transition-colors text-lg font-semibold mb-4">Get in Touch</h3>
             <address className="not-italic text-gray-400">
               <p className="mb-2">GBP No. 32, Ground Floor<br />New Market, Timarpur<br /></p>
               <p className="mb-2">National Capital Territory of Delhi</p>
