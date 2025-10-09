@@ -872,7 +872,7 @@ useEffect(() => {
 
     try {
       const normalizedPlan = plan.replace(/-/g, '_');
-    const endpoint = API_CONFIG.endpoints[normalizedPlan];
+      const endpoint = API_CONFIG.endpoints[normalizedPlan];
       if (!endpoint) {
         throw new Error(`No endpoint configured for plan: ${plan}`);
       }
@@ -1166,7 +1166,8 @@ useEffect(() => {
   };
 
   const renderTab = (plan) => {
-    const config = SUBSCRIPTION_CONFIG[plan] || {};
+    const latestNormalizedPlan = plan.replace(/-/g, '_');
+    const config = SUBSCRIPTION_CONFIG[latestNormalizedPlan] || {};
     const color = config.color || 'blue';
     const isActive = activeTab === plan;
     const colorClasses = colorConfig[color] || colorConfig.blue;
@@ -1196,7 +1197,7 @@ useEffect(() => {
       );
     }
     const normalizedTab = activeTab.replace(/-/g, '_');
-const config = SUBSCRIPTION_CONFIG[normalizedTab];
+    const config = SUBSCRIPTION_CONFIG[normalizedTab];
     const tabStocks = stocks[activeTab] || [];
     const isLoading = loading[activeTab];
     const error = errors[activeTab];
@@ -1558,6 +1559,10 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
 
 
   const subsToDisplay = activeSubs.length > 0 ? activeSubs : (activeTab ? [activeTab] : []);
+
+  if (subsToDisplay.length > 0 && !subsToDisplay.includes("stock_of_month")) {
+    subsToDisplay.push("stock_of_month");
+  }
 
   console.log('Rendering component. showEsignStatusPopup:', showEsignStatusPopup, 'esignStatusMessage:', esignStatusMessage);
   
