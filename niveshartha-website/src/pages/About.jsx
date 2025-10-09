@@ -17,12 +17,12 @@ const About = () => {
               />
               <div className="md:w-2/3 text-white font-sans space-y-* text-lg leading-loose">
                 <p className='mb-6'>
-                  <strong className="text-xl font-semibold text-white">Vinay Suneja</strong> is a post-graduate in Management Information Systems from USA, He has been a prominent figure in stock market analysis with over 10 years extensive experience, he specializes in 
-                  <strong className="font-semibold text-white"> Option Trading</strong> in  
-                  <strong className="font-semibold text-white"> Equity and Commodity market</strong> and uses his extensive 
+                  <strong className="text-xl font-semibold text-white">Vinay Suneja</strong> is a post-graduate in Management Information Systems from USA, He has been a prominent figure in stock market analysis with over ten years extensive experience. He specializes in cash as well as
+                  <strong className="font-semibold text-white"> Futures and Option Trading</strong> in  
+                  <strong className="font-semibold text-white"> Equity and Commodity market</strong>, and uses his extensive 
                   <strong className="font-semibold text-white"> Data Analytics Skills</strong> to provide 
                   <strong className="font-semibold text-white"> Research Based recommendations</strong> for the Indian Market. He is also a proponent of 
-                  <strong className="font-semibold text-white"> DIY Investing</strong> and therefore provides tools for investors and traders to do their own research before investing/trading.
+                  <strong className="font-semibold text-white"> DIY Investing</strong> and, therefore, provides tools for investors and traders to do their own research before investing or trading.
                   <br />
                 </p>
                 <p>
