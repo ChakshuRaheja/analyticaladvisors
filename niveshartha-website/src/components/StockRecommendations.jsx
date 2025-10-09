@@ -134,7 +134,7 @@ const SUBSCRIPTION_CONFIG = {
       { id: 'target', label: 'Target', sortable: true },
       { id: 'exitPrice', label: 'Exit Price', sortable: true },
       { id: 'stopLoss', label: 'Stop Loss', sortable: true },
-      { id: 'P/L', label: 'P/L', sortable: true },
+      { id: 'pl', label: 'P/L', sortable: true },
       { id: 'margin', label: 'Margin', sortable: true },
       { id: 'update', label: 'Update', sortable: true },
       { id: 'status', label: 'Status', sortable: true }
@@ -989,7 +989,7 @@ useEffect(() => {
             'Entry Date': 'entryDate',
             'Exit Date': 'exitDate',
             'Exit Price': 'exitPrice',
-            'P/L': 'pl',
+            'P/L %': 'pl',
             'Recommended BuyPrice': 'price',
             'Sr. No.': 'srNo',
             'Status': 'status',
@@ -999,25 +999,22 @@ useEffect(() => {
           },
           // Swing Equity mapping
           swing_equity: {
-            swing_equity: {
-              'Stock': 'stock',
-              'Action (Buy / Sell)': 'action',
-              'Entry Date': 'entryDate',
-              'Exit Date': 'exitDate',
-              'Exit Price': 'exitPrice',
-              'P/L %': 'pl',
-              'Recommended Price': 'price',
-              'Sr. No.': 'srNo',
-              'Status': 'status',
-              'Stop Loss': 'stopLoss',
-              'Target Price': 'target',
-              'Update on Recommenation': 'update'
-            }
-            
+            'Stock': 'stock',
+            'Action (Buy / Sell)': 'action',
+            'Entry Date': 'entryDate',
+            'Exit Date': 'exitDate',
+            'Exit Price': 'exitPrice',
+            'P/L %': 'pl',
+            'Recommended Price': 'price',
+            'Sr. No.': 'srNo',
+            'Status': 'status',
+            'Stop Loss': 'stopLoss',
+            'Target Price': 'target',
+            'Update on Recommenation': 'update'
           },
           // Swing Commodity mapping
           swing_commodity: {
-            'Commodity': 'stock',
+            'Commodity': 'commodity',
             'Action (Buy / Sell)': 'action',
             'Entry Date': 'entryDate',
             'Exit Date': 'exitDate',
@@ -1032,7 +1029,7 @@ useEffect(() => {
             'Upate on Recommenation': 'update'
           },
           // Equity Investing mapping
-          equityinvesting: {
+          equity_investing: {
             'Stock': 'stock',
             'Entry Date': 'entryDate',
             'Exit Date': 'exitDate',
@@ -1051,17 +1048,17 @@ useEffect(() => {
             'Entry Date': 'entryDate',
             'Exit Date': 'exitDate',
             'Exit Price': 'exitPrice',
-            'P/L': 'pl',
-            'Price': 'price',
+            'P/L %': 'pl',
+            'Recommended Price': 'price',
             'Sr. No.': 'srNo',
             'Status': 'status',
             'Stop Loss': 'stopLoss',
-            'Target': 'target'
+            'Target Price': 'target'
           }
         };
 
         // Get the appropriate mapping for the current plan
-        const fieldMapping = fieldMappings[plan] || fieldMappings.default;
+        const fieldMapping = fieldMappings[normalizedPlan] || fieldMappings.default;
 
         // Create mapped item with proper field names
         const mappedItem = {};
@@ -1120,6 +1117,12 @@ useEffect(() => {
       console.log(`[${plan}] Processed Stock Data:`, stockData);
 
       if (stockData.length > 0) {
+        stockData.sort((a, b) => {
+          const srNoA = parseInt(a.srNo) || 0;
+          const srNoB = parseInt(b.srNo) || 0;
+          return srNoB - srNoA; // Descending order
+        });
+        console.log(`[${plan}] Data sorted by Sr. No. in descending order`);
         console.log(`[${plan}] Updating UI with ${stockData.length} items`);
         updateColumnOrder(plan, stockData);
         setStocks((prev) => ({
