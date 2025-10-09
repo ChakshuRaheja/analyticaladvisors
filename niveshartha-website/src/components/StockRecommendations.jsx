@@ -1269,12 +1269,23 @@ useEffect(() => {
                   <tr key={index} className="hover:bg-gray-50">
                     {config.columns.map((column) => {
                       const value = stock[column.id]
+                      const stringValue = value !== undefined && value !== null ? value.toString() : 'N/A';
+                      // Handle case-insensitive "buy" or "sell"
+                      const lowerValue = stringValue.trim().toLowerCase();
+                      const isBuy = lowerValue === 'buy';
+                      const isSell = lowerValue === 'sell';
                       return (
                         <td 
                           key={column.id} 
-                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                          className= {`px-6 py-4 whitespace-nowrap text-sm ${
+                                      isBuy
+                                        ? 'text-green-600 font-medium'
+                                        : isSell
+                                        ? 'text-red-600 font-medium'
+                                        : 'text-gray-500'
+                                    }`}
                         >
-                          {value !== undefined && value !== null ? value.toString() : 'N/A'}
+                          {stringValue}
                         </td>
                       );
                     })}
