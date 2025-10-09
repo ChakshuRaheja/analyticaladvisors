@@ -247,7 +247,7 @@ function Navbar() {
         }
       `}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between md:justify-center items-center h-20">
+          <div className="flex justify-between xl:justify-center items-center h-20">
             {/* Logo and Brand Name */}
             <div className="flex-shrink-0">
               <RouterLink
@@ -275,7 +275,7 @@ function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="flex max-[1350px]:hidden items-center space-x-8">
               {/* about dropdown */}
               <div className="relative ml-5" ref={aboutMenuRef}>
                 <motion.button
@@ -502,7 +502,7 @@ function Navbar() {
             </div>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <div className="hidden max-[1350px]:block ml-4">
               <button
                 onClick={handleDrawerToggle}
                 className="p-2 rounded-md transition-colors duration-300 text-gray-700 hover:text-[#008080] hover:bg-gray-100"
@@ -520,7 +520,7 @@ function Navbar() {
           initial={false}
           animate={{ x: drawerOpen ? 0 : '100%' }}
           transition={{ type: 'spring', damping: 20 }}
-          className="fixed inset-y-0 right-0 w-64 bg-white shadow-xl md:hidden z-50 overflow-y-auto"
+          className="fixed inset-y-0 right-0 w-64 bg-white shadow-xl max-[1350px]:block hidden z-50 overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
