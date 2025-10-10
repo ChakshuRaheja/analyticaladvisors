@@ -127,7 +127,6 @@ const FreeTrialCard = ({isTrialActive}) => {
         trialEndDate: trialEndDate.toISOString(),
         updatedAt: new Date().toISOString()
       });
-      setTrialUsed(true);
 
       // 4. Redirect to stock recommendations
       navigate('/stock-recommendations');
