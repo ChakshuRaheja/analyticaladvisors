@@ -471,10 +471,14 @@ const PortfolioReview = () => {
       // API submission remains unchanged
       try {
         // Prepare payload in the correct format for the backend
+        const today = new Date().toISOString().split('T')[0];
+        const reviewId = Date.now().toString();
         const formattedRecords = selectedStocks.map(stock => ({
-          STOCK: stock.symbol,
+          REVIEW_ID: reviewId,
+          STOCK_NAME: stock.symbol,
           CUSTOMER_EMAIL: currentUser.email,
-          BUYING_PRICE: stockPrices[stock.symbol] || "0"
+          BUYING_PRICE: (stockPrices[stock.symbol] || 0).toString(),
+          SUBMITTED_DATE: today
         }));
         
         const payload = {
@@ -616,11 +620,17 @@ const PortfolioReview = () => {
         try {
           console.log('Trying alternative API format...');
           
-          const simplePayload = selectedStocks.map(stock => ({
-            stock: stock.symbol,
-            email: currentUser.email,
-            price: stockPrices[stock.symbol] || 0
-          }));
+          const today = new Date().toISOString().split('T')[0];
+          const reviewId = Date.now().toString();
+
+          const simplePayload = {
+            records: selectedStocks.map(stock => ({
+              REVIEW_ID: reviewId,
+              STOCK_NAME: stock.symbol,
+              CUSTOMER_EMAIL: currentUser.email,
+              BUYING_PRICE: (stockPrices[stock.symbol] || 0).toString(),
+              SUBMITTED_DATE: today
+          }))};
           
           console.log('Alternative payload:', JSON.stringify(simplePayload, null, 2));
           
