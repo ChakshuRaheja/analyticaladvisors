@@ -33,7 +33,7 @@ const BlogDetailPage = () => {
     container: { maxWidth: "700px", margin: "0 auto", padding: "20px" },
     title: { fontSize: "28px", fontWeight: "bold", marginBottom: "12px" },
     meta: { fontSize: "14px", color: "#666", marginBottom: "16px", lineHeight: "3"},
-    content: { fontSize: "16px", lineHeight: "1.6", color: "#333", lineHeight: "2" },
+    content: { fontSize: "16px", lineHeight: "2", color: "#333" },
   };
 
   if (loading) return <p>Loading...</p>;
