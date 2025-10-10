@@ -24,7 +24,7 @@ export default function BlogPage() {
   return (
     <div className="min-h-screen bg-white">
       <ScrollAnimation animation="from-bottom" delay={0.4}>
-        <div className="max-w-3xl mx-auto pt-20 px-4">
+        <div className="max-w-5xl mx-auto pt-20 px-4">
           <h1 className="text-3xl font-bold mt-8 mb-5">Blogs</h1>
           {posts.map((post) => (
             <div key={post.id} className="mb-6 pb-4 border-b border-gray-300">

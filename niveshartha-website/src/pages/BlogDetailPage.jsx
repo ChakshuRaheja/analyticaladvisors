@@ -32,8 +32,8 @@ const BlogDetailPage = () => {
   const styles = {
     container: { maxWidth: "700px", margin: "0 auto", padding: "20px" },
     title: { fontSize: "28px", fontWeight: "bold", marginBottom: "12px" },
-    meta: { fontSize: "14px", color: "#666", marginBottom: "16px" },
-    content: { fontSize: "16px", lineHeight: "1.6", color: "#333" },
+    meta: { fontSize: "14px", color: "#666", marginBottom: "16px", lineHeight: "3"},
+    content: { fontSize: "16px", lineHeight: "1.6", color: "#333", lineHeight: "2" },
   };
 
   if (loading) return <p>Loading...</p>;
@@ -42,7 +42,7 @@ const BlogDetailPage = () => {
   return (
     <div className = "py-24 min-h-screen bg-white">
       <ScrollAnimation animation="from-bottom" delay={0.4}>
-        <div style={styles.container}>
+        <div className="max-w-5xl mx-auto pt-20 px-4">
           <h1 style={styles.title}>{post.title}</h1>
           <p style={styles.meta}>
               By {post.author || "Unknown"} on{" "}
@@ -50,7 +50,7 @@ const BlogDetailPage = () => {
               ? post.createdAt.toDate().toLocaleDateString()
               : "No date"}
           </p>
-          <div style={styles.content}>{post.content}</div>
+          <pre style={{fontFamily: 'Helvetica, Arial, sans-serif', whiteSpace: 'pre-wrap', ...styles.content}}>{post.content}</pre>
         </div>
       </ScrollAnimation>
     </div>
