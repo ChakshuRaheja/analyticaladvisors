@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp, getDoc, doc, updateDoc, query, whe
 import { db } from '../firebase/config';
 import { initiateKYC } from '../services/kyc.service';
 
-const FreeTrialCard = () => {
+const FreeTrialCard = ({isTrialActive}) => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -88,9 +88,9 @@ const FreeTrialCard = () => {
         return;
       }
   
-      // 2. Create a single 14-day trial subscription with all plans included
+      // 2. Create a single 28-day trial subscription with all plans included
       const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 14); // 14-day trial
+      trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
       
       // Define all included plan IDs
       const includedPlans = [
@@ -106,7 +106,7 @@ const FreeTrialCard = () => {
         subscriptionId: `trial_all_${Date.now()}`,
         userId: currentUser.uid,
         planId: 'free_trial_all',
-        planName: '14-Day Free Trial (All Plans)',
+        planName: '28-Day Free Trial (All Plans)',
         status: 'active',
         startDate: new Date().toISOString(),
         endDate: trialEndDate.toISOString(),
@@ -127,7 +127,8 @@ const FreeTrialCard = () => {
         trialEndDate: trialEndDate.toISOString(),
         updatedAt: new Date().toISOString()
       });
-  
+      setTrialUsed(true);
+
       // 4. Redirect to stock recommendations
       navigate('/stock-recommendations');
   
@@ -141,18 +142,18 @@ const FreeTrialCard = () => {
   
   // Helper function to create trial subscription
   const createTrialSubscription = async () => {
-    // Set trial period (14 days from now)
+    // Set trial period (28 days from now)
     const startDate = new Date();
     const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 14);
+    endDate.setDate(endDate.getDate() + 28);
 
     // Create trial subscription
     await addDoc(collection(db, 'subscriptions'), {
       subscriptionId: `trial_${Date.now()}`,
       userId: currentUser.uid,
       planId: 'free-trial',
-      planName: '14-Day Free Trial',
-      duration: '14 days',
+      planName: '28-Day Free Trial',
+      duration: '28 days',
       price: 0,
       status: 'active',
       startDate: startDate,
@@ -165,12 +166,12 @@ const FreeTrialCard = () => {
     <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 mb-8">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
         <div className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-800 text-white text-center text-sm font-semibold">
-          Start your 14-day FREE trial — all features included
+          Start your 28-day FREE trial — all features included
         </div>
         
         <div className="p-6 text-center">
           <h3 className="text-2xl font-bold text-gray-900 mb-2">Free Trial</h3>
-          <p className="text-gray-600 mb-6">Experience all features for 14 days, no credit card required</p>
+          <p className="text-gray-600 mb-6">Experience all features for 28 days, no credit card required</p>
           
           <div className="space-y-4 mb-6">
             <div className="flex flex-col items-center">
@@ -201,10 +202,10 @@ const FreeTrialCard = () => {
           
           <button
             onClick={handleStartTrial}
-            disabled={isLoading}
+            disabled={isLoading || isTrialActive}
             className={`w-full py-3 px-6 ${isLoading ? 'bg-teal-400' : 'bg-teal-600 hover:bg-teal-700'} text-white font-medium rounded-lg transition-colors duration-200`}
           >
-            {isLoading ? 'Processing...' : 'Start Free Trial'}
+            {isLoading ? 'Processing...' : isTrialActive ? 'Trial Already Used' : 'Start Free Trial'}
           </button>
         </div>
       </div>

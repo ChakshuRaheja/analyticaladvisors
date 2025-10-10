@@ -82,8 +82,26 @@ const Subscription = () => {
   const [showKycPopup, setShowKycPopup] = useState(false);
   const isSubscriptionPage = location.pathname === '/subscription';
   const [hasActiveTrial, setHasActiveTrial] = useState(false);
+  const [isTrialActive, setIsTrialActive] = useState(false);
 const [trialEndDate, setTrialEndDate] = useState(null);
 
+  const checkIsTrialActive = async() => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      const userData = userDoc.exists() ? userDoc.data() : {};
+      if (userData?.trialActive !== undefined) {
+        setIsTrialActive(userData.trialActive);
+      }
+    } catch (err) {
+      console.error('Failed to check trial status:', err);
+    }
+  }
+
+  useEffect(() => {
+    if (currentUser?.uid) {
+      checkIsTrialActive();
+    }
+  }, [currentUser]);
 
 // Check if user has an active trial
 useEffect(() => {
@@ -758,8 +776,8 @@ if (plan.id === 'diy-screener') {
                 </div>
               )}
             </div>
-          )} 
-          {!trialEndDate && <FreeTrialCard />}
+          )}
+          {<FreeTrialCard isTrialActive={isTrialActive}/>}
 
 
 
