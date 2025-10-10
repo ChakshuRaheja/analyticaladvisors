@@ -278,6 +278,29 @@ useEffect(() => {
 
   const plans = [
     {
+      id: 'equity-investing',
+      name: 'Equity Investing',
+      subtitle: 'For long-term wealth creation',
+      description: 'In-depth research for serious investors',
+      originalPrice: 3500,
+      price: 3500,
+      period: 'month',
+      features: [
+        'Fewer, but more in-depth, long-term investment recommendations',
+        'Emphasize a longer holding period (years or more)',
+        'Detailed fundamental analysis, valuation, and long-term growth prospects',
+        'Clear entry zones',
+        'Less frequent alerts, primarily for significant news, rebalancing, or exit signals',
+        'Stock of Month: Research report on one stock recommended by analysts'
+      ],
+      buttonText: 'Start Investing',
+      pricing: [
+        { duration: 'Monthly', price: '₹1'},
+        // { duration: 'Quarterly', price: '₹10,000', save: 'Save 5%' },
+        // { duration: 'Half-Yearly', price: '₹18,000', save: 'Save 14%' }
+      ]
+    },
+    {
       id: 'swing-equity',
       name: 'Swing Trading – Equity',
       subtitle: 'For active traders looking for short to medium-term opportunities',
@@ -323,29 +346,6 @@ useEffect(() => {
         { duration: 'Monthly', price: '₹1'},
         // { duration: 'Quarterly', price: '₹8,000', save: 'Save 11%' },
         // { duration: 'Half-Yearly', price: '₹14,000', save: 'Save 22%' }
-      ]
-    },
-    {
-      id: 'equity-investing',
-      name: 'Equity Investing',
-      subtitle: 'For long-term wealth creation',
-      description: 'In-depth research for serious investors',
-      originalPrice: 3500,
-      price: 3500,
-      period: 'month',
-      features: [
-        'Fewer, but more in-depth, long-term investment recommendations',
-        'Emphasize a longer holding period (years or more)',
-        'Detailed fundamental analysis, valuation, and long-term growth prospects',
-        'Clear entry zones',
-        'Less frequent alerts, primarily for significant news, rebalancing, or exit signals',
-        'Stock of Month: Research report on one stock recommended by analysts'
-      ],
-      buttonText: 'Start Investing',
-      pricing: [
-        { duration: 'Monthly', price: '₹1'},
-        // { duration: 'Quarterly', price: '₹10,000', save: 'Save 5%' },
-        // { duration: 'Half-Yearly', price: '₹18,000', save: 'Save 14%' }
       ]
     },
     {

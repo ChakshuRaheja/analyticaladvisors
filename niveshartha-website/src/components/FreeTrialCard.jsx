@@ -202,7 +202,7 @@ const FreeTrialCard = ({isTrialActive}) => {
           <button
             onClick={handleStartTrial}
             disabled={isLoading || isTrialActive}
-            className={`w-full py-3 px-6 ${isLoading ? 'bg-teal-400' : 'bg-teal-600 hover:bg-teal-700'} text-white font-medium rounded-lg transition-colors duration-200`}
+            className={`w-full py-3 px-6 ${isTrialActive ? 'bg-gray-500 cursor-not-allowed' : isLoading ? 'bg-teal-400' : 'bg-teal-600 hover:bg-teal-700'} text-white font-medium rounded-lg transition-colors duration-200`}
           >
             {isLoading ? 'Processing...' : isTrialActive ? 'Trial Already Used' : 'Start Free Trial'}
           </button>
