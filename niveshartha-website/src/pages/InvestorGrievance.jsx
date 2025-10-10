@@ -197,6 +197,43 @@ const InvestorGrievance = () => {
             </div>
           </ScrollAnimation>
         </div>
+
+        <div className="mb-6 md:p-8">
+          <ScrollAnimation>
+            <div className="space-y-6 text-sm text-gray-700 leading-7">
+                      <p>
+                        <strong>Note:</strong>
+                        <br />
+                        1. Clients can seek clarification to their query and are further entitled to make a complaint in writing, orally or telephonically.
+                        An email may be sent to the Client Servicing Team at <a href="mailto:support@analyticaladvisors.in" className="text-blue-600 underline">support@analyticaladvisors.in</a>. 
+                        Alternatively, the Investor may call on <a href="tel:+919752918378" className="text-blue-600 underline">+91 9752918378</a>.
+                      </p>
+
+                      <p>
+                        2. A letter may also be written with the query/complaint and posted at the below-mentioned address: <br />
+                        <span className="block mt-1 font-medium">Analytical Advisors, GBP No.32 Ground Floor New Market, Timarpur, National Capital Territory of Delhi, Delhi, 110007, India.</span>
+                      </p>
+
+                      <p>
+                        3. Clients can write to the research analyst at <a href="mailto:support@analyticaladvisors.in" className="text-blue-600 underline">support@analyticaladvisors.in</a> 
+                        if the Investor does not receive a response within 10 business days of writing to the Client Servicing Team.
+                        The client can expect a reply within 10 business days of approaching the research analyst.
+                      </p>
+
+                      <p>
+                        4. In case you are not satisfied with our response, you can lodge your grievance with SEBI at 
+                        <a href="https://scores.sebi.gov.in/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline"> https://scores.sebi.gov.in/</a> or you may also write to any of the offices of SEBI. 
+                        SCORES may be accessed through the SCORES mobile application as well, which can be downloaded from:
+                        <a href="https://play.google.com/store/search?q=scores%20sebi&c=apps&hl=en" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline"> Google Play Store</a>.
+                      </p>
+
+                      <p>
+                        5. In case you are not satisfied with the response from SEBI, you can lodge your grievance with SMARTODR at: 
+                        <a href="https://smartodr.in/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline"> https://smartodr.in/</a>
+                      </p>
+            </div>
+          </ScrollAnimation>
+        </div>
       </div>
     </div>
   );

@@ -37,9 +37,17 @@ export default function BlogPage() {
                 {post.createdAt?.toDate().toLocaleDateString()}
               </Link>
               <p className="text-gray-800 text-base leading-relaxed pt-4">
-                {post.content.length > 120
-                  ? post.content.substring(0, 120) + "..."
+                {post.content.length > 1220
+                  ? post.content.substring(0, 1220) + "..."
                   : post.content}
+                {post.content.length > 120 && (
+                  <Link 
+                    to={`/blog/${post.id}`} 
+                    className="text-[#008080] hover:underline font-medium"
+                  >
+                    Read more
+                  </Link>
+                )}
               </p>
             </div>
           ))}
