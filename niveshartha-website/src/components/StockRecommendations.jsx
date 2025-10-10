@@ -1328,6 +1328,39 @@ useEffect(() => {
 if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
   return (
     <div className="container mx-auto px-4 py-16 pt-24 min-h-screen">
+      <div className="text-base leading-relaxed text-gray-800">
+        <h2 className="text-lg font-semibold mb-4">🔔 Mandatory KYC & eSign for Research Analyst Services</h2>
+
+        <p className="mb-4">
+          As per the Securities and Exchange Board of India (SEBI) regulations, all customers are required to complete the following before availing Research Analyst services:
+        </p>
+
+        <ol className="list-decimal list-inside space-y-4">
+          <li>
+            <strong>KYC Verification</strong>
+            <p className="mt-1">
+              In accordance with SEBI Master Circular No. SEBI/HO/MIRSD/SECFATF/P/CIR/2023/169 (dated October 12, 2023), KYC completion is mandatory before you can access research services.
+              <br />
+              👉 During KYC verification, an OTP will be sent to your registered mobile number for authentication.
+            </p>
+          </li>
+
+          <li>
+            <strong>eSign – Terms & Conditions</strong>
+            <p className="mt-1">
+              As per SEBI (Research Analysts) (Third Amendment) Regulations, 2024 – Regulation 24(6), customers must electronically sign and consent to the Terms & Conditions before services are activated.
+              <br />
+              👉 For eSign, an OTP will be sent to your registered email address to securely complete the signature.
+            </p>
+          </li>
+        </ol>
+
+        <ul className="list-disc list-inside mt-6 mb-6 space-y-2 text-green-700 font-medium">
+          <li>✅ These steps ensure compliance with SEBI standards and protect investor interests.</li>
+          <li>⚡ Please complete both steps promptly to activate uninterrupted access to our research services.</li>
+        </ul>
+      </div>
+
       <div className="max-w-2xl mx-auto text-center">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="mb-12">
