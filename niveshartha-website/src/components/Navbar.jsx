@@ -401,6 +401,22 @@ function Navbar() {
                       </div>
                     )}
                   </div>
+                ) : link.path === '/portfolio-review' ? (
+                  <div key={link.path} className="relative">
+                    <NavLink
+                      path={link.path}
+                      text={link.text}
+                      isActive={location.pathname === link.path}
+                      isMobile={false}
+                      onClick={() => {
+                        const blocked = handleInterceptNavigation(link.path);
+                        return blocked;
+                      }}
+                    />
+                    <span className="absolute -top-1 -right-4 bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                      Free
+                    </span>
+                  </div>
                 ) : (
                   <NavLink
                     key={link.path}
@@ -591,17 +607,17 @@ function Navbar() {
                       return blocked;
                     }}
                   />,
-                  <NavLink
-                    key="/portfolio-review" // Path for 'Portfolio Review'
-                    path="/portfolio-review"
-                    text="Portfolio Review" // Display text for mobile
-                    isActive={location.pathname === '/portfolio-review'}
-                    isMobile={true}
-                    onClick={() => {
-                      const blocked =handleInterceptNavigation('/portfolio-review');
-                      setDrawerOpen(false);
-                      return blocked;
-                    }}
+                    <NavLink
+                      key="/portfolio-review" // Path for 'Portfolio Review'
+                      path="/portfolio-review"
+                      text="Portfolio Review" // Display text for mobile
+                      isActive={location.pathname === '/portfolio-review'}
+                      isMobile={true}
+                      onClick={() => {
+                        const blocked =handleInterceptNavigation('/portfolio-review');
+                        setDrawerOpen(false);
+                        return blocked;
+                      }}
                   />,
                 ];
               }
@@ -610,7 +626,17 @@ function Navbar() {
                 <NavLink
                   key={link.path}
                   path={link.path}
-                  text={link.text}
+                  text={link.path === '/portfolio-review' ? (
+                      <span className="flex items-center space-x-1">
+                        <span>{link.text}</span>
+                        <span className="bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                          Free
+                        </span>
+                      </span>
+                    ) : (
+                      link.text
+                    )
+                  }
                   isActive={location.pathname === link.path}
                   isMobile={true}
                   onClick={() => {

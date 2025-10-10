@@ -717,8 +717,8 @@ const PortfolioReview = () => {
             ) : (
               <>
                 <p className="text-gray-600 mb-6">
-                  Select the stocks in your portfolio for a comprehensive review. Our data-powered analysis delivers insights and recommendations.</p>
-                
+                  Add the stocks and the Buying Price of the stocks that you will like for us to review. Based on our intensive research we will either have a Buy, Hold, or Sell recommendation.
+                </p>              
                 {/* Information note about review frequency */}
                 <div className="mb-6 p-4 bg-teal-50 border border-teal-200 rounded-lg">
                   <p className="text-teal-800 flex items-center">
