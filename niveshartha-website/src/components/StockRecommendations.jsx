@@ -173,12 +173,12 @@ const SUBSCRIPTION_CONFIG = {
     },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
-      { id: 'stock', label: 'Stock', sortable: true },
+      { id: 'stockName', label: 'Stock Name', sortable: true },
       { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
       { id: 'type', label: 'Type', sortable: true },
       { id: 'sector', label: 'Sector', sortable: true },
       { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
-      { id: 'recommended', label: 'Recommended', sortable: true },
+      { id: 'recommendation', label: 'Recommendation', sortable: true },
       { id: 'researchReport', label: 'Research Report', sortable: true }
     ]
   },
@@ -197,12 +197,12 @@ const SUBSCRIPTION_CONFIG = {
     },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
-      { id: 'stock', label: 'Stock', sortable: true },
-     { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
+      { id: 'stockName', label: 'Stock Name', sortable: true },
+      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
       { id: 'type', label: 'Type', sortable: true },
       { id: 'sector', label: 'Sector', sortable: true },
       { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
-      { id: 'recommended', label: 'Recommended', sortable: true },
+      { id: 'recommendation', label: 'Recommendation', sortable: true },
       { id: 'researchReport', label: 'Research Report', sortable: true }
     ]
   }
@@ -1037,12 +1037,12 @@ useEffect(() => {
           // Stock of the Month mapping
           stock_of_month: {
             'Sr. No.': 'srNo',
-            'Stock': 'stock',
+            'Stock Name': 'stockName',
             'NSE/ BSE Code': 'nseBseCode',
             'Type':'type',
             'Sector':'sector',
             'Preferred Allocation (%)': 'preferredAllocation',
-            'Recommended': 'recommended',
+            'Recommendation': 'recommendation',
             'Research Report': 'researchReport'
           },
           // Swing Equity mapping
@@ -1079,12 +1079,12 @@ useEffect(() => {
           // Equity Investing mapping
           equity_investing: {
             'Sr. No.': 'srNo',
-            'Stock': 'stock',
+            'Stock Name': 'stockName',
             'NSE/ BSE Code': 'nseBseCode',
             'Type':'type',
             'Sector':'sector',
             'Preferred Allocation (%)': 'preferredAllocation',
-            'Recommended': 'recommended',
+            'Recommendation': 'recommendation',
             'Research Report': 'researchReport'
           },
           // Default mapping (fallback)
