@@ -96,7 +96,7 @@ const Footer = () => {
             <address className="not-italic text-gray-400">
               <p className="mb-2">GBP No. 32, Ground Floor<br />New Market, Timarpur<br /></p>
               <p className="mb-2">National Capital Territory of Delhi</p>
-              <p className="mb-2">Delhi,110007</p>
+              <p className="mb-2">Delhi, 110007</p>
               <p className="mb-2">Phone: +91 97529 18378</p>
               <p className="mb-4">Email: support@analyticaladvisors.in</p>
             </address>

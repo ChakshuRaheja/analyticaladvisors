@@ -1361,6 +1361,7 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
       </div>
 
       <div className="max-w-2xl mx-auto text-center">
+        <p className='text-red-500'> Please read above instructions carefully before starting KYC </p>
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="mb-12">
             <svg className="mx-auto h-16 w-16 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1564,7 +1565,7 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
           </div>
           
           {userData?.esignData?.requestId && (
-            <p className="text-sm text-gray-500 mt-6">
+            <p className="text-sm font-semibold text-red-500 mt-6">
               eSign verification link has been sent to your email. Please check your inbox and complete the process.
             </p>
           )}
