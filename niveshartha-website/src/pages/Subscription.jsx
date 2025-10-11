@@ -282,8 +282,8 @@ useEffect(() => {
       name: 'Equity Investing',
       subtitle: 'For long-term wealth creation',
       description: 'In-depth research for serious investors',
-      originalPrice: 3500,
-      price: 3500,
+      originalPrice: 4999,
+      price: 4999,
       period: 'month',
       features: [
         'Fewer, but more in-depth, long-term investment recommendations',
@@ -295,9 +295,9 @@ useEffect(() => {
       ],
       buttonText: 'Start Investing',
       pricing: [
-        { duration: 'Monthly', price: '₹1'},
-        // { duration: 'Quarterly', price: '₹10,000', save: 'Save 5%' },
-        // { duration: 'Half-Yearly', price: '₹18,000', save: 'Save 14%' }
+        { duration: 'Monthly', price: '₹2,499'},
+        { duration: 'Quarterly', price: '6,499'},
+        { duration: 'Half-Yearly', price: '₹11,999'}
       ]
     },
     {
@@ -305,8 +305,8 @@ useEffect(() => {
       name: 'Swing Trading – Equity',
       subtitle: 'For active traders looking for short to medium-term opportunities',
       description: 'High-probability trade ideas with clear entry and exit points',
-      // originalPrice: 6000,
-      price: 3000,
+      originalPrice: 4999,
+      price: 4999,
       period: 'month',
       features: [
         '7-10 high-probability recommendations per month',
@@ -318,11 +318,9 @@ useEffect(() => {
       ],
       buttonText: 'Start Trading',
       pricing: [
-        { duration: 'Monthly', price: '₹1'
-          
-        },
-        // { duration: 'Quarterly', price: '₹8,000', save: 'Save 11%' },
-        // { duration: 'Half-Yearly', price: '₹14,000', save: 'Save 22%' }
+        { duration: 'Monthly', price: '₹2,499'},
+        { duration: 'Quarterly', price: '6,499'},
+        { duration: 'Half-Yearly', price: '₹11,999'}
       ]
     },
     {
@@ -330,8 +328,8 @@ useEffect(() => {
       name: 'Swing Trading – Commodity',
       subtitle: 'For traders interested in commodity markets',
       description: 'Expert analysis and signals for commodity trading',
-      originalPrice: 3000,
-      price: 3000,
+      originalPrice: 4999,
+      price: 4999,
       period: 'month',
       features: [
         '7-10 high-probability recommendations per month',
@@ -343,9 +341,9 @@ useEffect(() => {
       ],
       buttonText: 'Trade Commodities',
       pricing: [
-        { duration: 'Monthly', price: '₹1'},
-        // { duration: 'Quarterly', price: '₹8,000', save: 'Save 11%' },
-        // { duration: 'Half-Yearly', price: '₹14,000', save: 'Save 22%' }
+        { duration: 'Monthly', price: '₹2,499' },
+        { duration: 'Quarterly', price: '₹6,499'},
+        { duration: 'Half-Yearly', price: '₹11,999'}
       ]
     },
     {
@@ -365,9 +363,9 @@ useEffect(() => {
       ],
       buttonText: 'Get Started',
       pricing: [
-        { duration: 'Monthly', price: '₹1'},
-        // { duration: 'Quarterly', price: '₹800', save: 'Save 11%' },
-        // { duration: 'Half-Yearly', price: '₹1,500', save: 'Save 16%' }
+        { duration: 'Monthly', price: '₹99'},
+        { duration: 'Quarterly', price: '₹249'},
+        { duration: 'Half-Yearly', price: '₹449'},
       ]
     },
     {
@@ -392,7 +390,9 @@ useEffect(() => {
       ],
       buttonText: 'Access Analysis Tools',
       pricing: [
-        { duration: 'Monthly', price: '₹1'},
+        { duration: 'Monthly', price: '₹99'},
+        { duration: 'Quarterly', price: '₹249'},
+        { duration: 'Half-Yearly', price: '₹449'},
         // { duration: 'Quarterly', price: '₹250', save: 'Save 16%' },
         // { duration: 'Half-Yearly', price: '₹450', save: 'Save 24%' }
       ]

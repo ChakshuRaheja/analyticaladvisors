@@ -105,6 +105,15 @@ const SUBSCRIPTION_CONFIG = {
     name: 'Swing Trading - Equity',
     endpoint: API_CONFIG.endpoints.swing_equity,
     color: 'blue',
+    instructions:{
+      title: 'Principles of Trading',
+      points:[
+        'Always use a stop-loss — no exceptions.',
+        'Diversify. Never risk more than 4-5% of your capital per instrument.',
+        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
+        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
+      ]
+    },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
@@ -124,6 +133,15 @@ const SUBSCRIPTION_CONFIG = {
     name: 'Swing Trading - Commodity',
     endpoint: API_CONFIG.endpoints.swing_commodity,
     color: 'green',
+    instructions:{
+      title: 'Principles of Trading',
+      points:[
+        'Always use a stop-loss — no exceptions.',
+        'Diversify. Never risk more than 4-5% of your capital per instrument.',
+        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
+        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
+      ]
+    },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'commodity', label: 'Commodity', sortable: true },
@@ -144,6 +162,15 @@ const SUBSCRIPTION_CONFIG = {
     name: 'Equity Investing',
     endpoint: API_CONFIG.endpoints.equity_investing,
     color: 'purple',
+    instructions:{
+      title: 'Client Instructions – Please Read Before Taking Any Action',
+      points:[
+        'Buy only those stocks which are marked as Buy.',
+        'Maintain portfolio allocation as per the advised levels.',
+        'The remaining funds may be kept as cash or parked in the Stock of the Month.',
+        'Allocation is based on the total capital you plan to invest over the next year.'
+      ]
+    },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
@@ -162,6 +189,15 @@ const SUBSCRIPTION_CONFIG = {
     name: 'Stock of the Month',
     endpoint: API_CONFIG.endpoints.stock_of_month,
     color: 'red',
+    instructions:{
+      title: 'Principles of Trading',
+      points:[
+        'Always use a stop-loss — no exceptions.',
+        'Diversify. Never risk more than 4-5% of your capital per instrument.',
+        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
+        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
+      ]
+    },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
@@ -1248,6 +1284,21 @@ useEffect(() => {
 
     return (
       <div className="bg-white shadow overflow-hidden  sm:rounded-b-lg sm:rounded-tr-lg min-h-96">
+        {/* Instructions Section */}
+        {config.instructions && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-6 m-6 rounded-r-lg">
+            <h3 className="text-lg font-semibold text-blue-900 mb-3">
+              {config.instructions.title}
+            </h3>
+            <ol className="list-decimal list-inside space-y-2">
+              {config.instructions.points.map((point, index) => (
+                <li key={index} className="text-sm text-blue-800">
+                  {point}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
