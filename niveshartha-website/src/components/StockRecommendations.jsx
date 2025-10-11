@@ -1604,8 +1604,8 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
 
   const subsToDisplay = activeSubs.length > 0 ? activeSubs : (activeTab ? [activeTab] : []);
 
-  if (subsToDisplay.length > 0 && !subsToDisplay.includes("stock_of_month")) {
-    subsToDisplay.push("stock_of_month");
+  if (subsToDisplay.length > 0 && !subsToDisplay.includes("stock-of-month")) {
+    subsToDisplay.push("stock-of-month");
   }
 
   console.log('Rendering component. showEsignStatusPopup:', showEsignStatusPopup, 'esignStatusMessage:', esignStatusMessage);

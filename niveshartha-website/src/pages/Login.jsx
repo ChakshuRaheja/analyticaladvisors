@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useNavigationType  } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import ScrollAnimation from '../components/ScrollAnimation';
@@ -12,6 +12,20 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationType = useNavigationType();
+
+  useEffect(() => {
+    const hasRefreshed = sessionStorage.getItem('hasRefreshedLogin');
+    const timeout = setTimeout(() => {
+      if (navigationType === 'PUSH' && !hasRefreshed) {
+        sessionStorage.setItem('hasRefreshedLogin', 'true');
+        window.location.reload(); // Soft reload (not full hard refresh)
+      }
+    }, 100); // delay slightly to avoid React rendering issues
+
+    return () => clearTimeout(timeout); // clean up
+  }, [navigationType]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,6 +34,7 @@ const Login = () => {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      sessionStorage.removeItem('hasRefreshedLogin');
       navigate('/');
     } catch (error) {
       setError('Invalid login credentials');
