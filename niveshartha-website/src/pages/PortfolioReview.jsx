@@ -267,7 +267,7 @@ const PortfolioReview = () => {
         }
         
         const data = await response.json();
-        console.log('API Response:', data);
+        // console.log('API Response:', data);
         
         // Handle different response formats
         let stocksArray;
@@ -472,7 +472,7 @@ const PortfolioReview = () => {
       try {
         // Prepare payload in the correct format for the backend
         const today = new Date().toISOString().split('T')[0];
-        const reviewId = Date.now().toString();
+        const reviewId = Date.now().toString() + currentUser.email.slice(0,3);
         const formattedRecords = selectedStocks.map(stock => ({
           REVIEW_ID: reviewId,
           STOCK_NAME: stock.symbol,
@@ -539,6 +539,7 @@ const PortfolioReview = () => {
             const portfolioData = {
               userId: currentUser.uid,
               email: currentUser.email || '',
+              reviewId: reviewId,
               portfolioReviewEnabled: true, // Boolean flag indicating portfolio review is enabled
               submissionDate: new Date(), // Keep track of when they submitted
             };

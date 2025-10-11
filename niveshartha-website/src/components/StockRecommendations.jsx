@@ -174,15 +174,12 @@ const SUBSCRIPTION_CONFIG = {
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
-      { id: 'entryDate', label: 'Entry Date', sortable: true },
-      { id: 'price', label: 'Price', sortable: true },
-      { id: 'exitDate', label: 'Exit Date', sortable: true },
-      { id: 'target', label: 'Target', sortable: true },
-      { id: 'exitPrice', label: 'Exit Price', sortable: true },
-      { id: 'stopLoss', label: 'Stop Loss', sortable: true },
-      { id: 'pl', label: 'P/L', sortable: true },
-      { id: 'update', label: 'Update', sortable: true },
-      { id: 'status', label: 'Status', sortable: true }
+      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
+      { id: 'type', label: 'Type', sortable: true },
+      { id: 'sector', label: 'Sector', sortable: true },
+      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
+      { id: 'recommended', label: 'Recommended', sortable: true },
+      { id: 'researchReport', label: 'Research Report', sortable: true }
     ]
   },
   stock_of_month: {
@@ -201,15 +198,12 @@ const SUBSCRIPTION_CONFIG = {
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
-      { id: 'entryDate', label: 'Entry Date', sortable: true },
-      { id: 'price', label: 'Price', sortable: true },
-      { id: 'exitDate', label: 'Exit Date', sortable: true },
-      { id: 'target', label: 'Target', sortable: true },
-      { id: 'exitPrice', label: 'Exit Price', sortable: true },
-      { id: 'stopLoss', label: 'Stop Loss', sortable: true },
-      { id: 'pl', label: 'P/L', sortable: true },
-      { id: 'update', label: 'Update', sortable: true },
-      { id: 'status', label: 'Status', sortable: true }
+     { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
+      { id: 'type', label: 'Type', sortable: true },
+      { id: 'sector', label: 'Sector', sortable: true },
+      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
+      { id: 'recommended', label: 'Recommended', sortable: true },
+      { id: 'researchReport', label: 'Research Report', sortable: true }
     ]
   }
 };
@@ -1042,17 +1036,14 @@ useEffect(() => {
         const fieldMappings = {
           // Stock of the Month mapping
           stock_of_month: {
-            'Stock': 'stock',
-            'Entry Date': 'entryDate',
-            'Exit Date': 'exitDate',
-            'Exit Price': 'exitPrice',
-            'P/L %': 'pl',
-            'Recommended BuyPrice': 'price',
             'Sr. No.': 'srNo',
-            'Status': 'status',
-            'Stop Loss': 'stopLoss',
-            'Target Price': 'target',
-            'Upate on Recommenation': 'update'
+            'Stock': 'stock',
+            'NSE/ BSE Code': 'nseBseCode',
+            'Type':'type',
+            'Sector':'sector',
+            'Preferred Allocation (%)': 'preferredAllocation',
+            'Recommended': 'recommended',
+            'Research Report': 'researchReport'
           },
           // Swing Equity mapping
           swing_equity: {
@@ -1087,17 +1078,14 @@ useEffect(() => {
           },
           // Equity Investing mapping
           equity_investing: {
-            'Stock': 'stock',
-            'Entry Date': 'entryDate',
-            'Exit Date': 'exitDate',
-            'Exit Price': 'exitPrice',
-            'P/L %': 'pl',
-             'Recommended Price': 'price',
             'Sr. No.': 'srNo',
-            'Status': 'status',
-            'Stop Loss': 'stopLoss',
-            'Target Price': 'target',
-            'Upate on Recommenation': 'update'
+            'Stock': 'stock',
+            'NSE/ BSE Code': 'nseBseCode',
+            'Type':'type',
+            'Sector':'sector',
+            'Preferred Allocation (%)': 'preferredAllocation',
+            'Recommended': 'recommended',
+            'Research Report': 'researchReport'
           },
           // Default mapping (fallback)
           default: {

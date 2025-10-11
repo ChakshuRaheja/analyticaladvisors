@@ -296,7 +296,7 @@ useEffect(() => {
       buttonText: 'Start Investing',
       pricing: [
         { duration: 'Monthly', price: '₹2,499'},
-        { duration: 'Quarterly', price: '6,499'},
+        { duration: 'Quarterly', price: '₹6,499'},
         { duration: 'Half-Yearly', price: '₹11,999'}
       ]
     },
@@ -319,7 +319,7 @@ useEffect(() => {
       buttonText: 'Start Trading',
       pricing: [
         { duration: 'Monthly', price: '₹2,499'},
-        { duration: 'Quarterly', price: '6,499'},
+        { duration: 'Quarterly', price: '₹6,499'},
         { duration: 'Half-Yearly', price: '₹11,999'}
       ]
     },
