@@ -601,56 +601,78 @@ const checkKycStatusFromFirebase = async () => {
       return;
     }
 
-    console.log('🔍 [DEBUG] Firebase KYC status:', userData.kycStatus);
-    console.log('🔍 [DEBUG] Firebase KYC data status:', kycData.status);
+//     console.log('🔍 [DEBUG] Firebase KYC status:', userData.kycStatus);
+//     console.log('🔍 [DEBUG] Firebase KYC data status:', kycData.status);
 
-    // If Firebase already has approved status, use it directly
-    if (kycData.status === 'approved' || userData.kycStatus === 'approved') {
-      console.log('🔍 [DEBUG] Using Firebase approved status directly');
-      setKycStatus('verified');
-      setIsCheckingKyc(false);
-      return;
-    }
-    // Add this code when both KYC and eSign are verified
-if (kycStatus === 'verified' && esignStatus === 'verified') {
-  const userRef = doc(db, 'users', currentUser.uid);
-  await updateDoc(userRef, {
-    kycEsignCompleted: true,
-    kycEsignCompletedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
-  setKycEsignCompleted(true);
+//     // If Firebase already has approved status, use it directly
+//     if (kycData.status === 'approved' || userData.kycStatus === 'approved') {
+//       console.log('🔍 [DEBUG] Using Firebase approved status directly');
+//       setKycStatus('verified');
+//       setIsCheckingKyc(false);
+//       return;
+//     }
+//     // Add this code when both KYC and eSign are verified
+// if (kycStatus === 'verified' && esignStatus === 'verified') {
+//   const userRef = doc(db, 'users', currentUser.uid);
+//   await updateDoc(userRef, {
+//     kycEsignCompleted: true,
+//     kycEsignCompletedAt: new Date().toISOString(),
+//     updatedAt: new Date().toISOString()
+//   });
+//   setKycEsignCompleted(true);
 
-}
+// }
 
-    // Only call backend API if Firebase doesn't have a proper status
+//     // Only call backend API if Firebase doesn't have a proper status
+//     console.log('🔍 [DEBUG] Calling backend API for status check');
+//     const API_BASE_URL = import.meta.env.PROD ? import.meta.env.VITE_API_BASE_URL : "http://localhost:3001";
+//     const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify({ requestID: kycData.requestId }),
+//       credentials: 'include'
+//     });
+
+    // 1. First, call the backend API to verify KYC status
     console.log('🔍 [DEBUG] Calling backend API for status check');
     const API_BASE_URL = import.meta.env.PROD ? import.meta.env.VITE_API_BASE_URL : "http://localhost:3001";
+    
     const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requestID: kycData.requestId }),
+      body: JSON.stringify({ 
+        requestID: kycData.requestId,
+        reference_id: kycData.referenceId || `KYC_${currentUser.uid}`
+      }),
       credentials: 'include'
     });
 
     const result = await response.json();
     console.log('🔍 [DEBUG] Backend API response:', result);
 
-    // Update Firebase with new status
-    const userRef = doc(db, 'users', currentUser.uid);
-    await updateDoc(userRef, {
-      kycData: {
-        ...kycData,
-        status: result.status || 'pending',
-        lastChecked: new Date().toISOString()
-      },
-      kycStatus: result.status || 'pending',
-      updatedAt: new Date().toISOString()
+    // 2. Update Firebase with the latest status from backend
+    const newStatus = (result.status === 'verified' || result.status === 'approved' || result.status === 'SUCCESS') 
+      ? 'approved' 
+      : 'pending';
+
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      'kycData.status': newStatus,
+      'kycStatus': newStatus,
+      'kycData.lastChecked': new Date().toISOString(),
+      'updatedAt': new Date().toISOString()
     });
 
-    setKycStatus(result.status === 'verified' ? 'verified' : 'pending');
+    // 3. Update local state
+    const displayStatus = newStatus === 'approved' ? 'verified' : 'pending';
+    setKycStatus(displayStatus);
 
-  } catch (error) {
+    // 4. If approved, check eSign status
+    if (newStatus === 'approved') {
+      checkEsignStatusFromFirebase();
+    }
+
+    return displayStatus;
+  }catch (error) {
     console.error('KYC status check failed:', error);
     setKycStatus('pending');
   } finally {

@@ -1,5 +1,6 @@
 const API_BASE_URL = 'https://omkara-backend-725764883240.asia-south1.run.app';
 
+
 export const initiateEsign = async (data) => {
   try {
     const res = await fetch(`${API_BASE_URL}/api/esign/init`, {
