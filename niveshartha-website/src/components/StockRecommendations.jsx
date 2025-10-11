@@ -329,7 +329,6 @@ const detectSubscriptions = async () => {
         'swing_equity',
         'swing_commodity',
         'equity_investing',
-        'stock_of_month'
       ];
       setActiveSubs(allPlans);
       if (!activeTab && allPlans.length > 0) {

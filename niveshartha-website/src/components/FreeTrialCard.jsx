@@ -97,7 +97,6 @@ const FreeTrialCard = ({isTrialActive}) => {
         'swing_equity',
         'swing_commodity',
         'equity_investing',
-        'stock_of_month',
         'diy_screener' // Add DIY Screener to the included plans
       ];
   
