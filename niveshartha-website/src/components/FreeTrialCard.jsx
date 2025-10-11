@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { collection, addDoc, serverTimestamp, getDoc, doc, updateDoc, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { initiateKYC } from '../services/kyc.service';
+import { sendSubscriptionEmail } from '../services/emailService';
 
 const FreeTrialCard = ({isTrialActive}) => {
   const { currentUser } = useAuth();
@@ -126,8 +127,35 @@ const FreeTrialCard = ({isTrialActive}) => {
         trialEndDate: trialEndDate.toISOString(),
         updatedAt: new Date().toISOString()
       });
+       
 
-      // 4. Redirect to stock recommendations
+      
+      
+      //4. Send welcome email for free trial
+      try {
+        const response = await fetch('https://asia-south1-aerobic-acronym-466116-e1.cloudfunctions.net/sendSubscriptionEmailHTTP', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            to: currentUser.email,
+            name: userData.displayName || 'User',
+            template: 2, // Using template ID 2 for free trial
+            params: {
+              trialEndDate: trialEndDate.toLocaleDateString(),
+              includedPlans: includedPlans.join(', ').replace(/_/g, ' ')
+            }
+          }),
+        });
+        console.log('Free trial welcome email sent successfully');
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't block the user flow if email fails
+      }
+
+      // 5. Redirect to stock recommendations
       navigate('/stock-recommendations');
   
     } catch (error) {

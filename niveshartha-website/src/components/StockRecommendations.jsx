@@ -1442,7 +1442,7 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
             </svg>
           </div>
           
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete KYC Verification</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4"> <p className='text-red-500'> step-1 </p>Complete KYC Verification</h2>
           <p className="text-gray-600 mb-12">
             To access your recommendations, please complete the KYC (Know Your Customer) verification process.
           </p>
@@ -1568,7 +1568,7 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
             </svg>
           </div>
           
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete eSign Verification</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">  <p className='text-red-500'> step-2 </p>Complete eSign Verification</h2>
           <p className="text-gray-600 mb-12">
             Your KYC is verified! Please complete the eSign process to access your stock recommendations.
           </p>

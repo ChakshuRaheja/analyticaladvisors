@@ -105,7 +105,7 @@ const SubscriptionRequiredOverlay = ({ onSubscribe }) => {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Premium Feature Locked</h2>
           <p className="text-gray-600 mb-6">
-            Unlock the full potential of our DIY Stock Screener with a subscription. Get access to advanced analysis tools and insights.
+            Unlock the full potential of our <p className="text-gray-900 font-bold">DIY Stock Screener</p> with a subscription. Get access to advanced analysis tools and insights.
           </p>
         </div>
         
@@ -116,12 +116,12 @@ const SubscriptionRequiredOverlay = ({ onSubscribe }) => {
           >
             Subscribe Now
           </button>
-          <Link 
+          {/* <Link 
             to="/subscription"
             className="px-6 py-3 bg-white text-indigo-600 font-medium rounded-lg border border-indigo-600 hover:bg-indigo-50 transition-colors w-full block"
           >
             View Plans
-          </Link>
+          </Link> */}
         </div>
       </motion.div>
     </div>
