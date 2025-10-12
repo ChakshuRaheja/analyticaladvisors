@@ -30,10 +30,69 @@ const PortfolioReview = () => {
   const [submitting, setSubmitting] = useState(false);
   const [hasSubmittedBefore, setHasSubmittedBefore] = useState(false);
   const [previousSubmission, setPreviousSubmission] = useState(null);
+  const [portfolioResults, setPortfolioResults] = useState(null);
+  const [loadingResults, setLoadingResults] = useState(false);
   const debugMode = true; // Set to true to enable additional logging
 
   // Debug Firestore
   console.log("Firestore db initialized:", !!db);
+
+  // Fetch portfolio results by review ID
+  const fetchPortfolioResultsByReviewId = async (reviewId) => {
+    if (!reviewId) {
+      console.warn("No review ID provided for fetching results");
+      return null;
+    }
+
+    setLoadingResults(true);
+    try {
+      console.log("Fetching portfolio results for review ID:", reviewId);
+      
+      const response = await fetch(
+        `https://analytics-advisor-backend-1-583205731005.us-central1.run.app/get_portfolio_review_results?review_id="${reviewId}"`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        console.warn(`API returned ${response.status} for portfolio results`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log("Portfolio results received:", data);
+
+      // Handle both possible responses: [] or array with results
+      if (Array.isArray(data)) {
+        // Filter results - using RESULT field instead of RECOMMENDATION
+        const processedResults = data.filter(result => 
+          result.RESULT && 
+          result.RESULT.trim() !== '' &&
+          result.RESULT.toLowerCase() !== 'pending'
+        );
+
+        if (processedResults.length > 0) {
+          setPortfolioResults(processedResults);
+          return processedResults;
+        } else {
+          console.log("No results available yet for this review");
+          setPortfolioResults(null);
+          return null;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching portfolio results:", error);
+      return null;
+    } finally {
+      setLoadingResults(false);
+    }
+  };
 
   // Function to check if user has already submitted a portfolio review
   const checkPreviousSubmission = async (userId) => {
@@ -135,7 +194,13 @@ const PortfolioReview = () => {
             // Continue with the function even if update fails
           }
         }
+
+        if (data.reviewId) {
+          await fetchPortfolioResultsByReviewId(data.reviewId);
+          console.log(`data fetched with reviewId ${data.reviewId}`)
+        }
         
+        //If within 90 days, show "already submitted" screen
         if (portfolioReviewEnabled || hasStocks) {
           setHasSubmittedBefore(true);
           setPreviousSubmission({
@@ -144,6 +209,11 @@ const PortfolioReview = () => {
             stocks: data.stocks || []
           });
           setDaysUntilNextSubmission(daysUntilNextAllowed);
+          // if (data.reviewId) {
+          //   // fetch results for portfolio review
+          //   await fetchPortfolioResultsByReviewId(data.reviewId);
+          //   console.log(`data fetched with reviewId ${data.reviewId}`)
+          // }
         } else {
           setHasSubmittedBefore(false);
           setPreviousSubmission(null);
@@ -721,6 +791,103 @@ const PortfolioReview = () => {
                 <p className="mb-2">You have already submitted a portfolio for review on {previousSubmission?.date.toLocaleDateString('en-GB')}.</p>
                 <p className="mb-6">You can submit another portfolio after {daysUntilNextSubmission} days.</p>
 
+                {loadingResults ? (
+                  <div className="my-8 p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+                      <p className="text-blue-800 font-medium">Loading your portfolio results...</p>
+                    </div>
+                  </div>
+                ) : portfolioResults && portfolioResults.length > 0 ? (
+                  <div className="my-8 p-6 bg-blue-50 shadow-md rounded-lg">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">
+                      📊 Your Portfolio Review Results
+                    </h3>
+                    
+                    {/* ✅ Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                              Stock Name
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                              Your Buying Price
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                              Recommendation
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Submitted Date
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {portfolioResults.map((result, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900 border-r">
+                                {result.STOCK_NAME}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-gray-700 border-r">
+                                ₹{parseFloat(result.BUYING_PRICE).toLocaleString('en-IN')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap border-r">
+                                <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${
+                                  result.RESULT?.toUpperCase() === 'BUY' || result.RESULT?.toUpperCase() === 'STRONG BUY'
+                                    ? 'bg-green-100 text-green-800 border-green-300'
+                                    : result.RESULT?.toUpperCase() === 'HOLD'
+                                    ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                                    : result.RESULT?.toUpperCase() === 'SELL' || result.RESULT?.toUpperCase() === 'STRONG SELL'
+                                    ? 'bg-red-100 text-red-800 border-red-300'
+                                    : 'bg-gray-100 text-gray-800 border-gray-300'
+                                }`}>
+                                  {result.RESULT}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                                {new Date(result.SUBMITTED_DATE).toLocaleDateString('en-GB')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* ✅ Mobile Card View */}
+                    <div className="md:hidden space-y-4">
+                      {portfolioResults.map((result, index) => (
+                        <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="font-semibold text-gray-900 text-lg">{result.STOCK_NAME}</span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                              result.RESULT?.toUpperCase() === 'BUY' || result.RESULT?.toUpperCase() === 'STRONG BUY'
+                                ? 'bg-green-100 text-green-800 border-green-300'
+                                : result.RESULT?.toUpperCase() === 'HOLD'
+                                ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                                : result.RESULT?.toUpperCase() === 'SELL' || result.RESULT?.toUpperCase() === 'STRONG SELL'
+                                ? 'bg-red-100 text-red-800 border-red-300'
+                                : 'bg-gray-100 text-gray-800 border-gray-300'
+                            }`}>
+                              {result.RESULT}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p><span className="font-medium">Buying Price:</span> ₹{parseFloat(result.BUYING_PRICE).toLocaleString('en-IN')}</p>
+                            <p><span className="font-medium">Submitted:</span> {new Date(result.SUBMITTED_DATE).toLocaleDateString('en-GB')}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="my-8 p-6 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800 text-center font-medium">
+                      ⏳ Your portfolio is under review. Results will appear here once the analysis is complete.
+                    </p>
+                  </div>
+                )}
+
                 <Link to="/" className="px-6 py-3 bg-teal-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                   Return to Home
                 </Link>
@@ -917,6 +1084,92 @@ const PortfolioReview = () => {
                     >
                       {submitting ? 'Submitting...' : 'Submit Portfolio'}
                     </motion.button>
+                  </div>
+                )}
+                {!hasSubmittedBefore && !success && portfolioResults && portfolioResults.length > 0 && (
+                  <div className="my-8 p-6 bg-blue-50 shadow-md rounded-lg">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">
+                      📊 Your Previous Portfolio Review Results
+                    </h3>
+                    <p className="text-sm text-gray-600 text-center mb-4">
+                      Below are the results from your previous submission. You can now submit a new portfolio for review.
+                    </p>
+                    
+                    {/* ✅ Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                              Stock Name
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                              Your Buying Price
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                              Recommendation
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Submitted Date
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {portfolioResults.map((result, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900 border-r">
+                                {result.STOCK_NAME}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-gray-700 border-r">
+                                ₹{parseFloat(result.BUYING_PRICE).toLocaleString('en-IN')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap border-r">
+                                <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${
+                                  result.RESULT?.toUpperCase() === 'BUY' || result.RESULT?.toUpperCase() === 'STRONG BUY'
+                                    ? 'bg-green-100 text-green-800 border-green-300'
+                                    : result.RESULT?.toUpperCase() === 'HOLD'
+                                    ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                                    : result.RESULT?.toUpperCase() === 'SELL' || result.RESULT?.toUpperCase() === 'STRONG SELL'
+                                    ? 'bg-red-100 text-red-800 border-red-300'
+                                    : 'bg-gray-100 text-gray-800 border-gray-300'
+                                }`}>
+                                  {result.RESULT}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                                {new Date(result.SUBMITTED_DATE).toLocaleDateString('en-GB')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* ✅ Mobile Card View */}
+                    <div className="md:hidden space-y-4">
+                      {portfolioResults.map((result, index) => (
+                        <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="font-semibold text-gray-900 text-lg">{result.STOCK_NAME}</span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                              result.RESULT?.toUpperCase() === 'BUY' || result.RESULT?.toUpperCase() === 'STRONG BUY'
+                                ? 'bg-green-100 text-green-800 border-green-300'
+                                : result.RESULT?.toUpperCase() === 'HOLD'
+                                ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                                : result.RESULT?.toUpperCase() === 'SELL' || result.RESULT?.toUpperCase() === 'STRONG SELL'
+                                ? 'bg-red-100 text-red-800 border-red-300'
+                                : 'bg-gray-100 text-gray-800 border-gray-300'
+                            }`}>
+                              {result.RESULT}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p><span className="font-medium">Buying Price:</span> ₹{parseFloat(result.BUYING_PRICE).toLocaleString('en-IN')}</p>
+                            <p><span className="font-medium">Submitted:</span> {new Date(result.SUBMITTED_DATE).toLocaleDateString('en-GB')}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </>

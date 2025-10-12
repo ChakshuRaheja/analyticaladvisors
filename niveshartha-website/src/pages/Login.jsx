@@ -14,18 +14,23 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
-
+ 
   useEffect(() => {
-    const hasRefreshed = sessionStorage.getItem('hasRefreshedLogin');
+    const hasRefreshedLogin = sessionStorage.getItem('hasRefreshedLogin');
     const timeout = setTimeout(() => {
-      if (navigationType === 'PUSH' && !hasRefreshed) {
+      console.log('hasRefreshedLogin')
+      if (hasRefreshedLogin == 'false'){
+        console.log('setting hasRefreshedLogin')
         sessionStorage.setItem('hasRefreshedLogin', 'true');
-        window.location.reload(); // Soft reload (not full hard refresh)
+        console.log('reloading')
+        window.location.reload();
+        console.log('reload done')
       }
-    }, 100); // delay slightly to avoid React rendering issues
+      
+    }, 1000); // delay slightly to avoid React rendering issues
 
     return () => clearTimeout(timeout); // clean up
-  }, [navigationType]);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
