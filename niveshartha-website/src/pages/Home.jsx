@@ -13,7 +13,7 @@ const p1 = '/images/p1.jpg';
 const p1Mobile = '/images/p1 (2).jpg';
 const p2 = '/images/p 2.png';
 const p2Mobile = '/images/p 2 (2).png';
-const p3 = '/images/p3.png';
+const p3 = '/images/p3.jpg';
 const p3Mobile = '/images/p3(2).jpg'; // Fixed extension to match actual filename
 
 // Debug: Log the base URL
