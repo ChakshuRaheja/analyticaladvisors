@@ -104,18 +104,18 @@ const InvestorGrievance = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200 text-sm">
                       {[
-                        ['1', 'Sep, 2024', 0, 0, 0, 0],
-                        ['2', 'Oct, 2024', 0, 0, 0, 0],
-                        ['3', 'Nov, 2024', 0, 0, 0, 0],
-                        ['4', 'Dec, 2024', 0, 0, 0, 0],
-                        ['5', 'Jan, 2025', 0, 0, 0, 0],
-                        ['6', 'Feb, 2025', 0, 0, 0, 0],
-                        ['7', 'Mar, 2025', 0, 0, 0, 0],
-                        ['8', 'Apr, 2025', 0, 0, 0, 0],
-                        ['9', 'May, 2025', 0, 0, 0, 0],
-                        ['10', 'Jun, 2025', 0, 0, 0, 0],
-                        ['11', 'Jul, 2025', 0, 0, 0, 0],
-                        ['12', 'Aug, 2025', 0, 0, 0, 0],
+                        ['1', 'Oct, 2024', 0, 0, 0, 0],
+                        ['2', 'Nov, 2024', 0, 0, 0, 0],
+                        ['3', 'Dec, 2024', 0, 0, 0, 0],
+                        ['4', 'Jan, 2025', 0, 0, 0, 0],
+                        ['5', 'Feb, 2025', 0, 0, 0, 0],
+                        ['6', 'Mar, 2025', 0, 0, 0, 0],
+                        ['7', 'Apr, 2025', 0, 0, 0, 0],
+                        ['8', 'May, 2025', 0, 0, 0, 0],
+                        ['9', 'Jun, 2025', 0, 0, 0, 0],
+                        ['10', 'Jul, 2025', 0, 0, 0, 0],
+                        ['11', 'Aug, 2025', 0, 0, 0, 0],
+                        ['12', 'Sep, 2025', 0, 0, 0, 0],
                       ].map(([sr, month, carried, received, resolved, pending]) => (
                         <tr key={sr}>
                           <td className="px-6 py-4 whitespace-nowrap text-gray-900">{sr}</td>
@@ -129,10 +129,10 @@ const InvestorGrievance = () => {
 
                       <tr className="bg-gray-50 font-medium text-gray-900">
                         <td className="px-6 py-4 whitespace-nowrap" colSpan={2}>Grand Total of last 12 months</td>
-                        <td className="px-6 py-4 whitespace-nowrap">15</td>
-                        <td className="px-6 py-4 whitespace-nowrap">19</td>
-                        <td className="px-6 py-4 whitespace-nowrap">17</td>
-                        <td className="px-6 py-4 whitespace-nowrap">12</td>
+                        <td className="px-6 py-4 whitespace-nowrap">0</td>
+                        <td className="px-6 py-4 whitespace-nowrap">0</td>
+                        <td className="px-6 py-4 whitespace-nowrap">0</td>
+                        <td className="px-6 py-4 whitespace-nowrap">0</td>
                       </tr>
                     </tbody>
 

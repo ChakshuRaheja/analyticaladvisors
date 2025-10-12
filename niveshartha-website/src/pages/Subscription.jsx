@@ -311,7 +311,7 @@ useEffect(() => {
       features: [
         '7-10 high-probability recommendations per month',
         '2–6 week trade duration',
-        'Real-time alerts via email + Telegram',
+        'Real-time alerts via Whatsapp',
         'Monthly performance report',
         'Segments: Cash, Derivates, Index, ETF',
         'Stock of Month: Research report on one stock recommended by analysts'
@@ -334,7 +334,7 @@ useEffect(() => {
       features: [
         '7-10 high-probability recommendations per month',
         '2–6 week trade duration',
-        'Real-time alerts via email',
+        'Real-time alerts via Whatsapp',
         'Monthly performance report',
         'Commodity Specifics: Gold, Silver, Copper, Zinc, Aluminium, Lead, Crude Oil and Natural Gas',
         'Stock of Month: Research report on one stock recommended by analysts'
