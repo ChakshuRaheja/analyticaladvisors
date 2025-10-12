@@ -4,8 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import { collection, addDoc, serverTimestamp, getDoc, doc, updateDoc, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { initiateKYC } from '../services/kyc.service';
+import { sendSubscriptionEmail } from '../services/emailService';
 
-const FreeTrialCard = () => {
+const FreeTrialCard = ({isTrialActive}) => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -88,16 +89,15 @@ const FreeTrialCard = () => {
         return;
       }
   
-      // 2. Create a single 14-day trial subscription with all plans included
+      // 2. Create a single 28-day trial subscription with all plans included
       const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 14); // 14-day trial
+      trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
       
       // Define all included plan IDs
       const includedPlans = [
         'swing_equity',
         'swing_commodity',
         'equity_investing',
-        'stock_of_month',
         'diy_screener' // Add DIY Screener to the included plans
       ];
   
@@ -106,7 +106,7 @@ const FreeTrialCard = () => {
         subscriptionId: `trial_all_${Date.now()}`,
         userId: currentUser.uid,
         planId: 'free_trial_all',
-        planName: '14-Day Free Trial (All Plans)',
+        planName: '28-Day Free Trial (All Plans)',
         status: 'active',
         startDate: new Date().toISOString(),
         endDate: trialEndDate.toISOString(),
@@ -127,8 +127,82 @@ const FreeTrialCard = () => {
         trialEndDate: trialEndDate.toISOString(),
         updatedAt: new Date().toISOString()
       });
-  
-      // 4. Redirect to stock recommendations
+      
+       
+      //4. Send welcome email for free trial
+      try {
+  let emailStatus = { success: false, message: 'Email not sent' };
+
+  // Get user data first
+  const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+  const userData = userDoc.exists() ? userDoc.data() : {};
+
+  // Prepare email data
+  const emailData = {
+    to: currentUser.email,
+    name: userData.displayName || 'User',
+    templateId: 2, // Template ID for Free Trial
+    additionalParams: {
+      planName: '28-Day Free Trial (All Plans)',
+      startDate: new Date().toLocaleDateString(),
+    },
+  };
+
+  console.log('Sending Free Trial email with data:', emailData);
+
+  const response = await fetch(
+    'https://asia-south1-aerobic-acronym-466116-e1.cloudfunctions.net/sendSubscriptionEmailHTTP',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: emailData.to,
+        name: emailData.name,
+        templateId: emailData.templateId,
+        params: emailData.additionalParams,
+      }),
+    }
+  );
+
+  const responseText = await response.text();
+  let responseData;
+
+  try {
+    responseData = responseText ? JSON.parse(responseText) : {};
+  } catch (e) {
+    responseData = { error: 'Invalid JSON response', raw: responseText };
+  }
+
+  if (!response.ok) {
+    throw new Error(responseData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  emailStatus = {
+    success: true,
+    message: 'Free Trial Email sent successfully!',
+    data: responseData,
+  };
+
+  console.log('✅ Email sent successfully:', emailStatus);
+} catch (emailError) {
+  console.error('❌ Failed to send Free Trial email:', emailError);
+  emailStatus = {
+    success: false,
+    message: `Failed to send Free Trial email: ${emailError.message}`,
+    error: emailError,
+  };
+}
+
+
+      // // Show email status before redirecting
+      // alert(`Email Status: ${emailStatus.message}\n\n` +
+      //       `Success: ${emailStatus.success ? 'Yes' : 'No'}\n` +
+      //       `Details: ${JSON.stringify(emailStatus.data || emailStatus.error || 'No additional details')}`);
+
+
+      // 5. Redirect to stock recommendations
       navigate('/stock-recommendations');
   
     } catch (error) {
@@ -141,18 +215,18 @@ const FreeTrialCard = () => {
   
   // Helper function to create trial subscription
   const createTrialSubscription = async () => {
-    // Set trial period (14 days from now)
+    // Set trial period (28 days from now)
     const startDate = new Date();
     const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 14);
+    endDate.setDate(endDate.getDate() + 28);
 
     // Create trial subscription
     await addDoc(collection(db, 'subscriptions'), {
       subscriptionId: `trial_${Date.now()}`,
       userId: currentUser.uid,
       planId: 'free-trial',
-      planName: '14-Day Free Trial',
-      duration: '14 days',
+      planName: '28-Day Free Trial',
+      duration: '28 days',
       price: 0,
       status: 'active',
       startDate: startDate,
@@ -165,12 +239,12 @@ const FreeTrialCard = () => {
     <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 mb-8">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
         <div className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-800 text-white text-center text-sm font-semibold">
-          Start your 14-day FREE trial — all features included
+          Start your 28-day FREE trial — all features included
         </div>
         
         <div className="p-6 text-center">
           <h3 className="text-2xl font-bold text-gray-900 mb-2">Free Trial</h3>
-          <p className="text-gray-600 mb-6">Experience all features for 14 days, no credit card required</p>
+          <p className="text-gray-600 mb-6">Experience all features for 28 days, no credit card required</p>
           
           <div className="space-y-4 mb-6">
             <div className="flex flex-col items-center">
@@ -201,10 +275,10 @@ const FreeTrialCard = () => {
           
           <button
             onClick={handleStartTrial}
-            disabled={isLoading}
-            className={`w-full py-3 px-6 ${isLoading ? 'bg-teal-400' : 'bg-teal-600 hover:bg-teal-700'} text-white font-medium rounded-lg transition-colors duration-200`}
+            disabled={isLoading || isTrialActive}
+            className={`w-full py-3 px-6 ${isTrialActive ? 'bg-gray-500 cursor-not-allowed' : isLoading ? 'bg-teal-400' : 'bg-teal-600 hover:bg-teal-700'} text-white font-medium rounded-lg transition-colors duration-200`}
           >
-            {isLoading ? 'Processing...' : 'Start Free Trial'}
+            {isLoading ? 'Processing...' : isTrialActive ? 'Trial Already Used' : 'Start Free Trial'}
           </button>
         </div>
       </div>

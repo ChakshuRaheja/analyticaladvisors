@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useNavigationType  } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import ScrollAnimation from '../components/ScrollAnimation';
@@ -12,6 +12,25 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationType = useNavigationType();
+ 
+  useEffect(() => {
+    const hasRefreshedLogin = sessionStorage.getItem('hasRefreshedLogin');
+    const timeout = setTimeout(() => {
+      console.log('hasRefreshedLogin')
+      if (hasRefreshedLogin == 'false'){
+        console.log('setting hasRefreshedLogin')
+        sessionStorage.setItem('hasRefreshedLogin', 'true');
+        console.log('reloading')
+        window.location.reload();
+        console.log('reload done')
+      }
+      
+    }, 1000); // delay slightly to avoid React rendering issues
+
+    return () => clearTimeout(timeout); // clean up
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,6 +39,7 @@ const Login = () => {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      sessionStorage.removeItem('hasRefreshedLogin');
       navigate('/');
     } catch (error) {
       setError('Invalid login credentials');

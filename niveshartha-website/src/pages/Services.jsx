@@ -22,7 +22,7 @@ Based on a powerful combination of technical analysis + open interest data to en
 Each recommendation comes with well-defined SL/TP for risk management.
 ✅ 3–5 Curated Trades per Week
 No noise, just quality setups — because precision matters more than quantity.
-✅ Real-Time Alerts via Email & Telegram
+✅ Real-Time Alerts via Whatsapp.
 Never miss a trade opportunity. Stay informed and in control.
 
 🎯 Perfect for:

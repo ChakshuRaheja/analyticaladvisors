@@ -17,12 +17,12 @@ const About = () => {
               />
               <div className="md:w-2/3 text-white font-sans space-y-* text-lg leading-loose">
                 <p className='mb-6'>
-                  <strong className="text-xl font-semibold text-white">Vinay Suneja</strong> is a post-graduate in Management Information Systems from USA, He has been a prominent figure in stock market analysis with over 10 years extensive experience, he specializes in 
-                  <strong className="font-semibold text-white"> Option Trading</strong> in  
-                  <strong className="font-semibold text-white"> Equity and Commodity market</strong> and uses his extensive 
+                  <strong className="text-xl font-semibold text-white">Vinay Suneja</strong> is a post-graduate in Management Information Systems from USA, He has been a prominent figure in stock market analysis with over ten years extensive experience. He specializes in cash as well as
+                  <strong className="font-semibold text-white"> Futures and Option Trading</strong> in  
+                  <strong className="font-semibold text-white"> Equity and Commodity market</strong>, and uses his extensive 
                   <strong className="font-semibold text-white"> Data Analytics Skills</strong> to provide 
                   <strong className="font-semibold text-white"> Research Based recommendations</strong> for the Indian Market. He is also a proponent of 
-                  <strong className="font-semibold text-white"> DIY Investing</strong> and therefore provides tools for investors and traders to do their own research before investing/trading.
+                  <strong className="font-semibold text-white"> DIY Investing</strong> and, therefore, provides tools for investors and traders to do their own research before investing or trading.
                   <br />
                 </p>
                 <p>
@@ -120,6 +120,36 @@ const About = () => {
           </div>
         </motion.div>
       </section>
+      {/* Our Team Section */}
+      <section className="py-12 bg-gray-50">
+        <div className="container mx-auto px-8 max-w-6xl">
+          <h2 className="text-3xl font-bold mb-10 text-center text-gray-900">Our Team</h2>
+          <div className="flex justify-center gap-16">
+            {/* Team Member 1 */}
+            <div className="flex flex-col items-center">
+              <img
+                src="/images/team-member1.png"
+                alt="Team Member 1"
+                className="w-36 h-44 rounded-full object-cover object-top shadow-lg"
+              />
+              <h3 className="mt-4 text-xl font-semibold text-gray-900">Chakshu Raheja</h3>
+              <p className="text-gray-600">Software Engineer</p>
+            </div>
+
+            {/* Team Member 2 */}
+            <div className="flex flex-col items-center">
+              <img
+                src="/images/team-member2.png"
+                alt="Team Member 2"
+                className="w-36 h-44 rounded-full object-cover object-top shadow-lg"
+              />
+              <h3 className="mt-4 text-xl font-semibold text-gray-900">Jayant Khurana</h3>
+              <p className="text-gray-600">Software Engineer</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 };

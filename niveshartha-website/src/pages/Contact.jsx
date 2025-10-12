@@ -193,7 +193,7 @@ const Contact = () => {
                     <p className="text-gray-600">
                     GBP No.32 Ground Floor New Market,Timarpur<br />
                     National Capital Territory of Delhi<br />
-                    Delhi,110007
+                    Delhi, 110007
 
 
                     </p>

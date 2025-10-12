@@ -82,8 +82,26 @@ const Subscription = () => {
   const [showKycPopup, setShowKycPopup] = useState(false);
   const isSubscriptionPage = location.pathname === '/subscription';
   const [hasActiveTrial, setHasActiveTrial] = useState(false);
+  const [isTrialActive, setIsTrialActive] = useState(false);
 const [trialEndDate, setTrialEndDate] = useState(null);
 
+  const checkIsTrialActive = async() => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      const userData = userDoc.exists() ? userDoc.data() : {};
+      if (userData?.trialActive !== undefined) {
+        setIsTrialActive(userData.trialActive);
+      }
+    } catch (err) {
+      console.error('Failed to check trial status:', err);
+    }
+  }
+
+  useEffect(() => {
+    if (currentUser?.uid) {
+      checkIsTrialActive();
+    }
+  }, [currentUser]);
 
 // Check if user has an active trial
 useEffect(() => {
@@ -260,60 +278,12 @@ useEffect(() => {
 
   const plans = [
     {
-      id: 'swing-equity',
-      name: 'Swing Trading – Equity',
-      subtitle: 'For active traders looking for short to medium-term opportunities',
-      description: 'High-probability trade ideas with clear entry and exit points',
-      // originalPrice: 6000,
-      price: 3000,
-      period: 'month',
-      features: [
-        '7-10 high-probability recommendations per month',
-        '2–6 week trade duration',
-        'Real-time alerts via email + Telegram',
-        'Monthly performance report',
-        'Segments: Cash, Derivates, Index, ETF',
-        'Stock of Month: Research report on one stock recommended by analysts'
-      ],
-      buttonText: 'Start Trading',
-      pricing: [
-        { duration: 'Monthly', price: '₹1'
-          
-        },
-        // { duration: 'Quarterly', price: '₹8,000', save: 'Save 11%' },
-        // { duration: 'Half-Yearly', price: '₹14,000', save: 'Save 22%' }
-      ]
-    },
-    {
-      id: 'swing-commodity',
-      name: 'Swing Trading – Commodity',
-      subtitle: 'For traders interested in commodity markets',
-      description: 'Expert analysis and signals for commodity trading',
-      originalPrice: 3000,
-      price: 3000,
-      period: 'month',
-      features: [
-        '7-10 high-probability recommendations per month',
-        '2–6 week trade duration',
-        'Real-time alerts via email',
-        'Monthly performance report',
-        'Commodity Specifics: Gold, Silver, Copper, Zinc, Aluminium, Lead, Crude Oil and Natural Gas',
-        'Stock of Month: Research report on one stock recommended by analysts'
-      ],
-      buttonText: 'Trade Commodities',
-      pricing: [
-        { duration: 'Monthly', price: '₹1'},
-        // { duration: 'Quarterly', price: '₹8,000', save: 'Save 11%' },
-        // { duration: 'Half-Yearly', price: '₹14,000', save: 'Save 22%' }
-      ]
-    },
-    {
       id: 'equity-investing',
       name: 'Equity Investing',
       subtitle: 'For long-term wealth creation',
       description: 'In-depth research for serious investors',
-      originalPrice: 3500,
-      price: 3500,
+      originalPrice: 4999,
+      price: 4999,
       period: 'month',
       features: [
         'Fewer, but more in-depth, long-term investment recommendations',
@@ -325,9 +295,55 @@ useEffect(() => {
       ],
       buttonText: 'Start Investing',
       pricing: [
-        { duration: 'Monthly', price: '₹1'},
-        // { duration: 'Quarterly', price: '₹10,000', save: 'Save 5%' },
-        // { duration: 'Half-Yearly', price: '₹18,000', save: 'Save 14%' }
+        { duration: 'Monthly', price: '₹2,499'},
+        { duration: 'Quarterly', price: '₹6,499'},
+        { duration: 'Half-Yearly', price: '₹11,999'}
+      ]
+    },
+    {
+      id: 'swing-equity',
+      name: 'Swing Trading – Equity',
+      subtitle: 'For active traders looking for short to medium-term opportunities',
+      description: 'High-probability trade ideas with clear entry and exit points',
+      originalPrice: 4999,
+      price: 4999,
+      period: 'month',
+      features: [
+        '7-10 high-probability recommendations per month',
+        '2–6 week trade duration',
+        'Real-time alerts via Whatsapp',
+        'Monthly performance report',
+        'Segments: Cash, Derivates, Index, ETF',
+        'Stock of Month: Research report on one stock recommended by analysts'
+      ],
+      buttonText: 'Start Trading',
+      pricing: [
+        { duration: 'Monthly', price: '₹2,499'},
+        { duration: 'Quarterly', price: '₹6,499'},
+        { duration: 'Half-Yearly', price: '₹11,999'}
+      ]
+    },
+    {
+      id: 'swing-commodity',
+      name: 'Swing Trading – Commodity',
+      subtitle: 'For traders interested in commodity markets',
+      description: 'Expert analysis and signals for commodity trading',
+      originalPrice: 4999,
+      price: 4999,
+      period: 'month',
+      features: [
+        '7-10 high-probability recommendations per month',
+        '2–6 week trade duration',
+        'Real-time alerts via Whatsapp',
+        'Monthly performance report',
+        'Commodity Specifics: Gold, Silver, Copper, Zinc, Aluminium, Lead, Crude Oil and Natural Gas',
+        'Stock of Month: Research report on one stock recommended by analysts'
+      ],
+      buttonText: 'Trade Commodities',
+      pricing: [
+        { duration: 'Monthly', price: '₹2,499' },
+        { duration: 'Quarterly', price: '₹6,499'},
+        { duration: 'Half-Yearly', price: '₹11,999'}
       ]
     },
     {
@@ -347,9 +363,9 @@ useEffect(() => {
       ],
       buttonText: 'Get Started',
       pricing: [
-        { duration: 'Monthly', price: '₹1'},
-        // { duration: 'Quarterly', price: '₹800', save: 'Save 11%' },
-        // { duration: 'Half-Yearly', price: '₹1,500', save: 'Save 16%' }
+        { duration: 'Monthly', price: '₹99'},
+        { duration: 'Quarterly', price: '₹249'},
+        { duration: 'Half-Yearly', price: '₹449'},
       ]
     },
     {
@@ -374,7 +390,9 @@ useEffect(() => {
       ],
       buttonText: 'Access Analysis Tools',
       pricing: [
-        { duration: 'Monthly', price: '₹1'},
+        { duration: 'Monthly', price: '₹99'},
+        { duration: 'Quarterly', price: '₹249'},
+        { duration: 'Half-Yearly', price: '₹449'},
         // { duration: 'Quarterly', price: '₹250', save: 'Save 16%' },
         // { duration: 'Half-Yearly', price: '₹450', save: 'Save 24%' }
       ]
@@ -519,32 +537,32 @@ useEffect(() => {
               await saveSubscription(plan, response);
               
               // Initiate KYC process after successful payment (only for first-time users)
-try {
-  // Check if user has already completed KYC/eSign process
-  const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-  const userData = userDoc.exists() ? userDoc.data() : {};
+// try {
+//   // Check if user has already completed KYC/eSign process
+//   const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+//   const userData = userDoc.exists() ? userDoc.data() : {};
   
-  if (!userData.kycEsignCompleted || !userData.kycEsignCompletedAt) {
-    const kycResponse = await initiateKYC({
-      customer_identifier: currentUser.email,
-      customer_name: currentUser.displayName || 'Customer',
-      reference_id: `KYC_${Date.now()}_${currentUser.uid}`,
-      request_details: {
-        subscription_plan: plan.id,
-        payment_id: response.razorpay_payment_id
-      }
-    });
+//   if (!userData.kycEsignCompleted || !userData.kycEsignCompletedAt) {
+//     const kycResponse = await initiateKYC({
+//       customer_identifier: currentUser.email,
+//       customer_name: currentUser.displayName || 'Customer',
+//       reference_id: `KYC_${Date.now()}_${currentUser.uid}`,
+//       request_details: {
+//         subscription_plan: plan.id,
+//         payment_id: response.razorpay_payment_id
+//       }
+//     });
     
-    if (kycResponse.success) {
-      console.log('KYC initiated successfully');
-      setShowKycPopup(true);
-    } else {
-      console.error('KYC initiation failed:', kycResponse.message);
-    }
-  }
-} catch (kycError) {
-  console.error('KYC initiation failed:', kycError);
-}
+//     if (kycResponse.success) {
+//       console.log('KYC initiated successfully');
+//       setShowKycPopup(true);
+//     } else {
+//       console.error('KYC initiation failed:', kycResponse.message);
+//     }
+//   }
+// } catch (kycError) {
+//   console.error('KYC initiation failed:', kycError);
+// }
             } catch (error) {
               console.error("Payment verification failed:", error);
               setError(`Payment verification failed: ${error.message || 'Please try again or contact support.'}`);
@@ -758,8 +776,8 @@ if (plan.id === 'diy-screener') {
                 </div>
               )}
             </div>
-          )} 
-          {!trialEndDate && <FreeTrialCard />}
+          )}
+          {<FreeTrialCard isTrialActive={isTrialActive}/>}
 
 
 

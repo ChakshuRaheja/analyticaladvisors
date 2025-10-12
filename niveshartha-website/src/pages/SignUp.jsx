@@ -89,11 +89,12 @@ const SignUp = () => {
         draggable: true,
         progress: undefined,
       });
+      sessionStorage.setItem('hasRefreshedLogin', 'false');
 
       // Redirect to login after delay
       const timer = setTimeout(() => {
         navigate('/login');
-      }, 3000);
+      }, 5000);
 
       return () => clearTimeout(timer);
     }

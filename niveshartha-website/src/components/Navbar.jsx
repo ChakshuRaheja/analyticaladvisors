@@ -247,7 +247,7 @@ function Navbar() {
         }
       `}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between md:justify-center items-center h-20">
+          <div className="flex justify-between xl:justify-center items-center h-20">
             {/* Logo and Brand Name */}
             <div className="flex-shrink-0">
               <RouterLink
@@ -275,7 +275,7 @@ function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="flex max-[1350px]:hidden items-center space-x-8">
               {/* about dropdown */}
               <div className="relative ml-5" ref={aboutMenuRef}>
                 <motion.button
@@ -401,6 +401,22 @@ function Navbar() {
                       </div>
                     )}
                   </div>
+                ) : link.path === '/portfolio-review' ? (
+                  <div key={link.path} className="relative">
+                    <NavLink
+                      path={link.path}
+                      text={link.text}
+                      isActive={location.pathname === link.path}
+                      isMobile={false}
+                      onClick={() => {
+                        const blocked = handleInterceptNavigation(link.path);
+                        return blocked;
+                      }}
+                    />
+                    <span className="absolute -top-1 -right-4 bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                      Free
+                    </span>
+                  </div>
                 ) : (
                   <NavLink
                     key={link.path}
@@ -502,7 +518,7 @@ function Navbar() {
             </div>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <div className="hidden max-[1350px]:block ml-4">
               <button
                 onClick={handleDrawerToggle}
                 className="p-2 rounded-md transition-colors duration-300 text-gray-700 hover:text-[#008080] hover:bg-gray-100"
@@ -520,7 +536,7 @@ function Navbar() {
           initial={false}
           animate={{ x: drawerOpen ? 0 : '100%' }}
           transition={{ type: 'spring', damping: 20 }}
-          className="fixed inset-y-0 right-0 w-64 bg-white shadow-xl md:hidden z-50 overflow-y-auto"
+          className="fixed inset-y-0 right-0 w-64 bg-white shadow-xl max-[1350px]:block hidden z-50 overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -591,17 +607,17 @@ function Navbar() {
                       return blocked;
                     }}
                   />,
-                  <NavLink
-                    key="/portfolio-review" // Path for 'Portfolio Review'
-                    path="/portfolio-review"
-                    text="Portfolio Review" // Display text for mobile
-                    isActive={location.pathname === '/portfolio-review'}
-                    isMobile={true}
-                    onClick={() => {
-                      const blocked =handleInterceptNavigation('/portfolio-review');
-                      setDrawerOpen(false);
-                      return blocked;
-                    }}
+                    <NavLink
+                      key="/portfolio-review" // Path for 'Portfolio Review'
+                      path="/portfolio-review"
+                      text="Portfolio Review" // Display text for mobile
+                      isActive={location.pathname === '/portfolio-review'}
+                      isMobile={true}
+                      onClick={() => {
+                        const blocked =handleInterceptNavigation('/portfolio-review');
+                        setDrawerOpen(false);
+                        return blocked;
+                      }}
                   />,
                 ];
               }
@@ -610,7 +626,17 @@ function Navbar() {
                 <NavLink
                   key={link.path}
                   path={link.path}
-                  text={link.text}
+                  text={link.path === '/portfolio-review' ? (
+                      <span className="flex items-center space-x-1">
+                        <span>{link.text}</span>
+                        <span className="bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                          Free
+                        </span>
+                      </span>
+                    ) : (
+                      link.text
+                    )
+                  }
                   isActive={location.pathname === link.path}
                   isMobile={true}
                   onClick={() => {

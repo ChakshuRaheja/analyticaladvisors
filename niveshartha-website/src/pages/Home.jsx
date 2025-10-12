@@ -13,7 +13,7 @@ const p1 = '/images/p1.jpg';
 const p1Mobile = '/images/p1 (2).jpg';
 const p2 = '/images/p 2.png';
 const p2Mobile = '/images/p 2 (2).png';
-const p3 = '/images/p3.png';
+const p3 = '/images/p3.jpg';
 const p3Mobile = '/images/p3(2).jpg'; // Fixed extension to match actual filename
 
 // Debug: Log the base URL
@@ -148,7 +148,7 @@ const Home = ({ faqOnly = false }) => {
     },
     {
       question: "How can I subscribe to your research services?",
-      answer: "You can subscribe by:\n• Filling out the contact form on our website\n• Emailing us at [Your Email]\n• Calling or WhatsApp on [Your Number]\n\nOnce we receive your request, we will guide you through the onboarding process and provide access to our reports or platform."
+      answer: "You can sign up online and buy subscription from our website analyticaladvisors.in . You can reach out to our support via our website if you have any questions."
     },
     {
       question: "Who can benefit from your services?",
@@ -417,8 +417,8 @@ const Home = ({ faqOnly = false }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-3">24/7 Support</h3>
-              <p className="text-gray-600">Our dedicated support team is always here to assist you.</p>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">Customer Support</h3>
+              <p className="text-gray-600">For any queries you can reach our support team via email & Phone.</p>
             </div>
           </div>
         </div>

@@ -24,7 +24,7 @@ export default function BlogPage() {
   return (
     <div className="min-h-screen bg-white">
       <ScrollAnimation animation="from-bottom" delay={0.4}>
-        <div className="max-w-3xl mx-auto pt-20 px-4">
+        <div className="max-w-5xl mx-auto pt-20 px-4">
           <h1 className="text-3xl font-bold mt-8 mb-5">Blogs</h1>
           {posts.map((post) => (
             <div key={post.id} className="mb-6 pb-4 border-b border-gray-300">
@@ -37,9 +37,17 @@ export default function BlogPage() {
                 {post.createdAt?.toDate().toLocaleDateString()}
               </Link>
               <p className="text-gray-800 text-base leading-relaxed pt-4">
-                {post.content.length > 120
-                  ? post.content.substring(0, 120) + "..."
+                {post.content.length > 1220
+                  ? post.content.substring(0, 1220) + "..."
                   : post.content}
+                {post.content.length > 120 && (
+                  <Link 
+                    to={`/blog/${post.id}`} 
+                    className="text-[#008080] hover:underline font-medium"
+                  >
+                    Read more
+                  </Link>
+                )}
               </p>
             </div>
           ))}

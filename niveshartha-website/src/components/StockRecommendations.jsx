@@ -105,6 +105,15 @@ const SUBSCRIPTION_CONFIG = {
     name: 'Swing Trading - Equity',
     endpoint: API_CONFIG.endpoints.swing_equity,
     color: 'blue',
+    instructions:{
+      title: 'Principles of Trading',
+      points:[
+        'Always use a stop-loss — no exceptions.',
+        'Diversify. Never risk more than 4-5% of your capital per instrument.',
+        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
+        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
+      ]
+    },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
@@ -124,6 +133,15 @@ const SUBSCRIPTION_CONFIG = {
     name: 'Swing Trading - Commodity',
     endpoint: API_CONFIG.endpoints.swing_commodity,
     color: 'green',
+    instructions:{
+      title: 'Principles of Trading',
+      points:[
+        'Always use a stop-loss — no exceptions.',
+        'Diversify. Never risk more than 4-5% of your capital per instrument.',
+        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
+        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
+      ]
+    },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
       { id: 'commodity', label: 'Commodity', sortable: true },
@@ -134,7 +152,7 @@ const SUBSCRIPTION_CONFIG = {
       { id: 'target', label: 'Target', sortable: true },
       { id: 'exitPrice', label: 'Exit Price', sortable: true },
       { id: 'stopLoss', label: 'Stop Loss', sortable: true },
-      { id: 'P/L', label: 'P/L', sortable: true },
+      { id: 'pl', label: 'P/L', sortable: true },
       { id: 'margin', label: 'Margin', sortable: true },
       { id: 'update', label: 'Update', sortable: true },
       { id: 'status', label: 'Status', sortable: true }
@@ -144,36 +162,48 @@ const SUBSCRIPTION_CONFIG = {
     name: 'Equity Investing',
     endpoint: API_CONFIG.endpoints.equity_investing,
     color: 'purple',
+    instructions:{
+      title: 'Client Instructions – Please Read Before Taking Any Action',
+      points:[
+        'Buy only those stocks which are marked as Buy.',
+        'Maintain portfolio allocation as per the advised levels.',
+        'The remaining funds may be kept as cash or parked in the Stock of the Month.',
+        'Allocation is based on the total capital you plan to invest over the next year.'
+      ]
+    },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
-      { id: 'stock', label: 'Stock', sortable: true },
-      { id: 'entryDate', label: 'Entry Date', sortable: true },
-      { id: 'price', label: 'Price', sortable: true },
-      { id: 'exitDate', label: 'Exit Date', sortable: true },
-      { id: 'target', label: 'Target', sortable: true },
-      { id: 'exitPrice', label: 'Exit Price', sortable: true },
-      { id: 'stopLoss', label: 'Stop Loss', sortable: true },
-      { id: 'pl', label: 'P/L', sortable: true },
-      { id: 'update', label: 'Update', sortable: true },
-      { id: 'status', label: 'Status', sortable: true }
+      { id: 'stockName', label: 'Stock Name', sortable: true },
+      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
+      { id: 'type', label: 'Type', sortable: true },
+      { id: 'sector', label: 'Sector', sortable: true },
+      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
+      { id: 'recommendation', label: 'Recommendation', sortable: true },
+      { id: 'researchReport', label: 'Research Report', sortable: true }
     ]
   },
   stock_of_month: {
     name: 'Stock of the Month',
     endpoint: API_CONFIG.endpoints.stock_of_month,
     color: 'red',
+    instructions:{
+      title: 'Principles of Trading',
+      points:[
+        'Always use a stop-loss — no exceptions.',
+        'Diversify. Never risk more than 4-5% of your capital per instrument.',
+        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
+        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
+      ]
+    },
     columns: [
       // { id: 'srNo', label: 'Sr. No', sortable: true },
-      { id: 'stock', label: 'Stock', sortable: true },
-      { id: 'entryDate', label: 'Entry Date', sortable: true },
-      { id: 'price', label: 'Price', sortable: true },
-      { id: 'exitDate', label: 'Exit Date', sortable: true },
-      { id: 'target', label: 'Target', sortable: true },
-      { id: 'exitPrice', label: 'Exit Price', sortable: true },
-      { id: 'stopLoss', label: 'Stop Loss', sortable: true },
-      { id: 'pl', label: 'P/L', sortable: true },
-      { id: 'update', label: 'Update', sortable: true },
-      { id: 'status', label: 'Status', sortable: true }
+      { id: 'stockName', label: 'Stock Name', sortable: true },
+      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
+      { id: 'type', label: 'Type', sortable: true },
+      { id: 'sector', label: 'Sector', sortable: true },
+      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
+      { id: 'recommendation', label: 'Recommendation', sortable: true },
+      { id: 'researchReport', label: 'Research Report', sortable: true }
     ]
   }
 };
@@ -329,7 +359,6 @@ const detectSubscriptions = async () => {
         'swing_equity',
         'swing_commodity',
         'equity_investing',
-        'stock_of_month'
       ];
       setActiveSubs(allPlans);
       if (!activeTab && allPlans.length > 0) {
@@ -566,56 +595,78 @@ const checkKycStatusFromFirebase = async () => {
       return;
     }
 
-    console.log('🔍 [DEBUG] Firebase KYC status:', userData.kycStatus);
-    console.log('🔍 [DEBUG] Firebase KYC data status:', kycData.status);
+//     console.log('🔍 [DEBUG] Firebase KYC status:', userData.kycStatus);
+//     console.log('🔍 [DEBUG] Firebase KYC data status:', kycData.status);
 
-    // If Firebase already has approved status, use it directly
-    if (kycData.status === 'approved' || userData.kycStatus === 'approved') {
-      console.log('🔍 [DEBUG] Using Firebase approved status directly');
-      setKycStatus('verified');
-      setIsCheckingKyc(false);
-      return;
-    }
-    // Add this code when both KYC and eSign are verified
-if (kycStatus === 'verified' && esignStatus === 'verified') {
-  const userRef = doc(db, 'users', currentUser.uid);
-  await updateDoc(userRef, {
-    kycEsignCompleted: true,
-    kycEsignCompletedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
-  setKycEsignCompleted(true);
+//     // If Firebase already has approved status, use it directly
+//     if (kycData.status === 'approved' || userData.kycStatus === 'approved') {
+//       console.log('🔍 [DEBUG] Using Firebase approved status directly');
+//       setKycStatus('verified');
+//       setIsCheckingKyc(false);
+//       return;
+//     }
+//     // Add this code when both KYC and eSign are verified
+// if (kycStatus === 'verified' && esignStatus === 'verified') {
+//   const userRef = doc(db, 'users', currentUser.uid);
+//   await updateDoc(userRef, {
+//     kycEsignCompleted: true,
+//     kycEsignCompletedAt: new Date().toISOString(),
+//     updatedAt: new Date().toISOString()
+//   });
+//   setKycEsignCompleted(true);
 
-}
+// }
 
-    // Only call backend API if Firebase doesn't have a proper status
+//     // Only call backend API if Firebase doesn't have a proper status
+//     console.log('🔍 [DEBUG] Calling backend API for status check');
+//     const API_BASE_URL = import.meta.env.PROD ? import.meta.env.VITE_API_BASE_URL : "http://localhost:3001";
+//     const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify({ requestID: kycData.requestId }),
+//       credentials: 'include'
+//     });
+
+    // 1. First, call the backend API to verify KYC status
     console.log('🔍 [DEBUG] Calling backend API for status check');
     const API_BASE_URL = import.meta.env.PROD ? import.meta.env.VITE_API_BASE_URL : "http://localhost:3001";
+    
     const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requestID: kycData.requestId }),
+      body: JSON.stringify({ 
+        requestID: kycData.requestId,
+        reference_id: kycData.referenceId || `KYC_${currentUser.uid}`
+      }),
       credentials: 'include'
     });
 
     const result = await response.json();
     console.log('🔍 [DEBUG] Backend API response:', result);
 
-    // Update Firebase with new status
-    const userRef = doc(db, 'users', currentUser.uid);
-    await updateDoc(userRef, {
-      kycData: {
-        ...kycData,
-        status: result.status || 'pending',
-        lastChecked: new Date().toISOString()
-      },
-      kycStatus: result.status || 'pending',
-      updatedAt: new Date().toISOString()
+    // 2. Update Firebase with the latest status from backend
+    const newStatus = (result.status === 'verified' || result.status === 'approved' || result.status === 'SUCCESS') 
+      ? 'approved' 
+      : 'pending';
+
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      'kycData.status': newStatus,
+      'kycStatus': newStatus,
+      'kycData.lastChecked': new Date().toISOString(),
+      'updatedAt': new Date().toISOString()
     });
 
-    setKycStatus(result.status === 'verified' ? 'verified' : 'pending');
+    // 3. Update local state
+    const displayStatus = newStatus === 'approved' ? 'verified' : 'pending';
+    setKycStatus(displayStatus);
 
-  } catch (error) {
+    // 4. If approved, check eSign status
+    if (newStatus === 'approved') {
+      checkEsignStatusFromFirebase();
+    }
+
+    return displayStatus;
+  }catch (error) {
     console.error('KYC status check failed:', error);
     setKycStatus('pending');
   } finally {
@@ -872,7 +923,7 @@ useEffect(() => {
 
     try {
       const normalizedPlan = plan.replace(/-/g, '_');
-    const endpoint = API_CONFIG.endpoints[normalizedPlan];
+      const endpoint = API_CONFIG.endpoints[normalizedPlan];
       if (!endpoint) {
         throw new Error(`No endpoint configured for plan: ${plan}`);
       }
@@ -985,39 +1036,33 @@ useEffect(() => {
         const fieldMappings = {
           // Stock of the Month mapping
           stock_of_month: {
+            'Sr. No.': 'srNo',
+            'Stock Name': 'stockName',
+            'NSE/ BSE Code': 'nseBseCode',
+            'Type':'type',
+            'Sector':'sector',
+            'Preferred Allocation (%)': 'preferredAllocation',
+            'Recommendation': 'recommendation',
+            'Research Report': 'researchReport'
+          },
+          // Swing Equity mapping
+          swing_equity: {
             'Stock': 'stock',
+            'Action (Buy / Sell)': 'action',
             'Entry Date': 'entryDate',
             'Exit Date': 'exitDate',
             'Exit Price': 'exitPrice',
-            'P/L': 'pl',
-            'Recommended BuyPrice': 'price',
+            'P/L %': 'pl',
+            'Recommended Price': 'price',
             'Sr. No.': 'srNo',
             'Status': 'status',
             'Stop Loss': 'stopLoss',
             'Target Price': 'target',
-            'Upate on Recommenation': 'update'
-          },
-          // Swing Equity mapping
-          swing_equity: {
-            swing_equity: {
-              'Stock': 'stock',
-              'Action (Buy / Sell)': 'action',
-              'Entry Date': 'entryDate',
-              'Exit Date': 'exitDate',
-              'Exit Price': 'exitPrice',
-              'P/L %': 'pl',
-              'Recommended Price': 'price',
-              'Sr. No.': 'srNo',
-              'Status': 'status',
-              'Stop Loss': 'stopLoss',
-              'Target Price': 'target',
-              'Update on Recommenation': 'update'
-            }
-            
+            'Update on Recommenation': 'update'
           },
           // Swing Commodity mapping
           swing_commodity: {
-            'Commodity': 'stock',
+            'Commodity': 'commodity',
             'Action (Buy / Sell)': 'action',
             'Entry Date': 'entryDate',
             'Exit Date': 'exitDate',
@@ -1032,18 +1077,15 @@ useEffect(() => {
             'Upate on Recommenation': 'update'
           },
           // Equity Investing mapping
-          equityinvesting: {
-            'Stock': 'stock',
-            'Entry Date': 'entryDate',
-            'Exit Date': 'exitDate',
-            'Exit Price': 'exitPrice',
-            'P/L %': 'pl',
-             'Recommended Price': 'price',
+          equity_investing: {
             'Sr. No.': 'srNo',
-            'Status': 'status',
-            'Stop Loss': 'stopLoss',
-            'Target Price': 'target',
-            'Upate on Recommenation': 'update'
+            'Stock Name': 'stockName',
+            'NSE/ BSE Code': 'nseBseCode',
+            'Type':'type',
+            'Sector':'sector',
+            'Preferred Allocation (%)': 'preferredAllocation',
+            'Recommendation': 'recommendation',
+            'Research Report': 'researchReport'
           },
           // Default mapping (fallback)
           default: {
@@ -1051,17 +1093,17 @@ useEffect(() => {
             'Entry Date': 'entryDate',
             'Exit Date': 'exitDate',
             'Exit Price': 'exitPrice',
-            'P/L': 'pl',
-            'Price': 'price',
+            'P/L %': 'pl',
+            'Recommended Price': 'price',
             'Sr. No.': 'srNo',
             'Status': 'status',
             'Stop Loss': 'stopLoss',
-            'Target': 'target'
+            'Target Price': 'target'
           }
         };
 
         // Get the appropriate mapping for the current plan
-        const fieldMapping = fieldMappings[plan] || fieldMappings.default;
+        const fieldMapping = fieldMappings[normalizedPlan] || fieldMappings.default;
 
         // Create mapped item with proper field names
         const mappedItem = {};
@@ -1120,6 +1162,12 @@ useEffect(() => {
       console.log(`[${plan}] Processed Stock Data:`, stockData);
 
       if (stockData.length > 0) {
+        stockData.sort((a, b) => {
+          const srNoA = parseInt(a.srNo) || 0;
+          const srNoB = parseInt(b.srNo) || 0;
+          return srNoB - srNoA; // Descending order
+        });
+        console.log(`[${plan}] Data sorted by Sr. No. in descending order`);
         console.log(`[${plan}] Updating UI with ${stockData.length} items`);
         updateColumnOrder(plan, stockData);
         setStocks((prev) => ({
@@ -1163,7 +1211,8 @@ useEffect(() => {
   };
 
   const renderTab = (plan) => {
-    const config = SUBSCRIPTION_CONFIG[plan] || {};
+    const latestNormalizedPlan = plan.replace(/-/g, '_');
+    const config = SUBSCRIPTION_CONFIG[latestNormalizedPlan] || {};
     const color = config.color || 'blue';
     const isActive = activeTab === plan;
     const colorClasses = colorConfig[color] || colorConfig.blue;
@@ -1193,7 +1242,7 @@ useEffect(() => {
       );
     }
     const normalizedTab = activeTab.replace(/-/g, '_');
-const config = SUBSCRIPTION_CONFIG[normalizedTab];
+    const config = SUBSCRIPTION_CONFIG[normalizedTab];
     const tabStocks = stocks[activeTab] || [];
     const isLoading = loading[activeTab];
     const error = errors[activeTab];
@@ -1245,6 +1294,21 @@ const config = SUBSCRIPTION_CONFIG[normalizedTab];
 
     return (
       <div className="bg-white shadow overflow-hidden  sm:rounded-b-lg sm:rounded-tr-lg min-h-96">
+        {/* Instructions Section */}
+        {config.instructions && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-6 m-6 rounded-r-lg">
+            <h3 className="text-lg font-semibold text-blue-900 mb-3">
+              {config.instructions.title}
+            </h3>
+            <ol className="list-decimal list-inside space-y-2">
+              {config.instructions.points.map((point, index) => (
+                <li key={index} className="text-sm text-blue-800">
+                  {point}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -1265,12 +1329,31 @@ const config = SUBSCRIPTION_CONFIG[normalizedTab];
                   <tr key={index} className="hover:bg-gray-50">
                     {config.columns.map((column) => {
                       const value = stock[column.id]
+                      const stringValue = value !== undefined && value !== null ? value.toString() : 'N/A';
+                      // Handle case-insensitive "buy" or "sell"
+                      const lowerValue = stringValue.trim().toLowerCase();
+                      const isBuy = lowerValue === 'buy';
+                      const isSell = lowerValue === 'sell';
                       return (
                         <td 
                           key={column.id} 
-                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                          className= {`px-6 py-4 whitespace-nowrap text-sm ${
+                                      isBuy
+                                        ? 'text-green-600 font-medium'
+                                        : isSell
+                                        ? 'text-red-600 font-medium'
+                                        : 'text-gray-500'
+                                    }`}
                         >
-                          {value !== undefined && value !== null ? value.toString() : 'N/A'}
+                          {
+                          /^https?:\/\//.test(stringValue) ? (
+                            <a href={stringValue} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                              Research Report
+                            </a>
+                          ) : (
+                            stringValue
+                          )
+                        }
                         </td>
                       );
                     })}
@@ -1313,7 +1396,41 @@ const config = SUBSCRIPTION_CONFIG[normalizedTab];
 if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
   return (
     <div className="container mx-auto px-4 py-16 pt-24 min-h-screen">
+      <div className="text-base leading-relaxed text-gray-800">
+        <h2 className="text-lg font-semibold mb-4">🔔 Mandatory KYC & eSign for Research Analyst Services</h2>
+
+        <p className="mb-4">
+          As per the Securities and Exchange Board of India (SEBI) regulations, all customers are required to complete the following before availing Research Analyst services:
+        </p>
+
+        <ol className="list-decimal list-inside space-y-4">
+          <li>
+            <strong>KYC Verification</strong>
+            <p className="mt-1">
+              In accordance with SEBI Master Circular No. SEBI/HO/MIRSD/SECFATF/P/CIR/2023/169 (dated October 12, 2023), KYC completion is mandatory before you can access research services.
+              <br />
+              👉 During KYC verification, an OTP will be sent to your registered mobile number for authentication.
+            </p>
+          </li>
+
+          <li>
+            <strong>eSign – Terms & Conditions</strong>
+            <p className="mt-1">
+              As per SEBI (Research Analysts) (Third Amendment) Regulations, 2024 – Regulation 24(6), customers must electronically sign and consent to the Terms & Conditions before services are activated.
+              <br />
+              👉 For eSign, an OTP will be sent to your registered email address to securely complete the signature.
+            </p>
+          </li>
+        </ol>
+
+        <ul className="list-disc list-inside mt-6 mb-6 space-y-2 text-green-700 font-medium">
+          <li>✅ These steps ensure compliance with SEBI standards and protect investor interests.</li>
+          <li>⚡ Please complete both steps promptly to activate uninterrupted access to our research services.</li>
+        </ul>
+      </div>
+
       <div className="max-w-2xl mx-auto text-center">
+        <p className='text-red-500'> Please read above instructions carefully before starting KYC </p>
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="mb-12">
             <svg className="mx-auto h-16 w-16 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1321,7 +1438,7 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
             </svg>
           </div>
           
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete KYC Verification</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4"> <p className='text-red-500'> step-1 </p>Complete KYC Verification</h2>
           <p className="text-gray-600 mb-12">
             To access your recommendations, please complete the KYC (Know Your Customer) verification process.
           </p>
@@ -1447,7 +1564,7 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
             </svg>
           </div>
           
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete eSign Verification</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">  <p className='text-red-500'> step-2 </p>Complete eSign Verification</h2>
           <p className="text-gray-600 mb-12">
             Your KYC is verified! Please complete the eSign process to access your stock recommendations.
           </p>
@@ -1517,7 +1634,7 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
           </div>
           
           {userData?.esignData?.requestId && (
-            <p className="text-sm text-gray-500 mt-6">
+            <p className="text-sm font-semibold text-red-500 mt-6">
               eSign verification link has been sent to your email. Please check your inbox and complete the process.
             </p>
           )}
@@ -1555,6 +1672,10 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
 
 
   const subsToDisplay = activeSubs.length > 0 ? activeSubs : (activeTab ? [activeTab] : []);
+
+  if (subsToDisplay.length > 0 && !subsToDisplay.includes("stock-of-month")) {
+    subsToDisplay.push("stock-of-month");
+  }
 
   console.log('Rendering component. showEsignStatusPopup:', showEsignStatusPopup, 'esignStatusMessage:', esignStatusMessage);
   
