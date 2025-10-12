@@ -1345,7 +1345,15 @@ useEffect(() => {
                                         : 'text-gray-500'
                                     }`}
                         >
-                          {stringValue}
+                          {
+                          /^https?:\/\//.test(stringValue) ? (
+                            <a href={stringValue} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                              Research Report
+                            </a>
+                          ) : (
+                            stringValue
+                          )
+                        }
                         </td>
                       );
                     })}
