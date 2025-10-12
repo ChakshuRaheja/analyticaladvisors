@@ -127,33 +127,80 @@ const FreeTrialCard = ({isTrialActive}) => {
         trialEndDate: trialEndDate.toISOString(),
         updatedAt: new Date().toISOString()
       });
+      
        
-
-      
-      
       //4. Send welcome email for free trial
       try {
-        const response = await fetch('https://asia-south1-aerobic-acronym-466116-e1.cloudfunctions.net/sendSubscriptionEmailHTTP', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify({
-            to: currentUser.email,
-            name: userData.displayName || 'User',
-            template: 2, // Using template ID 2 for free trial
-            params: {
-              trialEndDate: trialEndDate.toLocaleDateString(),
-              includedPlans: includedPlans.join(', ').replace(/_/g, ' ')
-            }
-          }),
-        });
-        console.log('Free trial welcome email sent successfully');
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
-        // Don't block the user flow if email fails
-      }
+  let emailStatus = { success: false, message: 'Email not sent' };
+
+  // Get user data first
+  const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+  const userData = userDoc.exists() ? userDoc.data() : {};
+
+  // Prepare email data
+  const emailData = {
+    to: currentUser.email,
+    name: userData.displayName || 'User',
+    templateId: 2, // Template ID for Free Trial
+    additionalParams: {
+      planName: '28-Day Free Trial (All Plans)',
+      startDate: new Date().toLocaleDateString(),
+    },
+  };
+
+  console.log('Sending Free Trial email with data:', emailData);
+
+  const response = await fetch(
+    'https://asia-south1-aerobic-acronym-466116-e1.cloudfunctions.net/sendSubscriptionEmailHTTP',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: emailData.to,
+        name: emailData.name,
+        templateId: emailData.templateId,
+        params: emailData.additionalParams,
+      }),
+    }
+  );
+
+  const responseText = await response.text();
+  let responseData;
+
+  try {
+    responseData = responseText ? JSON.parse(responseText) : {};
+  } catch (e) {
+    responseData = { error: 'Invalid JSON response', raw: responseText };
+  }
+
+  if (!response.ok) {
+    throw new Error(responseData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  emailStatus = {
+    success: true,
+    message: 'Free Trial Email sent successfully!',
+    data: responseData,
+  };
+
+  console.log('✅ Email sent successfully:', emailStatus);
+} catch (emailError) {
+  console.error('❌ Failed to send Free Trial email:', emailError);
+  emailStatus = {
+    success: false,
+    message: `Failed to send Free Trial email: ${emailError.message}`,
+    error: emailError,
+  };
+}
+
+
+      // // Show email status before redirecting
+      // alert(`Email Status: ${emailStatus.message}\n\n` +
+      //       `Success: ${emailStatus.success ? 'Yes' : 'No'}\n` +
+      //       `Details: ${JSON.stringify(emailStatus.data || emailStatus.error || 'No additional details')}`);
+
 
       // 5. Redirect to stock recommendations
       navigate('/stock-recommendations');
