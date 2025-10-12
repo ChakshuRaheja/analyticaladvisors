@@ -34,7 +34,7 @@ const initEsign = async (req, res) => {
       display_on_page: "all",
       include_authentication_url: true,
       comment: "Read message",
-      file_name: "AA_Terms and Conditions_20250924.pdf",
+      file_name: "analyticaladvisors_terms_and_conditions.pdf",
       file_data:base64PDF,
 
       send_sign_link: true,
