@@ -611,7 +611,6 @@ const PortfolioReview = () => {
               userId: currentUser.uid,
               email: currentUser.email || '',
               reviewId: reviewId,
-              reviewId: reviewId,
               portfolioReviewEnabled: true, // Boolean flag indicating portfolio review is enabled
               submissionDate: new Date(), // Keep track of when they submitted
             };
