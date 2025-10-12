@@ -472,7 +472,7 @@ const PortfolioReview = () => {
       try {
         // Prepare payload in the correct format for the backend
         const today = new Date().toISOString().split('T')[0];
-        const reviewId = Date.now().toString() + currentUser.email.slice(0,3);
+        const reviewId = Date.now().toString() + currentUser.email;
         const formattedRecords = selectedStocks.map(stock => ({
           REVIEW_ID: reviewId,
           STOCK_NAME: stock.symbol,
