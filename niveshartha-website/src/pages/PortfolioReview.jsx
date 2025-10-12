@@ -338,6 +338,7 @@ const PortfolioReview = () => {
         
         const data = await response.json();
         // console.log('API Response:', data);
+        // console.log('API Response:', data);
         
         // Handle different response formats
         let stocksArray;
@@ -609,6 +610,7 @@ const PortfolioReview = () => {
             const portfolioData = {
               userId: currentUser.uid,
               email: currentUser.email || '',
+              reviewId: reviewId,
               reviewId: reviewId,
               portfolioReviewEnabled: true, // Boolean flag indicating portfolio review is enabled
               submissionDate: new Date(), // Keep track of when they submitted
