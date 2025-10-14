@@ -291,7 +291,7 @@ const StockRecommendations = ({ activeSubscriptions = [] }) => {
 
   const getDigioOptions = (user, callback, onCancelCallback) => ({
     environment: 'sandbox',
-    logo: "/logo1.png",
+    logo: "https://analyticaladvisors.in/logo1.png",
     theme: {
       primaryColor: '#0052cc',
       secondaryColor: '#000000'
