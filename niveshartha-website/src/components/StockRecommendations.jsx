@@ -703,7 +703,6 @@ const checkKycStatusFromFirebase = async () => {
 // KYC Verification Functions
 const initiateKYC = async () => {
 
-  if (kycLoading) return;
   setKycLoading(true);
 
   try {
@@ -774,7 +773,6 @@ const initiateKYC = async () => {
 // eSign Verification Functions
 const handleInitiateEsign = async () => {
 
-  if (eSignLoading) return;
   setESignLoading(true);
   try {
     if (!currentUser?.email) {
