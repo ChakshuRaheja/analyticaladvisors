@@ -283,6 +283,8 @@ const StockRecommendations = ({ activeSubscriptions = [] }) => {
     setKycStatus('not_started');
     setEsignStatus('not_started');
     setKycEsignCompleted(false);
+    setKycLoading(false);
+    setESignLoading(false);
     toast.info("Process was cancelled. You can try again.");
   };
 
@@ -701,6 +703,7 @@ const checkKycStatusFromFirebase = async () => {
 // KYC Verification Functions
 const initiateKYC = async () => {
 
+  if (kycLoading) return;
   setKycLoading(true);
 
   try {
@@ -770,6 +773,8 @@ const initiateKYC = async () => {
 
 // eSign Verification Functions
 const handleInitiateEsign = async () => {
+
+  if (eSignLoading) return;
   setESignLoading(true);
   try {
     if (!currentUser?.email) {
