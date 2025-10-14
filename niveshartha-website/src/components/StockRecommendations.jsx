@@ -4,6 +4,7 @@ import { db } from '../firebase/config';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { initiateEsign as initiateEsignService, verifyEsignStatus } from '../services/esign.service';
+import { toast } from 'react-toastify';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -273,6 +274,30 @@ const StockRecommendations = ({ activeSubscriptions = [] }) => {
   const [showEsignStatusPopup, setShowEsignStatusPopup] = useState(false);
   const [kycEsignCompleted, setKycEsignCompleted] = useState(false);
   const [userData, setUserData] = useState(null);
+  const [kycLoading, setKycLoading] = useState(false);
+  const [eSignLoading, setESignLoading] = useState(false);
+
+  const handleDigioCancel = () => {
+    setShowKycPopup(false);
+    setShowEsignPopup(false);
+    setKycStatus('not_started');
+    setEsignStatus('not_started');
+    setKycEsignCompleted(false);
+    toast.info("Process was cancelled. You can try again.");
+  };
+
+
+  const getDigioOptions = (user, callback, onCancelCallback) => ({
+    environment: 'sandbox',
+    logo: "/logo1.png",
+    theme: {
+      primaryColor: '#0052cc',
+      secondaryColor: '#000000'
+    },
+    is_iframe: true,
+    callback,
+    cancel_callback: onCancelCallback
+  });
 
   const hasActiveTrial = async () => {
     if (!currentUser?.uid) return false;
@@ -475,7 +500,7 @@ const detectSubscriptions = async () => {
       const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reference_id: `KYC_${currentUser.uid}` }),
+        body: JSON.stringify({ reference_id: `KYC_${Date.now()}_${currentUser.uid}` }),
         credentials: 'include'
       });
       
@@ -675,6 +700,9 @@ const checkKycStatusFromFirebase = async () => {
 };
 // KYC Verification Functions
 const initiateKYC = async () => {
+
+  setKycLoading(true);
+
   try {
     console.log('Initiating KYC for user:', currentUser.email);
     
@@ -719,24 +747,34 @@ const initiateKYC = async () => {
         setUserData(userDoc.data());
       }
       
-      setShowKycPopup(true);
-      console.log('KYC initiated and stored in Firebase:', result.requestId);
+      const digio = new window.Digio(getDigioOptions(currentUser, async () => {
+        await checkKycStatusFromFirebase();
+        console.log("KYC updated");
+      }), handleDigioCancel);
+      digio.init(); // Required to initialize the popup/iframe
+
+      if (result.token_id) {
+        digio.submit(result.requestId, currentUser.email, result.token_id);
+      } else {
+        digio.submit(result.requestId, currentUser.email);
+      }
     } else {
-      alert('KYC failed: ' + result.message);
+      toast.error('KYC failed: ' + result.message);
     }
 
   } catch (error) {
     console.error('Error initiating KYC:', error);
-    alert('Something went wrong while initiating KYC.');
+    toast.error('Something went wrong while initiating KYC.');
   }
 };
 
 // eSign Verification Functions
 const handleInitiateEsign = async () => {
+  setESignLoading(true);
   try {
     if (!currentUser?.email) {
       console.error('No user email available');
-      alert('Please sign in to initiate eSign');
+      toast.success('Please sign in to initiate eSign');
       return;
     }
     console.log('Initiating eSign for user:', currentUser.email);
@@ -765,14 +803,31 @@ const handleInitiateEsign = async () => {
         setUserData(userDoc.data());
       }
 
-      setShowEsignPopup(true);
+      const digio = new window.Digio(getDigioOptions(currentUser, async (response) => {
+        console.log('🔁 eSign callback response:', response);
+
+        if (response.error_code) {
+          toast.error('eSign failed: ' + response.message);
+        } else {
+          toast.success('eSign completed successfully!');
+          await checkEsignStatusFromFirebase();
+        }
+      }), handleDigioCancel);
+
+      digio.init(); // Required
+      if (result.token_id) {
+        digio.submit(result.requestId, currentUser.email, result.token_id);
+      } else {
+        digio.submit(result.requestId, currentUser.email);
+      }
+
       console.log('eSign initiated and stored in Firebase:', result.requestId);
     } else {
-      alert('eSign failed: ' + result.message);
+      toast.error('eSign failed: ' + result.message);
     }
   } catch (error) {
     console.error('Error initiating eSign:', error);
-    alert('Something went wrong while initiating eSign.');
+    toast.error('Something went wrong while initiating eSign.');
   }
 };
 
@@ -1444,7 +1499,7 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
           </p>
           
           <div className="space-y-4">
-            {!userData?.kycData?.requestId ? (
+            {!userData?.kycData?.requestId || kycLoading || kycStatus === 'pending' ? (
               <button
                 onClick={initiateKYC}
                 className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
@@ -1489,16 +1544,16 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
             
           </div>
           
-          {userData?.kycData?.requestId && (
+          {/* {userData?.kycData?.requestId && (
             <p className="text-sm text-gray-500 mt-6">
               KYC verification link has been sent to your email. Please check your inbox and complete the process.
             </p>
-          )}
+          )} */}
         </div>
       </div>
       
       {/* KYC Success Popup */}
-      {showKycPopup && (
+      {/* {showKycPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="text-center">
@@ -1520,7 +1575,7 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
       {/* KYC Status Popup */}
       {showKycStatusPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1570,7 +1625,7 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
           </p>
           
           <div className="space-y-4">
-            {!userData?.esignData?.requestId ? (
+            {!userData?.esignData?.requestId || !eSignLoading ? (
               <button
                 onClick={handleInitiateEsign}
                 className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
@@ -1633,16 +1688,16 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
             
           </div>
           
-          {userData?.esignData?.requestId && (
+          {/* {userData?.esignData?.requestId && (
             <p className="text-sm font-semibold text-red-500 mt-6">
               eSign verification link has been sent to your email. Please check your inbox and complete the process.
             </p>
-          )}
+          )} */}
         </div>
       </div>
       
       {/* eSign Success Popup */}
-      {showEsignPopup && (
+      {/* {showEsignPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="text-center">
@@ -1664,7 +1719,7 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
     
   );
@@ -1713,57 +1768,57 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
           </p>
         </div>
 
-      {subsToDisplay.length > 0 ? (
-        <div>
-          <div className="flex border-b border-gray-200">
-            {subsToDisplay.map(plan => renderTab(plan))}
+        {subsToDisplay.length > 0 ? (
+          <div>
+            <div className="flex border-b border-gray-200">
+              {subsToDisplay.map(plan => renderTab(plan))}
+            </div>
+            <div className="mt-0">
+              {renderContent()}
+            </div>
           </div>
-          <div className="mt-0">
-            {renderContent()}
+        ) : (
+          <div className="text-center py-12">
+            <svg className="mx-auto h-12 w-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">No Active Recommendations</h3>
+            <p className="mt-1 text-sm text-gray-500">You do not have any active subscription plans with recommendations.</p>
+            <button
+              onClick={() => navigate('/subscription')}
+              className="mt-6 inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              View Subscription Plans
+            </button>
           </div>
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <svg className="mx-auto h-12 w-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <h3 className="mt-2 text-lg font-medium text-gray-900">No Active Recommendations</h3>
-          <p className="mt-1 text-sm text-gray-500">You do not have any active subscription plans with recommendations.</p>
-          <button
-            onClick={() => navigate('/subscription')}
-            className="mt-6 inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            View Subscription Plans
-          </button>
-        </div>
-      )}
+        )}
 
-      {activeTab === 'basic' && (
-        <div className="mt-8 rounded-md bg-indigo-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-indigo-800">Upgrade Your Plan</h3>
-              <div className="mt-2 text-sm text-indigo-700">
-                <p>You're currently viewing basic  recommendations. Upgrade to access premium features and more detailed analysis.</p>
+        {activeTab === 'basic' && (
+          <div className="mt-8 rounded-md bg-indigo-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+                </svg>
               </div>
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={() => navigate('/subscription')}
-                  className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                >
-                  View Plans
-                </button>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-indigo-800">Upgrade Your Plan</h3>
+                <div className="mt-2 text-sm text-indigo-700">
+                  <p>You're currently viewing basic  recommendations. Upgrade to access premium features and more detailed analysis.</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/subscription')}
+                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                  >
+                    View Plans
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </>
   );
