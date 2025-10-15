@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import ScrollAnimation from '../components/ScrollAnimation';
 import ImageCarousel from '../components/ImageCarousel';
@@ -8,6 +8,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ContactChannels } from '../constants/systemEnums';
 import Subscription from './Subscription';
+import FreeTrialCard from '../components/FreeTrialCard';
+import { db } from '../firebase/config';
+import { doc, getDoc} from 'firebase/firestore';
+
 // Image paths from public directory
 const p1 = '/images/p1.jpg';
 const p1Mobile = '/images/p1 (2).jpg';
@@ -38,10 +42,47 @@ const Home = ({ faqOnly = false }) => {
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [showWhatsAppMessage, setShowWhatsAppMessage] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showFreeTrialPopup, setShowFreeTrialPopup] = useState(false);
   
   // WhatsApp number - update this with your actual business number
   const whatsappNumber = ContactChannels.phone_NUMBER.replace(/[^0-9]/g, ""); // Format: country code + number (no + or spaces)
   const whatsappMessage = "Hello! I'm interested in learning more about your investment services.";
+
+  //freeTrial popUp
+  useEffect(() => {
+    const fetchTrialStatus = async () => {
+      if (!currentUser?.uid) return;
+
+      const hasSeenPopup = sessionStorage.getItem('hasSeenFreeTrialPopup');
+
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userSnap = await getDoc(userRef);
+
+        const trialActive = userSnap.exists() ? userSnap.data().trialActive : false;
+
+        const isEligibleForFreeTrial = !trialActive;
+
+        if (!hasSeenPopup && isEligibleForFreeTrial) {
+          const timer = setTimeout(() => {
+            setShowFreeTrialPopup(true);
+          }, 5000);
+
+          return () => clearTimeout(timer);
+        }
+      } catch (error) {
+        console.error('Error fetching trialActive:', error);
+      }
+    };
+
+    fetchTrialStatus();
+  }, [currentUser]);
+
+
+  const closeFreeTrialPopup = () => {
+    setShowFreeTrialPopup(false);
+    sessionStorage.setItem('hasSeenFreeTrialPopup', 'true');
+  };
 
   // Function to toggle WhatsApp message
   const toggleWhatsAppMessage = (e) => {
@@ -238,6 +279,58 @@ const Home = ({ faqOnly = false }) => {
   // Original return for normal home page
   return (
     <div className="min-h-screen flex flex-col">
+
+      {/* Free Trial Popup Modal */}
+      <AnimatePresence>
+        {showFreeTrialPopup && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeFreeTrialPopup}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            >
+              {/* Modal Container */}
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: "spring", duration: 0.5 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative max-w-full overflow-y-auto"
+              >
+
+                {/* FreeTrialCard Component */}
+                <FreeTrialCard onClose={closeFreeTrialPopup} className='ml-5' />
+                {/* Close Button */}
+                <button
+                  onClick={closeFreeTrialPopup}
+                  className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+                  aria-label="Close popup"
+                >
+                  <svg
+                    className="w-5 h-5 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
       {/* WhatsApp Click to Chat Button */}
       <div className="fixed left-4 bottom-6 z-50">
         {/* WhatsApp Message - Only appears when state is true */}

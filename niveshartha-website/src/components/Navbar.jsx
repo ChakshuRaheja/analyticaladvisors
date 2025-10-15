@@ -417,6 +417,22 @@ function Navbar() {
                       Free
                     </span>
                   </div>
+                ) : link.path === '/subscription' ? (
+                  <div key={link.path} className="relative">
+                    <NavLink
+                      path={link.path}
+                      text={link.text}
+                      isActive={location.pathname === link.path}
+                      isMobile={false}
+                      onClick={() => {
+                        const blocked = handleInterceptNavigation(link.path);
+                        return blocked;
+                      }}
+                    />
+                    <span className="absolute -top-3 -right-4 bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                      Free Trial
+                    </span>
+                  </div>
                 ) : (
                   <NavLink
                     key={link.path}
