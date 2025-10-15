@@ -51,22 +51,24 @@ const Home = ({ faqOnly = false }) => {
   //freeTrial popUp
   useEffect(() => {
     const fetchTrialStatus = async () => {
-      if (!currentUser?.uid) return;
-
-      const hasSeenPopup = sessionStorage.getItem('hasSeenFreeTrialPopup');
+      var hasSeenPopup = sessionStorage.getItem('hasSeenFreeTrialPopup');
 
       try {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userSnap = await getDoc(userRef);
+        var trialActive = false;
+        
+        if(currentUser){
+          hasSeenPopup = sessionStorage.setItem('hasSeenFreeTrialPopup', 'false');
+          const userRef = doc(db, 'users', currentUser.uid);
+          const userSnap = await getDoc(userRef);
+          trialActive = userSnap.exists() ? userSnap.data().trialActive : false;
+        }
+        const isEligibleForFreeTrial = !currentUser || !trialActive;
 
-        const trialActive = userSnap.exists() ? userSnap.data().trialActive : false;
-
-        const isEligibleForFreeTrial = !trialActive;
 
         if (!hasSeenPopup && isEligibleForFreeTrial) {
           const timer = setTimeout(() => {
             setShowFreeTrialPopup(true);
-          }, 5000);
+          }, 3000);
 
           return () => clearTimeout(timer);
         }
