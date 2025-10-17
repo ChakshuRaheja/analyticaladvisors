@@ -236,7 +236,7 @@ const FreeTrialCard = ({isTrialActive}) => {
     });
   };
   return (
-    <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+    <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 mb-8 mt-6">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
         <div className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-800 text-white text-center text-sm font-semibold">
           Start your 28-day FREE trial — all features included
@@ -245,7 +245,7 @@ const FreeTrialCard = ({isTrialActive}) => {
         <div className="p-6 text-center">
           <h3 className="text-2xl font-bold text-gray-900 mb-2">Free Trial</h3>
           <p className="text-gray-600 mb-6">Experience all features for 28 days, no credit card required</p>
-          
+        
           <div className="space-y-4 mb-6">
             <div className="flex flex-col items-center">
               <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

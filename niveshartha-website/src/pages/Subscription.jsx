@@ -748,7 +748,7 @@ if (plan.id === 'diy-screener') {
     <div className={isSubscriptionPage ? "min-h-screen bg-gray-50 py-20" : "bg-teal-50 py-20"}>
       <div className="container mx-auto px-4">
         <ScrollAnimation animation="from-bottom" delay={0.2}>
-          <div className="text-center mb-16">
+          <div className="text-center mt-6 mb-12">
             {isSubscriptionPage ?
               <h1 className="text-4xl font-bold text-gray-900 mb-4">
               Choose Your Plan

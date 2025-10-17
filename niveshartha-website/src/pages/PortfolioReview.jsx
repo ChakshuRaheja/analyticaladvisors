@@ -32,6 +32,7 @@ const PortfolioReview = () => {
   const [previousSubmission, setPreviousSubmission] = useState(null);
   const [portfolioResults, setPortfolioResults] = useState(null);
   const [loadingResults, setLoadingResults] = useState(false);
+  const [possiblePreviousSubmission, setPossiblePreviousSubmission] = useState(false);
   const debugMode = true; // Set to true to enable additional logging
 
   // Debug Firestore
@@ -267,6 +268,7 @@ const PortfolioReview = () => {
     // Check for previous submission
     const checkSubmission = async () => {
       try {
+        setPossiblePreviousSubmission(true);
         await checkPreviousSubmission(currentUser.uid);
       } catch (err) {
         console.error("Error checking previous submissions:", err);
@@ -786,7 +788,7 @@ const PortfolioReview = () => {
                   Return to Home
                 </Link>
               </div>
-            ) : hasSubmittedBefore && daysUntilNextSubmission > 0 ? (
+            ) : (hasSubmittedBefore && daysUntilNextSubmission > 0) || possiblePreviousSubmission ? (
               <div className="text-center py-10">
                 <h2 className="text-2xl font-semibold text-amber-600 mb-4">Portfolio Already Submitted</h2>
                 <p className="mb-2">You have already submitted a portfolio for review on {previousSubmission?.date.toLocaleDateString('en-GB')}.</p>

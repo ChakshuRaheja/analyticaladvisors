@@ -37,8 +37,8 @@ const initEsign = async (req, res) => {
       file_name: "analyticaladvisors_terms_and_conditions.pdf",
       file_data:base64PDF,
 
-      send_sign_link: true,
-      notify_signers: true
+      send_sign_link: false,
+      notify_signers: false
     };
 
     const response = await axios.post(

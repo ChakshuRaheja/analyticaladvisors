@@ -31,7 +31,7 @@ exports.initKYC = async (req, res) => {
       customer_name,
       reference_id,
       template_name: 'DIGILOKER INTEGRATION', 
-      notify_customer: true,
+      notify_customer: false, //as using SDK
       generate_access_token: true,
       request_details
     };
