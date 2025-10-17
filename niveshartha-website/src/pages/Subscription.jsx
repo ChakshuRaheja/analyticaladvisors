@@ -501,6 +501,10 @@ useEffect(() => {
   }
 
   const validateCouponCode = async () => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
     try {
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       const userData = userDoc.exists() ? userDoc.data() : {};
