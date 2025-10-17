@@ -454,6 +454,7 @@ useEffect(() => {
   }
   // Helper function to get the price for the selected duration
   const getPriceForDuration = (plan, duration) => {
+
     const pricing = plan.pricing.find(p => p.duration === duration);
     if (!pricing) return plan.price;
     // Extract number from price string (e.g., '₹3,000' -> 3000)
@@ -501,10 +502,7 @@ useEffect(() => {
   }
 
   const validateCouponCode = async () => {
-    if (!currentUser) {
-      navigate('/login');
-      return;
-    }
+
     try {
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       const userData = userDoc.exists() ? userDoc.data() : {};
@@ -550,11 +548,15 @@ useEffect(() => {
     }
   }
 
-  const handleSubscribe = async (plan) => {
+  const isUserLoogedin = () => {
     if (!currentUser) {
       navigate('/login');
       return;
     }
+  }
+
+  const handleSubscribe = async (plan) => {
+    isUserLoogedin();
 
     // Set loading state only for the selected plan
     setLoadingPlans(prev => ({ ...prev, [plan.id]: true }));
@@ -971,6 +973,7 @@ useEffect(() => {
 
                   <button
                     onClick={() => {
+                      isUserLoogedin();
                       const price = getPriceForDuration(plan, selectedDuration);
                       setPriceBeforeDiscount(price);
                       setPriceAfterDiscount(price);
@@ -1061,6 +1064,7 @@ useEffect(() => {
                             <div className="flex space-x-4">
                               <button
                                 onClick={() => {
+                                  isUserLoogedin();
                                   const price = getPriceForDuration(plan, selectedDuration);
                                   setPriceBeforeDiscount(price);
                                   setPriceAfterDiscount(price);
