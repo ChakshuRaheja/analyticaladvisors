@@ -1123,7 +1123,7 @@ useEffect(() => {
                       <h1 className="text-2xl text-teal-600 font-bold mb-4 text-center">Payment Summary</h1>
                       <h3 className="text-xl font-semibold mt-8 mb-12 flex flex-row justify-between">
                         <span className='flex flex-col'>{selectedPlanForPayment.name}: <span className='text-xs'>(One time payment)</span></span> 
-                        <span>₹{priceBeforeDiscount}<span className="text-sm text-gray-500 ml-1">/{selectedDuration}</span></span>
+                        <span>₹ {priceBeforeDiscount}<span className="text-sm text-gray-500 ml-1">/{selectedDuration}</span></span>
                       </h3> 
                       <h2 className="text-xl font-semibold mb-4 text-center">Apply Coupon</h2>
 
@@ -1162,12 +1162,12 @@ useEffect(() => {
                         setCouponError('')
                         }} />}
 
-                      <h2 className="text-xl font-semibold mb-4 flex flex-row justify-between">Discount: 
-                        <span className='text-red-600'>- ₹{discountValue}</span>
+                      <h2 className="text-xl font-semibold mt-4 mb-4 flex flex-row justify-between">Discount: 
+                        <span className='text-red-600'>-  ₹ {discountValue}</span>
                       </h2> 
                       <h3 className="text-xl font-semibold mb-8 flex flex-row justify-between">
                         <span className='flex flex-col'>Payable Amount: <span className='text-xs'>(inclusive all the tax)</span></span>
-                        <span className='text-green-600'>₹{priceAfterDiscount}</span>
+                        <span className='text-green-600'>₹ {priceAfterDiscount}</span>
                       </h3>
                       <div className="flex justify-end space-x-3 mt-4">
                         <button
