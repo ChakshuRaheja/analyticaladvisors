@@ -509,7 +509,7 @@ useEffect(() => {
       
       const couponsUsed = Array.isArray(userData.couponsUsed) ? userData.couponsUsed : [];
 
-      const hasUsedCoupon = couponsUsed.some(code => code === couponCode)
+      const hasUsedCoupon = couponsUsed.some(code => code.trim() === couponCode.trim())
       if (hasUsedCoupon){
         setCouponError('You have already used this coupon.');
         return 0;
@@ -1134,7 +1134,7 @@ useEffect(() => {
                           className="w-full border border-gray-300 px-4 py-2 rounded mb-3 mr-5 focus:outline-none focus:ring-2 focus:ring-teal-500"
                           value={couponCode}
                           onChange={(e) => {
-                            setCouponCode(e.target.value)
+                            setCouponCode(e.target.value.trim())
                             setIsDiscountApplied(false)
                             setCouponError('')
                           }}
