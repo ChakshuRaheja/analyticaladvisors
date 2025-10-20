@@ -649,7 +649,15 @@ function Navbar() {
                           Free
                         </span>
                       </span>
-                    ) : (
+                    ) : link.path === '/subscription'? (
+                        <span className="flex items-center space-x-1">
+                        <span>{link.text}</span>
+                        <span className="bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                          Free Trial
+                        </span>
+                      </span>
+                        
+                    ): (
                       link.text
                     )
                   }
