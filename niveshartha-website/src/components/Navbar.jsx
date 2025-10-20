@@ -107,9 +107,9 @@ const NavLink = ({ path, text, isActive, isMobile, onClick, hasDropdown, toggleD
           to={path}
           onClick={handleClick}
           className={`
-            block py-2 px-4
+            block py-2 px-4 [@media(max-width:1300px)]:px-1
             ${isMobile 
-              ? 'text-gray-800 font-bold' 
+              ? 'text-gray-800 font-bold'
               : isActive 
                 ? 'text-[#008080] font-extrabold' 
                 : 'text-gray-700 hover:text-[#008080] font-bold'
@@ -246,7 +246,7 @@ function Navbar() {
           : 'bg-white'
         }
       `}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:pr-8 lg:pl-0">
           <div className="flex justify-between xl:justify-center items-center h-20">
             {/* Logo and Brand Name */}
             <div className="flex-shrink-0">
@@ -259,7 +259,7 @@ function Navbar() {
                     navigate('/');
                   }
                 }}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-0"
               >
                 <img 
                   src="/logo1.png" 
@@ -275,7 +275,7 @@ function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="flex max-[1350px]:hidden items-center space-x-8">
+            <div className="flex max-[1023px]:hidden items-center xl:space-x-8 space-x-0 max-[1090]:-ml-4">
               {/* about dropdown */}
               <div className="relative ml-5" ref={aboutMenuRef}>
                 <motion.button
@@ -534,7 +534,7 @@ function Navbar() {
             </div>
 
             {/* Mobile menu button */}
-            <div className="hidden max-[1350px]:block ml-4">
+            <div className="hidden max-[1023px]:block ml-4">
               <button
                 onClick={handleDrawerToggle}
                 className="p-2 rounded-md transition-colors duration-300 text-gray-700 hover:text-[#008080] hover:bg-gray-100"
@@ -552,7 +552,7 @@ function Navbar() {
           initial={false}
           animate={{ x: drawerOpen ? 0 : '100%' }}
           transition={{ type: 'spring', damping: 20 }}
-          className="fixed inset-y-0 right-0 w-64 bg-white shadow-xl max-[1350px]:block hidden z-50 overflow-y-auto"
+          className="fixed inset-y-0 right-0 w-64 bg-white shadow-xl max-[1023px]:block hidden z-50 overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -649,7 +649,15 @@ function Navbar() {
                           Free
                         </span>
                       </span>
-                    ) : (
+                    ) : link.path === '/subscription'? (
+                        <span className="flex items-center space-x-1">
+                        <span>{link.text}</span>
+                        <span className="bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                          Free Trial
+                        </span>
+                      </span>
+                        
+                    ): (
                       link.text
                     )
                   }

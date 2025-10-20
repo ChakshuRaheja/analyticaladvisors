@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ScrollAnimation from '../components/ScrollAnimation';
-import { doc, setDoc, collection, addDoc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { doc, setDoc, collection, addDoc, getDoc, getDocs,updateDoc, query, where, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { createOrder, verifyPayment, loadRazorpayScript } from '../services/payment.service';
 import { initiateKYC } from '../services/kyc.service';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import FreeTrialCard from '../components/FreeTrialCard';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaTag, FaTimes } from "react-icons/fa";
 
 // Helper function to safely get environment variables
 const getEnv = (key, fallback = '') => {
@@ -83,7 +85,51 @@ const Subscription = () => {
   const isSubscriptionPage = location.pathname === '/subscription';
   const [hasActiveTrial, setHasActiveTrial] = useState(false);
   const [isTrialActive, setIsTrialActive] = useState(false);
-const [trialEndDate, setTrialEndDate] = useState(null);
+  const [trialEndDate, setTrialEndDate] = useState(null);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [selectedPlanForPayment, setSelectedPlanForPayment] = useState(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponCodeTag, setCouponCodeTag] = useState('');
+  const [couponError, setCouponError] = useState('');
+  const [priceAfterDiscount, setPriceAfterDiscount] = useState(null);
+  const [priceBeforeDiscount, setPriceBeforeDiscount] = useState(null);
+  const [isDiscountApplied, setIsDiscountApplied] = useState(false);
+  const [discountValue, setDiscountValue] = useState(0);
+  const [couponUsedCount, setCouponUsedCount] = useState(null);
+
+
+  useEffect(() => {
+    if (showCouponModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showCouponModal]);
+
+  // Close handler
+  const closeModal = () => {
+    setShowCouponModal(false);
+    setIsDiscountApplied(false);
+    setDiscountValue(0);
+    setCouponCodeTag('');
+    setCouponCode('');
+    setCouponError('');
+  };
+
+  const CouponTag = ({ code, onRemove }) => {
+    return (
+      <div className="flex items-center bg-blue-700 text-white px-4 py-2 rounded-full space-x-2 w-fit">
+        <FaTag className="text-white" />
+        <span className="uppercase font-medium tracking-wide">{code}</span>
+        <button onClick={onRemove} className="focus:outline-none hover:opacity-80">
+          <FaTimes />
+        </button>
+      </div>
+    );
+  }
 
   const checkIsTrialActive = async() => {
     try {
@@ -408,6 +454,7 @@ useEffect(() => {
   }
   // Helper function to get the price for the selected duration
   const getPriceForDuration = (plan, duration) => {
+
     const pricing = plan.pricing.find(p => p.duration === duration);
     if (!pricing) return plan.price;
     // Extract number from price string (e.g., '₹3,000' -> 3000)
@@ -445,11 +492,71 @@ useEffect(() => {
     return endDate;
   };
 
-  const handleSubscribe = async (plan) => {
+  const calculateDiscount = (discountPercentage, subscriptionPrice) => {
+    if(discountPercentage && !Number.isNaN(subscriptionPrice) && subscriptionPrice > 0){
+        const discountAmount = (subscriptionPrice * discountPercentage) / 100;
+        const roundedOfDiscountAmount = Number((discountAmount).toFixed(2));
+        setDiscountValue(roundedOfDiscountAmount);
+        return subscriptionPrice - roundedOfDiscountAmount
+      }
+  }
+
+  const validateCouponCode = async () => {
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      const userData = userDoc.exists() ? userDoc.data() : {};
+      
+      const couponsUsed = Array.isArray(userData.couponsUsed) ? userData.couponsUsed : [];
+
+      const hasUsedCoupon = couponsUsed.some(code => code.trim() === couponCode.trim())
+      if (hasUsedCoupon){
+        setCouponError('You have already used this coupon.');
+        return 0;
+      }
+      
+      const couponDoc = await getDoc(doc(db, 'coupons', couponCode));
+        let discount = 0;
+
+        if (couponDoc.exists()) {
+          const couponData = couponDoc.data();
+
+          if(!couponData.isActive){
+            setCouponError('Invalid coupon code.');
+            return discount;
+          }
+
+          discount = couponData?.discountPercentage ?? 0;
+          setCouponUsedCount(couponData?.usedCount ?? 0)        
+        }
+        else{
+          setCouponError('Invalid coupon code.');
+        }
+        if(discount > 0){
+          const Price = calculateDiscount(discount, priceBeforeDiscount);
+          const finalPrice = Number((Price).toFixed(2));
+
+          setPriceAfterDiscount(finalPrice);
+          setIsDiscountApplied(true);
+          setCouponCodeTag(couponCode)  
+        }
+        
+        return discount;  
+    } catch (error) {
+      setCouponError('Something went wrong while applying the coupon.');
+      return 0;
+    }
+  }
+
+  const isUserLoogedin = () => {
     if (!currentUser) {
       navigate('/login');
       return;
     }
+  }
+
+  const handleSubscribe = async (plan) => {
+    isUserLoogedin();
 
     // Set loading state only for the selected plan
     setLoadingPlans(prev => ({ ...prev, [plan.id]: true }));
@@ -478,13 +585,12 @@ useEffect(() => {
       }
 
       // Get price for the selected duration
-      const subscriptionPrice = getPriceForDuration(plan, selectedDuration);
-      console.log(`Creating order for plan: ${plan.name}, duration: ${selectedDuration}, price: ${subscriptionPrice}`);
+      const finalPriceAfterDiscount = priceAfterDiscount;
 
       try {
         // First, create order through backend
         const order = await createOrder(
-          subscriptionPrice, // Use the price for selected duration
+          finalPriceAfterDiscount, // Use the price for selected duration
           'INR',
           `order_${Date.now()}`,
           {
@@ -536,33 +642,6 @@ useEffect(() => {
               // Save subscription to Firestore
               await saveSubscription(plan, response);
               
-              // Initiate KYC process after successful payment (only for first-time users)
-// try {
-//   // Check if user has already completed KYC/eSign process
-//   const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-//   const userData = userDoc.exists() ? userDoc.data() : {};
-  
-//   if (!userData.kycEsignCompleted || !userData.kycEsignCompletedAt) {
-//     const kycResponse = await initiateKYC({
-//       customer_identifier: currentUser.email,
-//       customer_name: currentUser.displayName || 'Customer',
-//       reference_id: `KYC_${Date.now()}_${currentUser.uid}`,
-//       request_details: {
-//         subscription_plan: plan.id,
-//         payment_id: response.razorpay_payment_id
-//       }
-//     });
-    
-//     if (kycResponse.success) {
-//       console.log('KYC initiated successfully');
-//       setShowKycPopup(true);
-//     } else {
-//       console.error('KYC initiation failed:', kycResponse.message);
-//     }
-//   }
-// } catch (kycError) {
-//   console.error('KYC initiation failed:', kycError);
-// }
             } catch (error) {
               console.error("Payment verification failed:", error);
               setError(`Payment verification failed: ${error.message || 'Please try again or contact support.'}`);
@@ -648,7 +727,7 @@ useEffect(() => {
       const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       // Get price for the selected duration
-      const subscriptionPrice = getPriceForDuration(plan, selectedDuration);
+      const finalPriceAfterDiscount = priceAfterDiscount;
 
       // Start date
       const latestStartDate = latestActiveSubscription[0] ? latestActiveSubscription[0].endDate : new Date();
@@ -663,10 +742,11 @@ useEffect(() => {
         planId: plan.id,
         planName: plan.name,
         duration: selectedDuration,
-        price: subscriptionPrice,
+        price: finalPriceAfterDiscount,
         status: 'active',
         startDate: typeof latestStartDate?.toDate === 'function' ? latestStartDate.toDate() : latestStartDate,
         endDate: endDate,
+        couponUsed: couponCode
         // paymentId: paymentResponse.razorpay_payment_id,
         // orderId: paymentResponse.razorpay_order_id,
         // signature: paymentResponse.razorpay_signature,
@@ -676,9 +756,17 @@ useEffect(() => {
       console.log('Subscription saved successfully');
 
       try {
-        // Get user data
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        const userData = userDoc.exists() ? userDoc.data() : {};
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+          couponsUsed: arrayUnion(couponCode)
+        });
+
+        //update coupon used count
+        if(isDiscountApplied && couponUsedCount > -1){
+          await updateDoc(doc(db, 'coupons', couponCode), {
+            usedCount: couponUsedCount +1
+          });
+        }
+        
         
         // Map plan IDs to template IDs
         const templateMap = {
@@ -726,15 +814,15 @@ useEffect(() => {
       await fetchUserSubscriptions();
 
       
-// Redirect to stock recommendations page after successful payment
-        // Redirect based on plan type
-if (plan.id === 'diy-screener') {
-  console.log('Payment successful, redirecting to Analysis page...');
-  navigate('/analysis');
-} else {
-  console.log('Payment successful, redirecting to stock recommendations...');
-  navigate('/stock-recommendations');
-}
+      // Redirect to stock recommendations page after successful payment
+              // Redirect based on plan type
+      if (plan.id === 'diy-screener') {
+        console.log('Payment successful, redirecting to Analysis page...');
+        navigate('/analysis');
+      } else {
+        console.log('Payment successful, redirecting to stock recommendations...');
+        navigate('/stock-recommendations');
+      }
     } catch (error) {
       console.error('Error saving subscription:', error);
       setError('Payment successful but failed to activate subscription. Please contact support.');
@@ -884,7 +972,14 @@ if (plan.id === 'diy-screener') {
                   </div>
 
                   <button
-                    onClick={() => !plan.comingSoon && handleSubscribe(plan)}
+                    onClick={() => {
+                      isUserLoogedin();
+                      const price = getPriceForDuration(plan, selectedDuration);
+                      setPriceBeforeDiscount(price);
+                      setPriceAfterDiscount(price);
+                      setShowCouponModal(true);
+                      setSelectedPlanForPayment(plan); 
+                    }}
                     disabled={loadingPlans[plan.id] || plan.comingSoon}
                     className={`w-full py-2.5 px-4 rounded-lg font-medium text-white transition-all duration-200 mt-auto ${
                       loadingPlans[plan.id] || plan.comingSoon
@@ -968,7 +1063,14 @@ if (plan.id === 'diy-screener') {
                             
                             <div className="flex space-x-4">
                               <button
-                                onClick={() => handleSubscribe(plan)}
+                                onClick={() => {
+                                  isUserLoogedin();
+                                  const price = getPriceForDuration(plan, selectedDuration);
+                                  setPriceBeforeDiscount(price);
+                                  setPriceAfterDiscount(price);
+                                  setShowCouponModal(true);
+                                  setSelectedPlanForPayment(plan);
+                                }}
                                 disabled={loadingPlans[plan.id]}
                                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-white transition-all duration-200 ${
                                   loadingPlans[plan.id]
@@ -998,6 +1100,115 @@ if (plan.id === 'diy-screener') {
           </div>
         </ScrollAnimation>
       </div>
+            <AnimatePresence>
+              {showCouponModal && (
+                <div>
+                  {/* Backdrop */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={closeModal}
+                    className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 pt-20"
+                  >
+                    {/* Modal */}
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                      transition={{ type: "spring", duration: 0.5 }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="relative w-full max-w-4xl bg-white rounded-xl p-6 shadow-xl overflow-y-auto max-h-4xl"
+                    >
+                      <h1 className="text-2xl text-teal-600 font-bold mb-4 text-center">Payment Summary</h1>
+                      <h3 className="text-xl font-semibold mt-8 mb-12 flex flex-row justify-between">
+                        <span className='flex flex-col'>{selectedPlanForPayment.name}: <span className='text-xs'>(One time payment)</span></span> 
+                        <span>₹ {priceBeforeDiscount}<span className="text-sm text-gray-500 ml-1">/{selectedDuration}</span></span>
+                      </h3> 
+                      <h2 className="text-xl font-semibold mb-4 text-center">Apply Coupon</h2>
+
+                      <div className='flex flex-row'>
+                        <input
+                          type="text"
+                          placeholder="Enter coupon code"
+                          className="w-full border border-gray-300 px-4 py-2 rounded mb-3 mr-5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          value={couponCode}
+                          onChange={(e) => {
+                            setCouponCode(e.target.value.trim())
+                            setIsDiscountApplied(false)
+                            setCouponError('')
+                          }}
+                          maxLength={10}
+                        />
+                        <button 
+                        className={`px-4 py-2 mb-3 rounded text-white ${isDiscountApplied || couponError ? "bg-gray-600 cursor-not-allowed opacity-60" : "bg-teal-600 hover:bg-teal-700"}`}
+                        onClick={ () => {
+                          validateCouponCode()
+                        }}
+                        disabled={isDiscountApplied || couponError}
+                        > Apply </button>
+                      </div>
+
+                      {/* {coupon code error} */}
+                      {couponError && <p className="text-red-500 text-sm mb-2">{couponError}</p>}
+                      {couponCodeTag && <CouponTag code={couponCodeTag}
+                      onRemove={() => {
+                        setPriceAfterDiscount(priceBeforeDiscount); //resting the discount value
+                        setCouponCode('')
+                        setCouponCodeTag('')
+                        setIsDiscountApplied(false)
+                        setDiscountValue(0)
+                        setCouponCode('')
+                        setCouponError('')
+                        }} />}
+
+                      <h2 className="text-xl font-semibold mt-4 mb-4 flex flex-row justify-between">Discount: 
+                        <span className='text-red-600'>-  ₹ {discountValue}</span>
+                      </h2> 
+                      <h3 className="text-xl font-semibold mb-8 flex flex-row justify-between">
+                        <span className='flex flex-col'>Payable Amount: <span className='text-xs'>(inclusive all the tax)</span></span>
+                        <span className='text-green-600'>₹ {priceAfterDiscount}</span>
+                      </h3>
+                      <div className="flex justify-end space-x-3 mt-4">
+                        <button
+                          onClick={closeModal}
+                          className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSubscribe(selectedPlanForPayment)}
+                          className="px-4 py-2 rounded bg-teal-600 text-white hover:bg-teal-700"
+                        >
+                          {loadingPlans[selectedPlanForPayment.id] ? 'Processing...' : 'Continue to Payment'}
+                        </button>
+                      </div>
+
+                      {/* Close button top-right */}
+                      <button
+                        onClick={closeModal}
+                        className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center bg-white rounded-full  hover:bg-red-500 transition-colors"
+                        aria-label="Close popup"
+                      >
+                        <svg
+                          className="w-5 h-5 text-gray-600 hover:text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </motion.div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
     </div>
   );
 };
