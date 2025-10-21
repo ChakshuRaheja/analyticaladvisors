@@ -765,9 +765,11 @@ useEffect(() => {
       console.log('Subscription saved successfully');
 
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-          couponsUsed: arrayUnion(couponCode)
-        });
+        if(couponCode.length > 0 && couponCode !== ""){
+          await updateDoc(doc(db, 'users', currentUser.uid), {
+            couponsUsed: arrayUnion(couponCode)
+          });
+        }
 
         //update coupon used count
         if(isDiscountApplied && couponUsedCount > -1){
