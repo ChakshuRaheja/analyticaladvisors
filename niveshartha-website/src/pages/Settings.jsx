@@ -1577,7 +1577,7 @@ const Settings = () => {
       <div className="lg:hidden fixed top-20 left-4 z-20">
         <button
           onClick={toggleMobileMenu}
-          className="p-2 rounded-md bg-white shadow-md text-gray-700 hover:bg-gray-100"
+          className="p-2 rounded-md bg-white shadow-md text-gray-700 hover:bg-white-100"
         >
           {isMobileMenuOpen ? (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1600,14 +1600,14 @@ const Settings = () => {
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        <div className="p-4">
+        <div className="p-4 mt-10">
           <div className="flex items-center space-x-3 mb-6 p-2 border-b pb-4">
             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
               {currentUser.displayName 
                 ? currentUser.displayName.charAt(0).toUpperCase() 
                 : currentUser.email.charAt(0).toUpperCase()}
             </div>
-            <div>
+            <div className='mt-3'>
               <p className="font-medium">{currentUser.displayName || currentUser.email.split('@')[0]}</p>
             </div>
           </div>

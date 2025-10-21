@@ -174,7 +174,7 @@ const SubscriptionInfo = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <div>
+        <div className='ml-5 mt-5'>
           <h2 className="text-2xl font-bold text-gray-900">My Subscriptions</h2>
           <p className="mt-1 text-sm text-gray-500">Manage your active and past subscriptions</p>
         </div>
