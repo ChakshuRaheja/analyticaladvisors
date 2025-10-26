@@ -64,13 +64,21 @@ const SignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [nextPath, setNextPath] = useState(null);
+  const { claimFreeTrialPhone } = location.state || {};
 
 
   const { setIsBlocking, showConfirmModal, confirmNavigation, cancelNavigation } = useNavigationBlock();
   
-    useEffect(() => {
-      setIsBlocking(currentStep === 3);
-    }, [currentStep]);
+  useEffect(() => {
+    setIsBlocking(currentStep === 3);
+  }, [currentStep]);
+
+  useEffect(() => {
+    if(claimFreeTrialPhone){
+      setFormData({ ...formData, phone: claimFreeTrialPhone })
+      location.state = {}
+    }
+  })
   // Save form data to session storage whenever it changes
   useEffect(() => {
     sessionStorage.setItem('signupFormData', JSON.stringify(formData));
@@ -93,7 +101,7 @@ const SignUp = () => {
 
       // Redirect to login after delay
       const timer = setTimeout(() => {
-        navigate('/login');
+        navigate('/login', {state: {claimFreeTrialPhone: claimFreeTrialPhone }});
       }, 5000);
 
       return () => clearTimeout(timer);
@@ -641,7 +649,7 @@ try {
                       className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200"
                       id="phone"
                       type="tel"
-                      placeholder="1234567890"
+                      placeholder="Enter Mobile No."
                       value={formData.phone}
                       onChange={(e) => {
                         // Allow only numbers
@@ -651,6 +659,7 @@ try {
                       pattern="[0-9]{10}"
                       title="Please enter a valid 10-digit phone number"
                       required
+                      maxLength={10}
                     />
                   </div>
                 </div>

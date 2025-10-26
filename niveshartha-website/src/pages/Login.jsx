@@ -14,6 +14,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const claimFreeTrialPhone = location.state || {};
  
   useEffect(() => {
     const hasRefreshedLogin = sessionStorage.getItem('hasRefreshedLogin');
@@ -40,7 +41,12 @@ const Login = () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       sessionStorage.removeItem('hasRefreshedLogin');
-      navigate('/');
+      if(Object.keys(claimFreeTrialPhone).length > 0){
+        navigate('/subscription');
+      }
+      else{
+        navigate('/');
+      }
     } catch (error) {
       setError('Invalid login credentials');
       console.error('Login error:', error);
