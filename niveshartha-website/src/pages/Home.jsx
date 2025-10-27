@@ -413,90 +413,93 @@ const Home = ({ faqOnly = false }) => {
       
       {/* Hero Section */}
 
-      <section className="relative pt-32 lg:pt-32 pb-16 lg:pb-20 font-Inter bg-[url('/images/landing_page_bg.jpg')] bg-cover bg-no-repeat text-white">
-      <h1 className="text-2xl lg:text-6xl text-white font-extrabold text-center leading-[40px] lg:leading-[80px]">
-        Empowering Traders and Investors 
-        <br />
-        through Research Excellence.
-      </h1>
+      <section className="relative pt-32 lg:pt-32 pb-16 lg:pb-20 font-Inter bg-[url('/images/landing_page_bg.webp')] bg-cover bg-no-repeat text-white">
+        <div className="absolute inset-0 bg-black/40 lg:bg-black/20"></div>
 
-      <p className="text-base lg:text-xl text-center mt-3 mx-5 lg:mt-6">
-        Comprehensive investment research and analysis to help you make informed decisions in the financial markets. Our expert insights and data-driven approach give you the edge you need.
-      </p>
+        <div className="relative z-10">
+          <h1 className="text-2xl lg:text-6xl text-[#f3f8fa] drop-shadow-[0_3px_8px_rgba(0,0,0,0.3)] font-extrabold text-center leading-[40px] lg:leading-[80px]">
+            Empowering Traders and Investors 
+            <br />
+            through Research Excellence.
+          </h1>
 
-      <div className="flex gap-3 lg:gap-11 justify-center items-center mt-8 lg:mt-16">
-        {<div className="min-w-[1px] w-px h-6 lg:h-11 bg-white"></div>}
-        <div className="flex flex-col items-center text-[10px] lg:text-base">
-          <p>SEBI Reg.</p>
-          <p className="font-semibold text-white flex items-center">
-            Research analysts
+          <p className="text-base lg:text-xl text-center mt-3 mx-5 lg:mt-6 text-white/85 drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]">
+            Comprehensive investment research and analysis to help you make informed decisions in the financial markets. Our expert insights and data-driven approach give you the edge you need.
           </p>
-        </div>
-        <div className="min-w-[1px] w-px h-6 lg:h-11 bg-white"></div>
-      </div>
 
-      {!currentUser ?
-        <div className="w-full lg:w-[662px] py-8 lg:py-16 mx-auto px-4">
-          <div className="flex rounded-[50px] bg-white p-1.5 lg:p-2 border border-primary lg:shadow-[4px_4px_50px_rgba(256,256,256,0.4)] shadow-[4px_4px_30px_rgba(256,256,256,0.4)]">
-            <div className="flex items-center lg:py-1 w-full">
-              <img
-                alt="india_flag"
-                loading="lazy"
-                width="56"
-                height="41"
-                decoding="async"
-                className="w-7 h-7 object-contain mx-3 lg:mx-5"
-                src="/images/india_flag.webp"
-              />
-              <div className="h-5 min-w-px bg-[#9D9D9D]"></div>
-              <input
-                type="text"
-                placeholder="Enter Mobile No."
-                className="w-full text-[#747474] font-Inter lg:text-base lg:font-medium lg:leading-7 text-xs font-medium leading-5 placeholder:text-[#9D9D9D] px-3 lg:px-4 focus:outline-none focus:ring-0 focus:border-transparent"
-                inputMode="numeric"
-                onInput={(e) => {
-                  setClaimFreeTrialPhone(e.target.value.replace(/[^0-9]/g, ''));
-                  setPhoneError(false);
-                }}
-                  
-                maxLength={10}
-              />
+          <div className="flex gap-3 lg:gap-11 justify-center items-center mt-8 lg:mt-16">
+            <div className="min-w-[1px] w-px h-6 lg:h-11 bg-white/70"></div>
+            <div className="flex flex-col items-center text-[10px] lg:text-base">
+              <p>SEBI Reg.</p>
+              <p className="font-semibold text-[#f9fafb] flex items-center drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
+                Research analysts
+              </p>
             </div>
-            {/* only show when the user is not logged in */}
-            <button 
-              className="inline-flex items-center justify-center whitespace-nowrap ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300 border border-primary bg-primary/80 text-white hover:bg-primary/90 disabled:bg-[#9D9D9D] rounded-full px-4 py-2 lg:px-6 ml-auto font-bold text-[10px] lg:text-base h-8 lg:h-10"
-              onClick={claimFreeTrialAction}
-            >
-              Claim FREE Trial
-            </button>
+            <div className="min-w-[1px] w-px h-6 lg:h-11 bg-white/70"></div>
           </div>
-          { phoneError && <p className="text-red-500 font-semi-bold text-ld m-2 ml-5">Phone number is required</p> }
-        </div>
-        : <div className='flex item-center justify-center mt-20'>
-            <Link 
-              to="/portfolio-review" 
-              className="inline-flex items-center text-blue-600 text-lg font-bold hover:text-blue-700 transition-colors group"
-            >
-              Free Portfolio Review
-              <svg 
-                className="w-5 h-5 ml-2 transform group-hover:translate-x-4 transition-transform" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24" 
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M14 5l7 7m0 0l-7 7m7-7H3" 
-                />
-              </svg>
-            </Link>
 
-          </div>
-        }
-    </section>
+          {!currentUser ?
+            <div className="w-full lg:w-[662px] py-8 lg:py-16 mx-auto px-4">
+              <div className="flex rounded-[50px] bg-white p-1.5 lg:p-2 border border-primary lg:shadow-[4px_4px_50px_rgba(256,256,256,0.4)] shadow-[4px_4px_30px_rgba(256,256,256,0.4)]">
+                <div className="flex items-center lg:py-1 w-full">
+                  <img
+                    alt="india_flag"
+                    loading="lazy"
+                    width="56"
+                    height="41"
+                    decoding="async"
+                    className="w-7 h-7 object-contain mx-3 lg:mx-5"
+                    src="/images/india_flag.webp"
+                  />
+                  <div className="h-5 min-w-px bg-[#9D9D9D]"></div>
+                  <input
+                    type="text"
+                    placeholder="Enter Mobile No."
+                    className="w-full text-[#747474] font-Inter lg:text-base lg:font-medium lg:leading-7 text-xs font-medium leading-5 placeholder:text-[#9D9D9D] px-3 lg:px-4 focus:outline-none focus:ring-0 focus:border-transparent"
+                    inputMode="numeric"
+                    onInput={(e) => {
+                      setClaimFreeTrialPhone(e.target.value.replace(/[^0-9]/g, ''));
+                      setPhoneError(false);
+                    }}
+                      
+                    maxLength={10}
+                  />
+                </div>
+                {/* only show when the user is not logged in */}
+                <button 
+                  className="inline-flex items-center justify-center whitespace-nowrap border border-primary bg-primary/90 hover:bg-primary text-white font-bold rounded-full px-4 py-2 lg:px-6 ml-auto text-[10px] lg:text-base h-8 lg:h-10 transition-all shadow-md hover:shadow-lg"
+                  onClick={claimFreeTrialAction}
+                >
+                  Claim FREE Trial
+                </button>
+              </div>
+              { phoneError && <p className="text-red-500 font-semi-bold text-ld m-2 ml-5">Phone number is required</p> }
+            </div>
+          : <div className='flex item-center justify-center h-[10vh] mt-20'>
+                <Link 
+                  to="/portfolio-review" 
+                  className="inline-flex items-center justify-center text-blue-600 bg-white/75 hover:bg-white/85 text-lg font-bold hover:text-blue-700 transition-colors group w-[40vh] bg-black rounded-full"
+                >
+                  Free Portfolio Review
+                  <svg 
+                    className="w-5 h-5 ml-2 transform group-hover:translate-x-4 transition-transform" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M14 5l7 7m0 0l-7 7m7-7H3" 
+                    />
+                  </svg>
+                </Link>
+            </div>
+          }
+        </div>
+      </section>
 
       {/* What We Offer Teaser */}
       <section className="py-16 bg-gray-50">

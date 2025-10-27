@@ -262,7 +262,7 @@ function Navbar() {
                 className="flex items-center space-x-0"
               >
                 <img 
-                  src="/logo1.png" 
+                  src="/logo1.webp" 
                   alt="Analytical Advisors Logo" 
                   className="h-12 w-auto"
                   style={{ minWidth: '48px' }}
