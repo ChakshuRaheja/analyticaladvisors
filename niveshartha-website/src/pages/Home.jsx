@@ -113,7 +113,7 @@ const Home = ({ faqOnly = false }) => {
 
   const claimFreeTrialAction = () => {
     //redirtect to signup page 
-    if(!currentUser && claimFreeTrialPhone){
+    if(!currentUser && claimFreeTrialPhone && claimFreeTrialPhone.length === 10){
       navigate("/signup", { state: { claimFreeTrialPhone: claimFreeTrialPhone } });
     }
     setPhoneError(true);
@@ -458,10 +458,10 @@ const Home = ({ faqOnly = false }) => {
                     className="w-full text-[#747474] font-Inter lg:text-base lg:font-medium lg:leading-7 text-xs font-medium leading-5 placeholder:text-[#9D9D9D] px-3 lg:px-4 focus:outline-none focus:ring-0 focus:border-transparent"
                     inputMode="numeric"
                     onInput={(e) => {
-                      setClaimFreeTrialPhone(e.target.value.replace(/[^0-9]/g, ''));
+                      e.target.value = e.target.value.replace(/[^0-9]/g, '')
+                      setClaimFreeTrialPhone(e.target.value);
                       setPhoneError(false);
-                    }}
-                      
+                    }}   
                     maxLength={10}
                   />
                 </div>
@@ -473,7 +473,7 @@ const Home = ({ faqOnly = false }) => {
                   Claim FREE Trial
                 </button>
               </div>
-              { phoneError && <p className="text-red-500 font-semi-bold text-ld m-2 ml-5">Phone number is required</p> }
+              { phoneError ? <p className="text-red-500 font-semibold text-ld m-2 ml-5">Valid phone number is required.</p> : <p className="f m-2 ml-5 text-white/0">.</p> }
             </div>
           : <div className='flex item-center justify-center h-[10vh] mt-20'>
                 <Link 
