@@ -475,27 +475,29 @@ const Home = ({ faqOnly = false }) => {
               </div>
               { phoneError ? <p className="text-red-500 font-semibold text-ld m-2 ml-5">Valid phone number is required.</p> : <p className="f m-2 ml-5 text-white/0">.</p> }
             </div>
-          : <div className='flex item-center justify-center h-[10vh] mt-20'>
-                <Link 
-                  to="/portfolio-review" 
-                  className="inline-flex items-center justify-center text-blue-600 bg-white/75 hover:bg-white/85 text-lg font-bold hover:text-blue-700 transition-colors group w-[40vh] bg-black rounded-full"
-                >
-                  Free Portfolio Review
-                  <svg 
-                    className="w-5 h-5 ml-2 transform group-hover:translate-x-4 transition-transform" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24" 
-                    xmlns="http://www.w3.org/2000/svg"
+          : <div className='flex items-center justify-center h-full w-full mt-20'>
+                <div className='flex items-center flex-basis justify-center bg-white/75 hover:bg-white/85 rounded-full'>
+                  <Link 
+                    to="/portfolio-review" 
+                    className="inline-flex items-center justify-center text-blue-600 text-lg font-bold hover:text-blue-700 transition-colors group rounded-full m-4"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M14 5l7 7m0 0l-7 7m7-7H3" 
-                    />
-                  </svg>
-                </Link>
+                    Free Portfolio Review
+                    <svg 
+                      className="w-5 h-5 ml-2 transform group-hover:translate-x-4 transition-transform" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M14 5l7 7m0 0l-7 7m7-7H3" 
+                      />
+                    </svg>
+                  </Link>
+                </div>
             </div>
           }
         </div>
