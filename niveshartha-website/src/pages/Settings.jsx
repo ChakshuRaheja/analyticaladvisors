@@ -1333,6 +1333,7 @@ const Settings = () => {
                           placeholder={"Enter 10-digit phone number"}
                           pattern="[0-9]{10}"
                           title="Please enter a valid 10-digit phone number"
+                          maxLength={10}
                         />
                       </div>
                     ) : (
