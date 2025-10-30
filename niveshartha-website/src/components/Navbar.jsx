@@ -262,7 +262,7 @@ function Navbar() {
                 className="flex items-center space-x-0"
               >
                 <img 
-                  src="/logo1.png" 
+                  src="/logo1.webp" 
                   alt="Analytical Advisors Logo" 
                   className="h-12 w-auto"
                   style={{ minWidth: '48px' }}
@@ -417,7 +417,7 @@ function Navbar() {
                       Free
                     </span>
                   </div>
-                ) : link.path === '/subscription' ? (
+                ) : link.path === '/subscription' && !currentUser ? (
                   <div key={link.path} className="relative">
                     <NavLink
                       path={link.path}
@@ -649,7 +649,7 @@ function Navbar() {
                           Free
                         </span>
                       </span>
-                    ) : link.path === '/subscription'? (
+                    ) : link.path === '/subscription' && !currentUser ? (
                         <span className="flex items-center space-x-1">
                         <span>{link.text}</span>
                         <span className="bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">

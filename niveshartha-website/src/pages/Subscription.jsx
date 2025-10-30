@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ScrollAnimation from '../components/ScrollAnimation';
-import { doc, setDoc, collection, addDoc, getDoc, getDocs,updateDoc, query, where, arrayUnion } from 'firebase/firestore';
+import { doc, setDoc, collection, addDoc, getDoc, getDocs,updateDoc, query, where, arrayUnion, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { createOrder, verifyPayment, loadRazorpayScript } from '../services/payment.service';
 import { initiateKYC } from '../services/kyc.service';
@@ -548,6 +548,13 @@ useEffect(() => {
     }
   }
 
+  function addDaysToTimestamp(timestamp, days) {
+    const date = timestamp.toDate(); // Convert to JavaScript Date
+    date.setDate(date.getDate() + days); // Add the days
+    date.setHours(0, 0, 0, 0);
+    return Timestamp.fromDate(date); // Convert back to Firestore Timestamp
+  }
+
   const isUserLoogedin = () => {
     if (!currentUser) {
       navigate('/login');
@@ -730,7 +737,9 @@ useEffect(() => {
       const finalPriceAfterDiscount = priceAfterDiscount;
 
       // Start date
-      const latestStartDate = latestActiveSubscription[0] ? latestActiveSubscription[0].endDate : new Date();
+      const latestStartDate = latestActiveSubscription[0] 
+      ? addDaysToTimestamp(latestActiveSubscription[0].endDate, 1)
+      : new Date();
 
       // Calculate end date based on selected duration
       const endDate = calculateEndDate(selectedDuration, latestStartDate);
@@ -756,9 +765,11 @@ useEffect(() => {
       console.log('Subscription saved successfully');
 
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-          couponsUsed: arrayUnion(couponCode)
-        });
+        if(couponCode.length > 0 && couponCode !== ""){
+          await updateDoc(doc(db, 'users', currentUser.uid), {
+            couponsUsed: arrayUnion(couponCode)
+          });
+        }
 
         //update coupon used count
         if(isDiscountApplied && couponUsedCount > -1){
