@@ -64,7 +64,6 @@ const SignUp = () => {
   const location = useLocation();
   const [nextPath, setNextPath] = useState(null);
   const { claimFreeTrialPhone } = location.state || {};
-  const { currentUser } = useAuth();
 
 
   const { setIsBlocking, showConfirmModal, confirmNavigation, cancelNavigation } = useNavigationBlock();
