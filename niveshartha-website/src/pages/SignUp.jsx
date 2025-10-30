@@ -19,7 +19,6 @@ import { toast } from 'react-toastify';
 import { httpsCallable } from 'firebase/functions';
 import { useNavigationBlock } from '../context/NavigationBlockContext';
 
-
 const SignUp = () => {
   const [currentStep, setCurrentStep] = useState(1);
   // Load saved form data from session storage on component mount
@@ -65,9 +64,16 @@ const SignUp = () => {
   const location = useLocation();
   const [nextPath, setNextPath] = useState(null);
   const { claimFreeTrialPhone } = location.state || {};
+  const { currentUser } = useAuth();
 
 
   const { setIsBlocking, showConfirmModal, confirmNavigation, cancelNavigation } = useNavigationBlock();
+
+  useEffect(() => {
+    if (auth.currentUser){
+      navigate('/');
+    }
+  })
   
   useEffect(() => {
     setIsBlocking(currentStep === 3);

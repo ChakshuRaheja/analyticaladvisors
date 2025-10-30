@@ -17,6 +17,12 @@ const Login = () => {
   const claimFreeTrialPhone = location.state || {};
  
   useEffect(() => {
+    if (auth.currentUser){
+      navigate('/');
+    }
+  })
+
+  useEffect(() => {
     const hasRefreshedLogin = sessionStorage.getItem('hasRefreshedLogin');
     const timeout = setTimeout(() => {
       console.log('hasRefreshedLogin')
