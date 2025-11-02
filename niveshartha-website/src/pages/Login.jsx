@@ -62,7 +62,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white mt-12 py-20">
+    <div className="min-h-screen bg-white py-20">
       <div className="container mx-auto mt-20 px-4">
         <ScrollAnimation animation="from-bottom" delay={0.2}>
           <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-xl">
