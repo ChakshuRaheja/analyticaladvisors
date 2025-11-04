@@ -69,7 +69,7 @@ const SignUp = () => {
   const { setIsBlocking, showConfirmModal, confirmNavigation, cancelNavigation } = useNavigationBlock();
 
   useEffect(() => {
-    if (auth.currentUser){
+    if (auth.currentUser && claimFreeTrialPhone){
       navigate('/');
     }
   })
@@ -214,7 +214,7 @@ const SignUp = () => {
   useEffect(() => {
     if (currentStep === 3) {
       const handleBeforeUnload = async (e) => {
-        e.preventDefault();
+        // e.preventDefault();
         e.returnValue = ""; // Chrome requires returnValue to be set
         if (auth.currentUser) {
           try {
