@@ -18,7 +18,7 @@ import { db, functions } from '../firebase/config';
 import { toast } from 'react-toastify';
 import { httpsCallable } from 'firebase/functions';
 import { useNavigationBlock } from '../context/NavigationBlockContext';
-
+import { sendNotificationToTelegram } from '../services/notification';
 
 const SignUp = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -68,6 +68,12 @@ const SignUp = () => {
 
 
   const { setIsBlocking, showConfirmModal, confirmNavigation, cancelNavigation } = useNavigationBlock();
+
+  useEffect(() => {
+    if (auth.currentUser && claimFreeTrialPhone){
+      navigate('/');
+    }
+  })
   
   useEffect(() => {
     setIsBlocking(currentStep === 3);
@@ -209,7 +215,7 @@ const SignUp = () => {
   useEffect(() => {
     if (currentStep === 3) {
       const handleBeforeUnload = async (e) => {
-        e.preventDefault();
+        // e.preventDefault();
         e.returnValue = ""; // Chrome requires returnValue to be set
         if (auth.currentUser) {
           try {
@@ -434,8 +440,11 @@ const SignUp = () => {
         role: 'user'
       });
 
+      //Send notification to internal telegram channel
+      const telegramNotificationBody = `New User Just signed up \n ${formData.firstName + ' ' + formData.lastName} \n ${formData.email} \n +91-${formData.phone}`;
+      await sendNotificationToTelegram(telegramNotificationBody);
+
       // Send welcome email
-     // Send welcome email
 try {
   console.log('Attempting to send welcome email to:', formData.email);
   await sendWelcomeEmail({
