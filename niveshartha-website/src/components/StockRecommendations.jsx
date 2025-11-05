@@ -719,7 +719,6 @@ const initiateKYC = async () => {
         user_id: currentUser.uid 
       }
     };
-    console.log('Sending KYC request with data:', kycData);
 
     const response = await fetch(`${API_BASE_URL}/api/kyc/init`, {
       method: 'POST',
