@@ -689,6 +689,9 @@ const checkKycStatusFromFirebase = async () => {
 
     // 4. If approved, check eSign status
     if (newStatus === 'approved') {
+      //send internal telegram notification
+      const telegramNotificationBody = `🪪✅ \nKyc Approved:- \n Name: ${currentUser.name} \n UserId: ${currentUser.uid}`
+      await sendNotificationToTelegram(telegramNotificationBody);
       checkEsignStatusFromFirebase();
     }
 
@@ -880,6 +883,8 @@ const checkEsignStatusFromFirebase = async () => {
     
     // Set the status message
     if (status === 'verified') {
+      const telegramNotificationBody = `✍️✅ \nESign verified:- \n Name: ${currentUser.name} \n UserId: ${currentUser.uid}`
+      await sendNotificationToTelegram(telegramNotificationBody);
       setEsignStatusMessage('eSign verification completed successfully! Your stock recommendations are now unlocked.');
       // Update KYC eSign completion status if both are verified
       if (kycStatus === 'verified') {

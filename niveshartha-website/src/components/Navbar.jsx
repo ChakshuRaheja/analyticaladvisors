@@ -272,7 +272,7 @@ function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="flex max-[1023px]:hidden items-center xl:space-x-8 space-x-0 max-[1090]:-ml-4">
+            <div className="flex max-[1023px]:hidden items-center xl:space-x-5 space-x-0 max-[1090]:-ml-4">
               {/* about dropdown */}
               <div className="relative ml-5" ref={aboutMenuRef}>
                 <motion.button
@@ -281,7 +281,7 @@ function Navbar() {
                   whileTap={{ scale: 0.95 }}
                   // className="flex items-center space-x-2 text-gray-700 hover:text-[#008080] focus:outline-none"
                   className={`
-                    relative block py-2 px-4
+                    relative block py-2 px-4 md:px-1
                     ${['/about', '/blog'].includes(location.pathname)
                       ? 'text-[#008080] font-extrabold after:opacity-100'
                       : 'text-gray-700 hover:text-[#008080] font-bold hover:after:opacity-100'
@@ -336,7 +336,7 @@ function Navbar() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={`
-                    relative block py-2 px-4
+                    relative block py-2 px-4 md:px-1
                     ${['/option-trading-for-beginners'].includes(location.pathname)
                       ? 'text-[#008080] font-extrabold after:opacity-100'
                       : 'text-gray-700 hover:text-[#008080] font-bold hover:after:opacity-100'

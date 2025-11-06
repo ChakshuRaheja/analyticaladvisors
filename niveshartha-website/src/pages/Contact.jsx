@@ -40,6 +40,10 @@ const Contact = () => {
       formDataObj.append('phone', formData.phone || 'Not provided');
       formDataObj.append('message', formData.message);
       
+      //send internal telegram notification
+      const telegramNotificationBody = `💬 \nContact Form Submission:- \n Name: ${formData.name} \n 'email', ${formData.email} \n ${'phone', formData.phone || 'Not provided'} \n ${'message', formData.message}`
+      await sendNotificationToTelegram(telegramNotificationBody);
+
       const response = await fetch('https://formsubmit.co/ajax/analyticaladvisors@gmail.com', {
         method: 'POST',
         body: formDataObj,

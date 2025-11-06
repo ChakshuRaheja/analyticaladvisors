@@ -441,7 +441,7 @@ const SignUp = () => {
       });
 
       //Send notification to internal telegram channel
-      const telegramNotificationBody = `New User Just signed up \n ${formData.firstName + ' ' + formData.lastName} \n ${formData.email} \n +91-${formData.phone}`;
+      const telegramNotificationBody = `👨‍💻 \n New User Just Signed Up \n ${formData.firstName + ' ' + formData.lastName} \n ${formData.email} \n +91-${formData.phone}`;
       await sendNotificationToTelegram(telegramNotificationBody);
 
       // Send welcome email

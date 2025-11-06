@@ -128,7 +128,10 @@ const FreeTrialCard = ({isTrialActive}) => {
         updatedAt: new Date().toISOString()
       });
       
-       
+      //send internal telegram notification
+      const telegramNotificationBody = `🆓 \nFree trial started by user:- \n Name: ${currentUser.name} \n UserId: ${currentUser.uid}`
+      await sendNotificationToTelegram(telegramNotificationBody);
+    
       //4. Send welcome email for free trial
       try {
   let emailStatus = { success: false, message: 'Email not sent' };
@@ -186,14 +189,14 @@ const FreeTrialCard = ({isTrialActive}) => {
   };
 
   console.log('✅ Email sent successfully:', emailStatus);
-} catch (emailError) {
-  console.error('❌ Failed to send Free Trial email:', emailError);
-  emailStatus = {
-    success: false,
-    message: `Failed to send Free Trial email: ${emailError.message}`,
-    error: emailError,
-  };
-}
+      } catch (emailError) {
+        console.error('❌ Failed to send Free Trial email:', emailError);
+        emailStatus = {
+          success: false,
+          message: `Failed to send Free Trial email: ${emailError.message}`,
+          error: emailError,
+        };
+      }
 
 
       // // Show email status before redirecting
