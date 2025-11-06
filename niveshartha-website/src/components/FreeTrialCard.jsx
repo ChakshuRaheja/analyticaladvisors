@@ -129,10 +129,6 @@ const FreeTrialCard = ({isTrialActive}) => {
         updatedAt: new Date().toISOString()
       });
       
-      //send internal telegram notification
-      const telegramNotificationBody = `🆓 \nFree trial started by user:- \n Name: ${currentUser.firstName +' '+ currentUser.lastName} \n UserId: ${currentUser.uid}`
-      await sendNotificationToTelegram(telegramNotificationBody);
-    
       //4. Send welcome email for free trial
       try {
   let emailStatus = { success: false, message: 'Email not sent' };
@@ -205,6 +201,9 @@ const FreeTrialCard = ({isTrialActive}) => {
       //       `Success: ${emailStatus.success ? 'Yes' : 'No'}\n` +
       //       `Details: ${JSON.stringify(emailStatus.data || emailStatus.error || 'No additional details')}`);
 
+      //send internal telegram notification
+      const telegramNotificationBody = `🆓 \nFree trial started by user:- \n Name: ${userData?.firstName +' '+ userData?.lastName} \n UserId: ${currentUser.uid}`
+      await sendNotificationToTelegram(telegramNotificationBody);
 
       // 5. Redirect to stock recommendations
       navigate('/stock-recommendations');

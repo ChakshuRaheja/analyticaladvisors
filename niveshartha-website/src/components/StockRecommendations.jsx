@@ -623,38 +623,6 @@ const checkKycStatusFromFirebase = async () => {
       return;
     }
 
-//     console.log('🔍 [DEBUG] Firebase KYC status:', userData.kycStatus);
-//     console.log('🔍 [DEBUG] Firebase KYC data status:', kycData.status);
-
-//     // If Firebase already has approved status, use it directly
-//     if (kycData.status === 'approved' || userData.kycStatus === 'approved') {
-//       console.log('🔍 [DEBUG] Using Firebase approved status directly');
-//       setKycStatus('verified');
-//       setIsCheckingKyc(false);
-//       return;
-//     }
-//     // Add this code when both KYC and eSign are verified
-// if (kycStatus === 'verified' && esignStatus === 'verified') {
-//   const userRef = doc(db, 'users', currentUser.uid);
-//   await updateDoc(userRef, {
-//     kycEsignCompleted: true,
-//     kycEsignCompletedAt: new Date().toISOString(),
-//     updatedAt: new Date().toISOString()
-//   });
-//   setKycEsignCompleted(true);
-
-// }
-
-//     // Only call backend API if Firebase doesn't have a proper status
-//     console.log('🔍 [DEBUG] Calling backend API for status check');
-//     const API_BASE_URL = import.meta.env.PROD ? import.meta.env.VITE_API_BASE_URL : "http://localhost:3001";
-//     const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify({ requestID: kycData.requestId }),
-//       credentials: 'include'
-//     });
-
     // 1. First, call the backend API to verify KYC status
     console.log('🔍 [DEBUG] Calling backend API for status check');
     const API_BASE_URL = import.meta.env.PROD ? import.meta.env.VITE_API_BASE_URL : "http://localhost:3001";
@@ -691,7 +659,7 @@ const checkKycStatusFromFirebase = async () => {
     // 4. If approved, check eSign status
     if (newStatus === 'approved') {
       //send internal telegram notification
-      const telegramNotificationBody = `🪪✅ \nKyc Approved:- \n Name: ${currentUser.name} \n UserId: ${currentUser.uid}`
+      const telegramNotificationBody = `🪪✅ \nKyc Approved:- \n Name: ${userData?.firstName +' '+userData?.lastName} \n UserId: ${currentUser.uid}`
       await sendNotificationToTelegram(telegramNotificationBody);
       checkEsignStatusFromFirebase();
     }
@@ -884,7 +852,7 @@ const checkEsignStatusFromFirebase = async () => {
     
     // Set the status message
     if (status === 'verified') {
-      const telegramNotificationBody = `✍️✅ \nESign verified:- \n Name: ${currentUser.name} \n UserId: ${currentUser.uid}`
+      const telegramNotificationBody = `✍️✅ \nESign verified:- \n Name: ${userData?.firstName +' '+ userData.lastName} \n UserId: ${currentUser.uid}`
       await sendNotificationToTelegram(telegramNotificationBody);
       setEsignStatusMessage('eSign verification completed successfully! Your stock recommendations are now unlocked.');
       // Update KYC eSign completion status if both are verified
