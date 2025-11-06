@@ -103,6 +103,54 @@ const API_CONFIG = {
 
 // Subscription configuration
 const SUBSCRIPTION_CONFIG = {
+  stock_of_month: {
+    name: 'Stock of the Month',
+    endpoint: API_CONFIG.endpoints.stock_of_month,
+    color: 'red',
+    instructions:{
+      title: 'Principles of Trading',
+      points:[
+        'Always use a stop-loss — no exceptions.',
+        'Diversify. Never risk more than 4-5% of your capital per instrument.',
+        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
+        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
+      ]
+    },
+    columns: [
+      // { id: 'srNo', label: 'Sr. No', sortable: true },
+      { id: 'stockName', label: 'Stock Name', sortable: true },
+      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
+      { id: 'type', label: 'Type', sortable: true },
+      { id: 'sector', label: 'Sector', sortable: true },
+      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
+      { id: 'recommendation', label: 'Recommendation', sortable: true },
+      { id: 'researchReport', label: 'Research Report', sortable: true }
+    ]
+  },
+  equity_investing: {
+    name: 'Equity Investing',
+    endpoint: API_CONFIG.endpoints.equity_investing,
+    color: 'purple',
+    instructions:{
+      title: 'Client Instructions – Please Read Before Taking Any Action',
+      points:[
+        'Buy only those stocks which are marked as Buy.',
+        'Maintain portfolio allocation as per the advised levels.',
+        'The remaining funds may be kept as cash or parked in the Stock of the Month.',
+        'Allocation is based on the total capital you plan to invest over the next year.'
+      ]
+    },
+    columns: [
+      // { id: 'srNo', label: 'Sr. No', sortable: true },
+      { id: 'stockName', label: 'Stock Name', sortable: true },
+      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
+      { id: 'type', label: 'Type', sortable: true },
+      { id: 'sector', label: 'Sector', sortable: true },
+      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
+      { id: 'recommendation', label: 'Recommendation', sortable: true },
+      { id: 'researchReport', label: 'Research Report', sortable: true }
+    ]
+  },
   swing_equity: {
     name: 'Swing Trading - Equity',
     endpoint: API_CONFIG.endpoints.swing_equity,
@@ -159,55 +207,7 @@ const SUBSCRIPTION_CONFIG = {
       { id: 'update', label: 'Update', sortable: true },
       { id: 'status', label: 'Status', sortable: true }
     ]
-  },
-  equity_investing: {
-    name: 'Equity Investing',
-    endpoint: API_CONFIG.endpoints.equity_investing,
-    color: 'purple',
-    instructions:{
-      title: 'Client Instructions – Please Read Before Taking Any Action',
-      points:[
-        'Buy only those stocks which are marked as Buy.',
-        'Maintain portfolio allocation as per the advised levels.',
-        'The remaining funds may be kept as cash or parked in the Stock of the Month.',
-        'Allocation is based on the total capital you plan to invest over the next year.'
-      ]
-    },
-    columns: [
-      // { id: 'srNo', label: 'Sr. No', sortable: true },
-      { id: 'stockName', label: 'Stock Name', sortable: true },
-      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
-      { id: 'type', label: 'Type', sortable: true },
-      { id: 'sector', label: 'Sector', sortable: true },
-      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
-      { id: 'recommendation', label: 'Recommendation', sortable: true },
-      { id: 'researchReport', label: 'Research Report', sortable: true }
-    ]
-  },
-  stock_of_month: {
-    name: 'Stock of the Month',
-    endpoint: API_CONFIG.endpoints.stock_of_month,
-    color: 'red',
-    instructions:{
-      title: 'Principles of Trading',
-      points:[
-        'Always use a stop-loss — no exceptions.',
-        'Diversify. Never risk more than 4-5% of your capital per instrument.',
-        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
-        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
-      ]
-    },
-    columns: [
-      // { id: 'srNo', label: 'Sr. No', sortable: true },
-      { id: 'stockName', label: 'Stock Name', sortable: true },
-      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
-      { id: 'type', label: 'Type', sortable: true },
-      { id: 'sector', label: 'Sector', sortable: true },
-      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
-      { id: 'recommendation', label: 'Recommendation', sortable: true },
-      { id: 'researchReport', label: 'Research Report', sortable: true }
-    ]
-  }
+  } 
 };
 
 const colorConfig = {
@@ -384,9 +384,9 @@ const detectSubscriptions = async () => {
     if (isTrialActive) {
       console.log('✅ Active trial found, activating all plans');
       const allPlans = [
+        'equity_investing',
         'swing_equity',
         'swing_commodity',
-        'equity_investing',
       ];
       setActiveSubs(allPlans);
       if (!activeTab && allPlans.length > 0) {
@@ -1705,7 +1705,7 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
   const subsToDisplay = activeSubs.length > 0 ? activeSubs : (activeTab ? [activeTab] : []);
 
   if (subsToDisplay.length > 0 && !subsToDisplay.includes("stock-of-month")) {
-    subsToDisplay.push("stock-of-month");
+    subsToDisplay.unshift("stock-of-month");
   }
 
   console.log('Rendering component. showEsignStatusPopup:', showEsignStatusPopup, 'esignStatusMessage:', esignStatusMessage);
