@@ -130,7 +130,7 @@ const FreeTrialCard = ({isTrialActive}) => {
       });
       
       //send internal telegram notification
-      const telegramNotificationBody = `🆓 \nFree trial started by user:- \n Name: ${currentUser.name} \n UserId: ${currentUser.uid}`
+      const telegramNotificationBody = `🆓 \nFree trial started by user:- \n Name: ${currentUser.firstName +' '+ currentUser.lastName} \n UserId: ${currentUser.uid}`
       await sendNotificationToTelegram(telegramNotificationBody);
     
       //4. Send welcome email for free trial
