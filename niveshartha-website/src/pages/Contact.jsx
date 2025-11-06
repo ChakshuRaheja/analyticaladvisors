@@ -4,6 +4,7 @@ import ScrollAnimation from '../components/ScrollAnimation';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ContactChannels, SocialMediaBaseUrls } from '../constants/systemEnums';
+import { sendNotificationToTelegram } from '../services/notification';
 
 
 const Contact = () => {

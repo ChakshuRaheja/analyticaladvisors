@@ -5,6 +5,7 @@ import { collection, addDoc, serverTimestamp, getDoc, doc, updateDoc, query, whe
 import { db } from '../firebase/config';
 import { initiateKYC } from '../services/kyc.service';
 import { sendSubscriptionEmail } from '../services/emailService';
+import { sendNotificationToTelegram } from '../services/notification';
 
 const FreeTrialCard = ({isTrialActive}) => {
   const { currentUser } = useAuth();
