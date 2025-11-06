@@ -3,6 +3,7 @@ import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigationBlock } from '../context/NavigationBlockContext';
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 
 // Navbar links configuration
@@ -140,6 +141,9 @@ function Navbar() {
   const { handleInterceptNavigation } = useNavigationBlock();
   const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
   const aboutMenuRef = useRef(null);
+  const [coursesMenuOpen, setCoursesMenuOpen] = useState(false);
+  const [coursesMenuOpenMobile, setCoursesMenuOpenMobile] = useState(false);
+  const coursesMenuRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -162,6 +166,9 @@ function Navbar() {
       if (aboutMenuRef.current && !aboutMenuRef.current.contains(event.target)) {
         setAboutMenuOpen(false);
       }
+      if (coursesMenuRef.current && !coursesMenuRef.current.contains(event.target)) {
+        setCoursesMenuOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -173,6 +180,8 @@ function Navbar() {
     setServicesMenuOpen(false);
     setProfileMenuOpen(false);
     setDrawerOpen(false);
+    setAboutMenuOpen(false);
+    setCoursesMenuOpen(false);
     
     // Always ensure body scrolling is enabled when route changes
     document.body.style.overflow = 'auto';
@@ -198,15 +207,11 @@ function Navbar() {
     }
   };
 
-  const handleAboutClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setAboutMenuOpen(!aboutMenuOpen);
-  };
-
-  const handleAboutDropdownItemClick = (path) => {
+  const handleDropdownItemClick = (path) => {
     const blocked = handleInterceptNavigation(path);
     setAboutMenuOpen(false);
+    setServicesMenuOpen(false);
+    setCoursesMenuOpen(false);
     if (!blocked) {
       navigate(path);
     }
@@ -227,14 +232,6 @@ function Navbar() {
     e.preventDefault();
     e.stopPropagation();
     setServicesMenuOpen(!servicesMenuOpen);
-  };
-
-  const handleDropdownItemClick = (path) => {
-    const blocked = handleInterceptNavigation(path);
-    setServicesMenuOpen(false);
-    if (!blocked) {
-      navigate(path); 
-    }
   };
 
   return (
@@ -317,16 +314,65 @@ function Navbar() {
                 {aboutMenuOpen && (
                   <div className="absolute left-0 mt-2 w-44 py-2 bg-white rounded-md shadow-xl z-50 border border-gray-100">
                     <button 
-                      onClick={() => handleAboutDropdownItemClick('/about')}
+                      onClick={() => handleDropdownItemClick('/about')}
                       className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
                     >
                       About Us
                     </button>
                     <button 
-                      onClick={() => handleAboutDropdownItemClick('/blog')}
+                      onClick={() => handleDropdownItemClick('/blog')}
                       className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
                     >
                       Blog
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* courses dropdown */}
+              <div className="relative ml-5" ref={coursesMenuRef}>
+                <motion.button
+                  onClick={() => setCoursesMenuOpen((prev) => !prev)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`
+                    relative block py-2 px-4
+                    ${['/option-trading-for-beginners'].includes(location.pathname)
+                      ? 'text-[#008080] font-extrabold after:opacity-100'
+                      : 'text-gray-700 hover:text-[#008080] font-bold hover:after:opacity-100'
+                    }
+                    after:content-['']
+                    after:absolute
+                    after:ml-4
+                    after:-bottom-1
+                    after:w-[2ch]
+                    after:h-[2px]
+                    after:bg-[#008080]
+                    after:opacity-0
+                    after:transition-opacity
+                    after:duration-200
+                    flex items-center
+                    transition-colors duration-200 rounded-md
+                  `}
+                  >
+                    Courses
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className={`h-4 w-4 ml-1 transition-transform duration-200 ${coursesMenuOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </motion.button>
+                {coursesMenuOpen && (
+                  <div className="absolute left-0 mt-2 w-44 py-2 bg-white rounded-md shadow-xl z-50 border border-gray-100">
+                    <button 
+                      onClick={() => handleDropdownItemClick('/option-trading-for-beginners')}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
+                    >
+                      Option Trading for Beginners
                     </button>
                   </div>
                 )}
@@ -606,6 +652,39 @@ function Navbar() {
                 return blocked;
               }}
             />
+
+            {/* Courses Dropdown */}
+            <div>
+              <button
+                onClick={() => setCoursesMenuOpenMobile((prev) => !prev)}
+                className="w-full flex items-center justify-between text-gray-800 font-bold py-3 rounded-md hover:bg-gray-100 transition-colors duration-200"
+              >
+                Courses
+                {coursesMenuOpenMobile ? (
+                  <ChevronUpIcon className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
+
+              {coursesMenuOpenMobile && (
+                <div className="pl-4 space-y-1">
+                  <NavLink
+                    key="/option-trading-for-beginners"
+                    path="/option-trading-for-beginners"
+                    text="Option Trading For Beginners"
+                    isActive={location.pathname === '/option-trading-for-beginners'}
+                    isMobile={true}
+                    onClick={() => {
+                      const blocked = handleInterceptNavigation('/option-trading-for-beginners');
+                      setDrawerOpen(false);
+                      setCoursesMenuOpenMobile(false);
+                      return blocked;
+                    }}
+                  />
+                </div>
+              )}
+            </div>
 
             {navLinks.flatMap((link) => {
               if (link.path === '/services') {

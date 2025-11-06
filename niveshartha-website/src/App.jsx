@@ -34,6 +34,7 @@ import KycCallback from './pages/KycCallback';
 import BlogPage from './pages/BlogPage';
 import BlogDetailPage from './pages/BlogDetailPage';
 import StockRecommendations from './components/StockRecommendations';
+import OptionTradingForBeginners from './pages/OptionTradingForBeginners';
 import {NavigationBlockProvider} from './context/NavigationBlockContext';
 
 // Component to conditionally render the footer based on the current route
@@ -96,6 +97,7 @@ function App() {
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/stock-recommendations" element={<PrivateRoute><StockRecommendations /></PrivateRoute>} />
                 <Route path="/blog/:id" element={<BlogDetailPage />} />
+                <Route path="/option-trading-for-beginners" element={<OptionTradingForBeginners />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
