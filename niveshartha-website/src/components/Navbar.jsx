@@ -279,7 +279,6 @@ function Navbar() {
                   onClick={() => setAboutMenuOpen((prev) => !prev)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  // className="flex items-center space-x-2 text-gray-700 hover:text-[#008080] focus:outline-none"
                   className={`
                     relative block py-2 px-4 md:px-1
                     ${['/about', '/blog'].includes(location.pathname)
@@ -399,7 +398,7 @@ function Navbar() {
                     )}
                   </div>
                 ) : link.path === '/portfolio-review' ? (
-                  <div key={link.path} className="relative">
+                  <div key={link.path} className="relative text-center">
                     <NavLink
                       path={link.path}
                       text={link.text}
