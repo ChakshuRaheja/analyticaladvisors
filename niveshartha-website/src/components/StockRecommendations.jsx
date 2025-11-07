@@ -277,6 +277,7 @@ const StockRecommendations = ({ activeSubscriptions = [] }) => {
   const [userData, setUserData] = useState(null);
   const [kycLoading, setKycLoading] = useState(false);
   const [eSignLoading, setESignLoading] = useState(false);
+  const [activeTrial, setActiveTrial] = useState(false);
 
   const handleDigioCancel = () => {
     setShowKycPopup(false);
@@ -454,6 +455,18 @@ const detectSubscriptions = async () => {
 
     fetchUserData();
   }, [currentUser]);
+
+  // checking if free trial is active
+  useEffect(() => {
+    if (!userData || !userData.trialEndDate) return;
+
+    const today = new Date();
+    const trialEndDate = new Date(userData.trialEndDate);
+    if (trialEndDate >= today){
+      setActiveTrial(true);
+    }
+  }, [userData]);
+
 
   // Check KYC status when component mounts or user changes
   useEffect(() => {
@@ -880,74 +893,23 @@ const checkEsignStatusFromFirebase = async () => {
   }
 };
 
-    
-   
+ // Consolidated effect to fetch data when activeTab, kycStatus,esignStatus and activeTrial change
+  useEffect(() => {
+    if (activeTab) {
+      const alreadyLoaded = stocks[activeTab] && stocks[activeTab].length > 0;
+      const isLoading = loading[activeTab];
 
-  // Test function to fetch and log raw API response
-  const testApiEndpoint = async () => {
-    try {
-      const endpoint = API_CONFIG.baseUrl + API_CONFIG.endpoints.swing_equity;
-      console.log('Testing API endpoint:', endpoint);
-      
-      const response = await fetchWithRetry(endpoint, {
-        method: 'GET',
-        mode: 'cors',
-        cache: 'no-cache',
-        credentials: 'omit'
-      });
-      
-      const data = await response.json();
-      console.log('Raw API Response (test):', JSON.stringify(data, null, 2));
-      
-      // Log response structure
-      if (Array.isArray(data)) {
-        console.log('Response is an array with length:', data.length);
-        if (data.length > 0) {
-          console.log('First item keys:', Object.keys(data[0]));
-          console.log('First item values:', data[0]);
-        }
-      } else if (data && typeof data === 'object') {
-        console.log('Response is an object with keys:', Object.keys(data));
-        // Check for common data containers
-        const possibleKeys = ['data', 'results', 'items', 'stocks', 'recommendations'];
-        for (const key of possibleKeys) {
-          if (Array.isArray(data[key])) {
-            console.log(`Found array in key '${key}' with ${data[key].length} items`);
-            if (data[key].length > 0) {
-              console.log(`First ${key} item:`, data[key][0]);
-            }
-          }
+      if (!alreadyLoaded && !isLoading) {
+        if (kycStatus === 'verified' && esignStatus === 'verified') {
+          fetchRecommendationData(activeTab);
+        } else if (activeTrial){
+          fetchRecommendationData(activeTab);
         }
       }
-      
-      return data;
-    } catch (error) {
-      console.error('Error testing API endpoint:', error);
-      return null;
     }
-  };
+  }, [activeTab, kycStatus, esignStatus, activeTrial]);
 
-  // Call the test function when component mounts
-  useEffect(() => {
-    testApiEndpoint();
-  }, []);
-
-  // Consolidated effect to fetch data when activeTab or kycStatus changes
- // Consolidated effect to fetch data when activeTab, kycStatus, and esignStatus change
-useEffect(() => {
-  if (activeTab && kycStatus === 'verified' && esignStatus === 'verified') {
-    const alreadyLoaded = stocks[activeTab] && stocks[activeTab].length > 0;
-    const isLoading = loading[activeTab];
-
-    
-
-    if (!alreadyLoaded && !isLoading) {
-      fetchSubscriptionData(activeTab);
-    }
-  }
-}, [activeTab, kycStatus, esignStatus]);
-
-  const fetchSubscriptionData = async (plan) => {
+  const fetchRecommendationData = async (plan) => {
     console.log(`[${plan}] Starting optimized data fetch`);
     setLoading((prev) => ({ ...prev, [plan]: true }));
     setErrors((prev) => ({ ...prev, [plan]: '' }));
@@ -1142,31 +1104,6 @@ useEffect(() => {
           mappedItem[ourField] = item[apiField] !== undefined ? item[apiField] : 'N/A';
         }
 
-        // // Handle plan-specific fields and data formatting
-        // if (plan === 'swing_equity' || plan === 'swing_commodity') {
-        //   // Ensure action is properly formatted
-        //   if (mappedItem.action === 'N/A' && item['Action (Buy / Sell)']) {
-        //     mappedItem.action = item['Action (Buy / Sell)'];
-        //   }
-          
-        //   // Format numbers to 2 decimal places
-        //   if (mappedItem.price && mappedItem.price !== 'N/A') {
-        //     mappedItem.price = parseFloat(mappedItem.price).toFixed(2);
-        //   }
-        //   if (mappedItem.target && mappedItem.target !== 'N/A') {
-        //     mappedItem.target = parseFloat(mappedItem.target).toFixed(2);
-        //   }
-        //   if (mappedItem.stopLoss && mappedItem.stopLoss !== 'N/A') {
-        //     mappedItem.stopLoss = parseFloat(mappedItem.stopLoss).toFixed(2);
-        //   }
-        //   if (mappedItem.exitPrice && mappedItem.exitPrice !== 'N/A') {
-        //     mappedItem.exitPrice = parseFloat(mappedItem.exitPrice).toFixed(2);
-        //   }
-        //   if (mappedItem.pl && mappedItem.pl !== 'N/A') {
-        //     mappedItem.pl = parseFloat(mappedItem.pl).toFixed(2);
-        //   }
-        // }
-        
         // Special handling for commodity tab
         if (plan === 'swing_commodity') {
           // Use stock name as commodity if commodity is not available
@@ -1424,7 +1361,7 @@ useEffect(() => {
     );
   }
 // Show KYC verification UI if not verified AND has active subscriptions AND not completed before
-if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
+if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted && !activeTrial) {
   return (
     <div className="container mx-auto px-4 py-16 pt-24 min-h-screen">
       <div className="text-base leading-relaxed text-gray-800">
@@ -1517,41 +1454,10 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
                 Proceed to Esign verification 
               </button>
             )}
-            
           </div>
-          
-          {/* {userData?.kycData?.requestId && (
-            <p className="text-sm text-gray-500 mt-6">
-              KYC verification link has been sent to your email. Please check your inbox and complete the process.
-            </p>
-          )} */}
         </div>
       </div>
-      
-      {/* KYC Success Popup */}
-      {/* {showKycPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">KYC Request Sent!</h3>
-              <p className="text-sm text-gray-500 mb-6">
-                We've sent a verification link to your email. Please check your inbox and complete the KYC process to unlock recommendations.
-              </p>
-              <button
-                onClick={() => setShowKycPopup(false)}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                Got it!
-              </button>
-            </div>
-          </div>
-        </div>
-      )} */}
+
       {/* KYC Status Popup */}
       {showKycStatusPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1584,7 +1490,7 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
 
 
 // Show eSign verification UI if KYC is verified but eSign is not AND not completed before
-if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted)  {
+if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted && !activeTrial)  {
   return (
     <div className="container mx-auto px-4 py-16 pt-24 min-h-screen">
       <div className="max-w-2xl mx-auto text-center">
