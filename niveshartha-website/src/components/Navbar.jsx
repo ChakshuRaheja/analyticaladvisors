@@ -8,7 +8,6 @@ import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 // Navbar links configuration
 const navLinks = [
-  // { path: '/', text: 'Home' },
   { path: '/portfolio-review', text: 'Portfolio Review' },
   { path: '/analysis', text: 'Analysis' },
   { path: '/subscription', text: 'Subscriptions' },
@@ -329,7 +328,7 @@ function Navbar() {
                     </div>
                   )}
                 </div>
-                {navLinks.slice(0, navLinks.length-2).map((link) => (
+                {navLinks.slice(0, navLinks.length-1).map((link) => (
                   link.text === 'Services' ? (
                     <div key={link.path} className="relative" ref={servicesMenuRef}>
                       <button
@@ -663,7 +662,7 @@ function Navbar() {
               }}
             />
 
-            {navLinks.slice(0, navLinks.length -2).flatMap((link) => {
+            {navLinks.slice(0, navLinks.length - 1).flatMap((link) => {
               if (link.path === '/services') {
                 // Special handling for 'Services' link in mobile view
                 return [
