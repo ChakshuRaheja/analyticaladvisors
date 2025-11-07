@@ -272,9 +272,9 @@ function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="flex max-[1023px]:hidden items-center xl:space-x-5 space-x-0 max-[1090]:-ml-4">
+            <div className="flex max-[1023px]:hidden items-center xl:space-x-4 space-x-0 max-[1090]:-ml-4">
               {/* about dropdown */}
-              <div className="relative ml-5" ref={aboutMenuRef}>
+              <div className="relative pl-16 ml-5" ref={aboutMenuRef}>
                 <motion.button
                   onClick={() => setAboutMenuOpen((prev) => !prev)}
                   whileHover={{ scale: 1.05 }}
@@ -329,56 +329,7 @@ function Navbar() {
                 )}
               </div>
 
-              {/* courses dropdown */}
-              <div className="relative ml-5" ref={coursesMenuRef}>
-                <motion.button
-                  onClick={() => setCoursesMenuOpen((prev) => !prev)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`
-                    relative block py-2 px-4 md:px-1
-                    ${['/option-trading-for-beginners'].includes(location.pathname)
-                      ? 'text-[#008080] font-extrabold after:opacity-100'
-                      : 'text-gray-700 hover:text-[#008080] font-bold hover:after:opacity-100'
-                    }
-                    after:content-['']
-                    after:absolute
-                    after:ml-4
-                    after:-bottom-1
-                    after:w-[2ch]
-                    after:h-[2px]
-                    after:bg-[#008080]
-                    after:opacity-0
-                    after:transition-opacity
-                    after:duration-200
-                    flex items-center
-                    transition-colors duration-200 rounded-md
-                  `}
-                  >
-                    Courses
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className={`h-4 w-4 ml-1 transition-transform duration-200 ${coursesMenuOpen ? 'rotate-180' : ''}`} 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </motion.button>
-                {coursesMenuOpen && (
-                  <div className="absolute left-0 mt-2 w-44 py-2 bg-white rounded-md shadow-xl z-50 border border-gray-100">
-                    <button 
-                      onClick={() => handleDropdownItemClick('/option-trading-for-beginners')}
-                      className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
-                    >
-                      Option Trading for Beginners
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {navLinks.map((link) => (
+              {navLinks.slice(0, navLinks.length-2).map((link) => (
                 link.text === 'Services' ? (
                   <div key={link.path} className="relative" ref={servicesMenuRef}>
                     <button
@@ -459,7 +410,7 @@ function Navbar() {
                         return blocked;
                       }}
                     />
-                    <span className="absolute -top-1 -right-4 bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                    <span className="absolute -top-1 -right-2 bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
                       Free
                     </span>
                   </div>
@@ -493,6 +444,65 @@ function Navbar() {
                   />
                 )
               ))}
+              {/* courses dropdown */}
+              <div className="relative ml-5" ref={coursesMenuRef}>
+                <motion.button
+                  onClick={() => setCoursesMenuOpen((prev) => !prev)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`
+                    relative block py-2 px-4 md:px-1
+                    ${['/option-trading-for-beginners'].includes(location.pathname)
+                      ? 'text-[#008080] font-extrabold after:opacity-100'
+                      : 'text-gray-700 hover:text-[#008080] font-bold hover:after:opacity-100'
+                    }
+                    after:content-['']
+                    after:absolute
+                    after:ml-4
+                    after:-bottom-1
+                    after:w-[2ch]
+                    after:h-[2px]
+                    after:bg-[#008080]
+                    after:opacity-0
+                    after:transition-opacity
+                    after:duration-200
+                    flex items-center
+                    transition-colors duration-200 rounded-md
+                  `}
+                  >
+                    Courses
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className={`h-4 w-4 ml-1 transition-transform duration-200 ${coursesMenuOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </motion.button>
+                {coursesMenuOpen && (
+                  <div className="absolute left-0 mt-2 w-44 py-2 bg-white rounded-md shadow-xl z-50 border border-gray-100">
+                    <button 
+                      onClick={() => handleDropdownItemClick('/option-trading-for-beginners')}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
+                    >
+                      Option Trading for Beginners
+                    </button>
+                  </div>
+                )}
+              </div>
+              <NavLink
+                    key={navLinks[navLinks.length -1].path}
+                    path={navLinks[navLinks.length -1].path}
+                    text={navLinks[navLinks.length -1].text}
+                    isActive={location.pathname === navLinks[navLinks.length -1].path}
+                    isMobile={false}
+                    onClick={() => {
+                      const blocked = handleInterceptNavigation(navLinks[navLinks.length -1].path);
+                      return blocked;
+                    }}
+                  />
               
               {currentUser ? (
                 <div className="relative" ref={profileMenuRef}>
@@ -653,40 +663,7 @@ function Navbar() {
               }}
             />
 
-            {/* Courses Dropdown */}
-            <div>
-              <button
-                onClick={() => setCoursesMenuOpenMobile((prev) => !prev)}
-                className="w-full flex items-center justify-between text-gray-800 font-bold py-3 rounded-md hover:bg-gray-100 transition-colors duration-200"
-              >
-                Courses
-                {coursesMenuOpenMobile ? (
-                  <ChevronUpIcon className="w-5 h-5 text-gray-500" />
-                ) : (
-                  <ChevronDownIcon className="w-5 h-5 text-gray-500" />
-                )}
-              </button>
-
-              {coursesMenuOpenMobile && (
-                <div className="pl-4 space-y-1">
-                  <NavLink
-                    key="/option-trading-for-beginners"
-                    path="/option-trading-for-beginners"
-                    text="Option Trading For Beginners"
-                    isActive={location.pathname === '/option-trading-for-beginners'}
-                    isMobile={true}
-                    onClick={() => {
-                      const blocked = handleInterceptNavigation('/option-trading-for-beginners');
-                      setDrawerOpen(false);
-                      setCoursesMenuOpenMobile(false);
-                      return blocked;
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {navLinks.flatMap((link) => {
+            {navLinks.slice(0, navLinks.length -2).flatMap((link) => {
               if (link.path === '/services') {
                 // Special handling for 'Services' link in mobile view
                 return [
@@ -748,8 +725,55 @@ function Navbar() {
                       return blocked;
                     }}
                 />
+                
               );
             })}
+            {/* Courses Dropdown */}
+            <div>
+              <button
+                onClick={() => setCoursesMenuOpenMobile((prev) => !prev)}
+                className="w-full flex items-center justify-between text-gray-800 font-bold py-3 rounded-md hover:bg-gray-100 transition-colors duration-200"
+              >
+                Courses
+                {coursesMenuOpenMobile ? (
+                  <ChevronUpIcon className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
+
+              {coursesMenuOpenMobile && (
+                <div className="pl-4 space-y-1">
+                  <NavLink
+                    key="/option-trading-for-beginners"
+                    path="/option-trading-for-beginners"
+                    text="Option Trading For Beginners"
+                    isActive={location.pathname === '/option-trading-for-beginners'}
+                    isMobile={true}
+                    onClick={() => {
+                      const blocked = handleInterceptNavigation('/option-trading-for-beginners');
+                      setDrawerOpen(false);
+                      setCoursesMenuOpenMobile(false);
+                      return blocked;
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <NavLink
+                  key={navLinks[navLinks.length - 1].path}
+                  path={navLinks[navLinks.length - 1].path}
+                  text= {navLinks[navLinks.length - 1].text}
+                  isActive={location.pathname === navLinks[navLinks.length - 1].path}
+                  isMobile={true}
+                  onClick={() => {
+                      const blocked = handleInterceptNavigation(navLinks[navLinks.length - 1].path);
+                      setDrawerOpen(false);
+                      return blocked;
+                    }}
+                />
+
             {currentUser && (
               <NavLink
                 path="/settings"
