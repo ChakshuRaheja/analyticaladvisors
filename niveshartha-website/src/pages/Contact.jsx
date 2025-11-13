@@ -4,6 +4,7 @@ import ScrollAnimation from '../components/ScrollAnimation';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ContactChannels, SocialMediaBaseUrls } from '../constants/systemEnums';
+import { sendNotificationToTelegram } from '../services/notification';
 
 
 const Contact = () => {
@@ -40,6 +41,10 @@ const Contact = () => {
       formDataObj.append('phone', formData.phone || 'Not provided');
       formDataObj.append('message', formData.message);
       
+      //send internal telegram notification
+      const telegramNotificationBody = `💬 \nContact Form Submission:- \n Name: ${formData.name} \n Email: ${formData.email} \n Phone: ${ formData.phone || 'Not provided'} \n Message: ${ formData.message}`
+      await sendNotificationToTelegram(telegramNotificationBody);
+
       const response = await fetch('https://formsubmit.co/ajax/analyticaladvisors@gmail.com', {
         method: 'POST',
         body: formDataObj,

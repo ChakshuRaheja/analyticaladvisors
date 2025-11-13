@@ -5,6 +5,7 @@ import { collection, addDoc, serverTimestamp, getDoc, doc, updateDoc, query, whe
 import { db } from '../firebase/config';
 import { initiateKYC } from '../services/kyc.service';
 import { sendSubscriptionEmail } from '../services/emailService';
+import { sendNotificationToTelegram } from '../services/notification';
 
 const FreeTrialCard = ({isTrialActive}) => {
   const { currentUser } = useAuth();
@@ -128,14 +129,17 @@ const FreeTrialCard = ({isTrialActive}) => {
         updatedAt: new Date().toISOString()
       });
       
-       
-      //4. Send welcome email for free trial
+      //4. Send welcome email and internal telegram notification for free trial
       try {
   let emailStatus = { success: false, message: 'Email not sent' };
 
   // Get user data first
   const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
   const userData = userDoc.exists() ? userDoc.data() : {};
+
+  //send internal telegram notification
+      const telegramNotificationBody = `🆓 \nFree trial started by user:- \n Name: ${userData?.firstName +' '+ userData?.lastName} \n UserId: ${currentUser.uid}`
+      await sendNotificationToTelegram(telegramNotificationBody);
 
   // Prepare email data
   const emailData = {
@@ -186,21 +190,14 @@ const FreeTrialCard = ({isTrialActive}) => {
   };
 
   console.log('✅ Email sent successfully:', emailStatus);
-} catch (emailError) {
-  console.error('❌ Failed to send Free Trial email:', emailError);
-  emailStatus = {
-    success: false,
-    message: `Failed to send Free Trial email: ${emailError.message}`,
-    error: emailError,
-  };
-}
-
-
-      // // Show email status before redirecting
-      // alert(`Email Status: ${emailStatus.message}\n\n` +
-      //       `Success: ${emailStatus.success ? 'Yes' : 'No'}\n` +
-      //       `Details: ${JSON.stringify(emailStatus.data || emailStatus.error || 'No additional details')}`);
-
+      } catch (emailError) {
+        console.error('❌ Failed to send Free Trial email:', emailError);
+        emailStatus = {
+          success: false,
+          message: `Failed to send Free Trial email: ${emailError.message}`,
+          error: emailError,
+        };
+      }
 
       // 5. Redirect to stock recommendations
       navigate('/stock-recommendations');

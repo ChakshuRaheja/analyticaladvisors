@@ -65,6 +65,7 @@ const SignUp = () => {
   const location = useLocation();
   const [nextPath, setNextPath] = useState(null);
   const { claimFreeTrialPhone } = location.state || {};
+  const [confirmPasswordError, setConfirmPasswordError] = useState(false);
 
 
   const { setIsBlocking, showConfirmModal, confirmNavigation, cancelNavigation } = useNavigationBlock();
@@ -404,6 +405,7 @@ const SignUp = () => {
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setConfirmPasswordError(true);
       return;
     }
 
@@ -441,7 +443,7 @@ const SignUp = () => {
       });
 
       //Send notification to internal telegram channel
-      const telegramNotificationBody = `New User Just signed up \n ${formData.firstName + ' ' + formData.lastName} \n ${formData.email} \n +91-${formData.phone}`;
+      const telegramNotificationBody = `👨‍💻 \n New User Just Signed Up \n ${formData.firstName + ' ' + formData.lastName} \n ${formData.email} \n +91-${formData.phone}`;
       await sendNotificationToTelegram(telegramNotificationBody);
 
       // Send welcome email
@@ -787,7 +789,9 @@ try {
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm your password"
                       value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value },
+                        setConfirmPasswordError(false)
+                      )}
                       required
                     />
                     <button
@@ -799,8 +803,10 @@ try {
                       {showConfirmPassword ? <FiEye size={18} /> : <FiEyeOff size={18} />}
                     </button>
                   </div>
+                  {confirmPasswordError && (
+                    <p className='text-red-600 font-semibold'> Passwords do not match </p>
+                  )}
                 </div>
-
                 <div className="flex items-start">
                   <div className="flex items-center h-5">
                     <input

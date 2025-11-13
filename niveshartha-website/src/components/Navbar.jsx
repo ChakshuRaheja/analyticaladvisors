@@ -3,11 +3,11 @@ import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigationBlock } from '../context/NavigationBlockContext';
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 
 // Navbar links configuration
 const navLinks = [
-  // { path: '/', text: 'Home' },
   { path: '/portfolio-review', text: 'Portfolio Review' },
   { path: '/analysis', text: 'Analysis' },
   { path: '/subscription', text: 'Subscriptions' },
@@ -107,7 +107,7 @@ const NavLink = ({ path, text, isActive, isMobile, onClick, hasDropdown, toggleD
           to={path}
           onClick={handleClick}
           className={`
-            block py-2 px-4 [@media(max-width:1300px)]:px-1
+            block py-2 px-4 whitespace-nowrap [@media(max-width:1300px)]:px-1
             ${isMobile 
               ? 'text-gray-800 font-bold'
               : isActive 
@@ -140,6 +140,9 @@ function Navbar() {
   const { handleInterceptNavigation } = useNavigationBlock();
   const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
   const aboutMenuRef = useRef(null);
+  const [coursesMenuOpen, setCoursesMenuOpen] = useState(false);
+  const [coursesMenuOpenMobile, setCoursesMenuOpenMobile] = useState(false);
+  const coursesMenuRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -162,6 +165,9 @@ function Navbar() {
       if (aboutMenuRef.current && !aboutMenuRef.current.contains(event.target)) {
         setAboutMenuOpen(false);
       }
+      if (coursesMenuRef.current && !coursesMenuRef.current.contains(event.target)) {
+        setCoursesMenuOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -173,6 +179,8 @@ function Navbar() {
     setServicesMenuOpen(false);
     setProfileMenuOpen(false);
     setDrawerOpen(false);
+    setAboutMenuOpen(false);
+    setCoursesMenuOpen(false);
     
     // Always ensure body scrolling is enabled when route changes
     document.body.style.overflow = 'auto';
@@ -198,15 +206,11 @@ function Navbar() {
     }
   };
 
-  const handleAboutClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setAboutMenuOpen(!aboutMenuOpen);
-  };
-
-  const handleAboutDropdownItemClick = (path) => {
+  const handleDropdownItemClick = (path) => {
     const blocked = handleInterceptNavigation(path);
     setAboutMenuOpen(false);
+    setServicesMenuOpen(false);
+    setCoursesMenuOpen(false);
     if (!blocked) {
       navigate(path);
     }
@@ -229,14 +233,6 @@ function Navbar() {
     setServicesMenuOpen(!servicesMenuOpen);
   };
 
-  const handleDropdownItemClick = (path) => {
-    const blocked = handleInterceptNavigation(path);
-    setServicesMenuOpen(false);
-    if (!blocked) {
-      navigate(path); 
-    }
-  };
-
   return (
     <HideOnScroll>
       <nav className={`
@@ -247,7 +243,7 @@ function Navbar() {
         }
       `}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:pr-8 lg:pl-0">
-          <div className="flex justify-between xl:justify-center items-center h-20">
+          <div className="flex justify-between justify-center items-center h-20">
             {/* Logo and Brand Name */}
             <div className="flex-shrink-0">
               <RouterLink
@@ -275,135 +271,167 @@ function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="flex max-[1023px]:hidden items-center xl:space-x-8 space-x-0 max-[1090]:-ml-4">
-              {/* about dropdown */}
-              <div className="relative ml-5" ref={aboutMenuRef}>
-                <motion.button
-                  onClick={() => setAboutMenuOpen((prev) => !prev)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  // className="flex items-center space-x-2 text-gray-700 hover:text-[#008080] focus:outline-none"
-                  className={`
-                    relative block py-2 px-4
-                    ${['/about', '/blog'].includes(location.pathname)
-                      ? 'text-[#008080] font-extrabold after:opacity-100'
-                      : 'text-gray-700 hover:text-[#008080] font-bold hover:after:opacity-100'
-                    }
-                    after:content-['']
-                    after:absolute
-                    after:ml-4
-                    after:-bottom-1
-                    after:w-[2ch]
-                    after:h-[2px]
-                    after:bg-[#008080]
-                    after:opacity-0
-                    after:transition-opacity
-                    after:duration-200
-                    flex items-center
-                    transition-colors duration-200 rounded-md
-                  `}
-                  >
-                    About
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className={`h-4 w-4 ml-1 transition-transform duration-200 ${aboutMenuOpen ? 'rotate-180' : ''}`} 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </motion.button>
-                {aboutMenuOpen && (
-                  <div className="absolute left-0 mt-2 w-44 py-2 bg-white rounded-md shadow-xl z-50 border border-gray-100">
-                    <button 
-                      onClick={() => handleAboutDropdownItemClick('/about')}
-                      className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
-                    >
-                      About Us
-                    </button>
-                    <button 
-                      onClick={() => handleAboutDropdownItemClick('/blog')}
-                      className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
-                    >
-                      Blog
-                    </button>
-                  </div>
-                )}
-              </div>
+            <div className="flex max-[1023px]:hidden items-center xl:space-x-4 space-x-0 max-[1090]:-ml-4">
 
-              {navLinks.map((link) => (
-                link.text === 'Services' ? (
-                  <div key={link.path} className="relative" ref={servicesMenuRef}>
-                    <button
-                      onClick={handleServicesClick}
-                      className={`
-                        block py-2 px-4
-                        ${location.pathname === '/services' || location.pathname === '/portfolio-review'
-                          ? 'text-[#008080] font-extrabold'
-                          : 'text-gray-700 hover:text-[#008080] font-bold'
-                        }
-                        relative transition-all duration-300 rounded-md
-                        flex items-center
-                      `}
+              <div className='flex items-center ml-auto'>
+                {/* about dropdown */}
+                <div className="relative" ref={aboutMenuRef}>
+                  <motion.button
+                    onClick={() => setAboutMenuOpen((prev) => !prev)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`
+                      relative block py-2 px-4 md:px-1
+                      ${['/about', '/blog'].includes(location.pathname)
+                        ? 'text-[#008080] font-extrabold after:opacity-100'
+                        : 'text-gray-700 hover:text-[#008080] font-bold hover:after:opacity-100'
+                      }
+                      after:content-['']
+                      after:absolute
+                      after:ml-4
+                      after:-bottom-1
+                      after:w-[2ch]
+                      after:h-[2px]
+                      after:bg-[#008080]
+                      after:opacity-0
+                      after:transition-opacity
+                      after:duration-200
+                      flex items-center
+                      transition-colors duration-200 rounded-md
+                    `}
                     >
-                      Services
+                      About
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
-                        className={`h-4 w-4 ml-1 transition-transform duration-200 ${servicesMenuOpen ? 'rotate-180' : ''}`} 
+                        className={`h-4 w-4 ml-1 transition-transform duration-200 ${aboutMenuOpen ? 'rotate-180' : ''}`} 
                         fill="none" 
                         viewBox="0 0 24 24" 
                         stroke="currentColor"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                    </button>
-                    
-                    {/* Services Menu Dropdown */}
-                    {servicesMenuOpen && (
-                      <div className="absolute left-0 mt-2 w-64 py-2 bg-white rounded-lg shadow-xl z-50 border border-gray-100">
-                        <div className="px-4 py-2 border-b border-gray-100">
-                          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Our Services</h3>
-                        </div>
-                        
-                        <div className="py-1">
-                          <button 
-                            onClick={() => handleDropdownItemClick('/portfolio-review')}
-                            className="w-full flex items-center px-4 py-3 text-gray-700 hover:text-[#008080] hover:bg-gray-50 transition-colors duration-200"
-                          >
-                            <span className="mr-3 text-xl">📊</span>
-                            <div>
-                              <p className="font-bold">Portfolio Review</p>
-                              <p className="text-sm text-gray-500">Get your portfolio analyzed by experts</p>
-                            </div>
-                          </button>
+                  </motion.button>
+                  {aboutMenuOpen && (
+                    <div className="absolute left-0 mt-2 w-44 py-2 bg-white rounded-md shadow-xl z-50 border border-gray-100">
+                      <button 
+                        onClick={() => handleDropdownItemClick('/about')}
+                        className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
+                      >
+                        About Us
+                      </button>
+                      <button 
+                        onClick={() => handleDropdownItemClick('/blog')}
+                        className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
+                      >
+                        Blog
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {navLinks.slice(0, navLinks.length-1).map((link) => (
+                  link.text === 'Services' ? (
+                    <div key={link.path} className="relative" ref={servicesMenuRef}>
+                      <button
+                        onClick={handleServicesClick}
+                        className={`
+                          block py-2 px-4
+                          ${location.pathname === '/services' || location.pathname === '/portfolio-review'
+                            ? 'text-[#008080] font-extrabold'
+                            : 'text-gray-700 hover:text-[#008080] font-bold'
+                          }
+                          relative transition-all duration-300 rounded-md
+                          flex items-center
+                        `}
+                      >
+                        Services
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          className={`h-4 w-4 ml-1 transition-transform duration-200 ${servicesMenuOpen ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {/* Services Menu Dropdown */}
+                      {servicesMenuOpen && (
+                        <div className="absolute left-0 mt-2 w-64 py-2 bg-white rounded-lg shadow-xl z-50 border border-gray-100">
+                          <div className="px-4 py-2 border-b border-gray-100">
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Our Services</h3>
+                          </div>
                           
-                          <button 
-                            onClick={() => handleDropdownItemClick('/services')}
-                            className="w-full flex items-center px-4 py-3 text-gray-700 hover:text-[#008080] hover:bg-gray-50 transition-colors duration-200"
-                          >
-                            <span className="mr-3 text-xl">🔍</span>
-                            <div>
-                              <p className="font-bold">All Services</p>
-                              <p className="text-sm text-gray-500">Explore our complete service offerings</p>
-                            </div>
-                          </button>
+                          <div className="py-1">
+                            <button 
+                              onClick={() => handleDropdownItemClick('/portfolio-review')}
+                              className="w-full flex items-center px-4 py-3 text-gray-700 hover:text-[#008080] hover:bg-gray-50 transition-colors duration-200"
+                            >
+                              <span className="mr-3 text-xl">📊</span>
+                              <div>
+                                <p className="font-bold">Portfolio Review</p>
+                                <p className="text-sm text-gray-500">Get your portfolio analyzed by experts</p>
+                              </div>
+                            </button>
+                            
+                            <button 
+                              onClick={() => handleDropdownItemClick('/services')}
+                              className="w-full flex items-center px-4 py-3 text-gray-700 hover:text-[#008080] hover:bg-gray-50 transition-colors duration-200"
+                            >
+                              <span className="mr-3 text-xl">🔍</span>
+                              <div>
+                                <p className="font-bold">All Services</p>
+                                <p className="text-sm text-gray-500">Explore our complete service offerings</p>
+                              </div>
+                            </button>
+                          </div>
+                          
+                          <div className="px-4 py-2 border-t border-gray-100">
+                            <button
+                              onClick={() => handleDropdownItemClick('/contact')}
+                              className="w-full text-center px-4 py-2 bg-[#008080] text-white rounded-md hover:bg-[#006666] transition-colors duration-200 font-bold"
+                            >
+                              Contact Us
+                            </button>
+                          </div>
                         </div>
-                        
-                        <div className="px-4 py-2 border-t border-gray-100">
-                          <button
-                            onClick={() => handleDropdownItemClick('/contact')}
-                            className="w-full text-center px-4 py-2 bg-[#008080] text-white rounded-md hover:bg-[#006666] transition-colors duration-200 font-bold"
-                          >
-                            Contact Us
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : link.path === '/portfolio-review' ? (
-                  <div key={link.path} className="relative">
+                      )}
+                    </div>
+                  ) : link.path === '/portfolio-review' ? (
+                    <div key={link.path} className="relative">
+                      <NavLink
+                        path={link.path}
+                        text={link.text}
+                        isActive={location.pathname === link.path}
+                        isMobile={false}
+                        onClick={() => {
+                          const blocked = handleInterceptNavigation(link.path);
+                          return blocked;
+                        }}
+                      />
+                      <span className="absolute -top-2 -right-1 bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                        Free
+                      </span>
+                    </div>
+                  ) : link.path === '/subscription' && !currentUser ? (
+                    <div key={link.path} className="relative">
+                      <NavLink
+                        path={link.path}
+                        text={link.text}
+                        isActive={location.pathname === link.path}
+                        isMobile={false}
+                        onClick={() => {
+                          const blocked = handleInterceptNavigation(link.path);
+                          return blocked;
+                        }}
+                      />
+                      <span className="absolute -top-3 -right-4 bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
+                        Free Trial
+                      </span>
+                    </div>
+                  ) : (
                     <NavLink
+                      key={link.path}
                       path={link.path}
                       text={link.text}
                       isActive={location.pathname === link.path}
@@ -413,42 +441,68 @@ function Navbar() {
                         return blocked;
                       }}
                     />
-                    <span className="absolute -top-1 -right-4 bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
-                      Free
-                    </span>
-                  </div>
-                ) : link.path === '/subscription' && !currentUser ? (
-                  <div key={link.path} className="relative">
-                    <NavLink
-                      path={link.path}
-                      text={link.text}
-                      isActive={location.pathname === link.path}
+                  )
+                ))}
+                {/* courses dropdown */}
+                <div className="relative ml-5" ref={coursesMenuRef}>
+                  <motion.button
+                    onClick={() => setCoursesMenuOpen((prev) => !prev)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`
+                      relative block py-2 px-4 md:px-1
+                      ${['/option-trading-for-beginners'].includes(location.pathname)
+                        ? 'text-[#008080] font-extrabold after:opacity-100'
+                        : 'text-gray-700 hover:text-[#008080] font-bold hover:after:opacity-100'
+                      }
+                      after:content-['']
+                      after:absolute
+                      after:ml-4
+                      after:-bottom-1
+                      after:w-[2ch]
+                      after:h-[2px]
+                      after:bg-[#008080]
+                      after:opacity-0
+                      after:transition-opacity
+                      after:duration-200
+                      flex items-center
+                      transition-colors duration-200 rounded-md
+                    `}
+                    >
+                      Courses
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className={`h-4 w-4 ml-1 transition-transform duration-200 ${coursesMenuOpen ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                  </motion.button>
+                  {coursesMenuOpen && (
+                    <div className="absolute left-0 mt-2 w-44 py-2 bg-white rounded-md shadow-xl z-50 border border-gray-100">
+                      <button 
+                        onClick={() => handleDropdownItemClick('/option-trading-for-beginners')}
+                        className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#008080] hover:bg-gray-50 font-bold transition-colors duration-200"
+                      >
+                        Option Trading for Beginners
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <NavLink
+                      key={navLinks[navLinks.length -1].path}
+                      path={navLinks[navLinks.length -1].path}
+                      text={navLinks[navLinks.length -1].text}
+                      isActive={location.pathname === navLinks[navLinks.length -1].path}
                       isMobile={false}
                       onClick={() => {
-                        const blocked = handleInterceptNavigation(link.path);
+                        const blocked = handleInterceptNavigation(navLinks[navLinks.length -1].path);
                         return blocked;
                       }}
                     />
-                    <span className="absolute -top-3 -right-4 bg-cyan-400 text-white text-xs font-bold px-2 py-0.5 rounded">
-                      Free Trial
-                    </span>
-                  </div>
-                ) : (
-                  <NavLink
-                    key={link.path}
-                    path={link.path}
-                    text={link.text}
-                    isActive={location.pathname === link.path}
-                    isMobile={false}
-                    onClick={() => {
-                      const blocked = handleInterceptNavigation(link.path);
-                      return blocked;
-                    }}
-                  />
-                )
-              ))}
-              
-              {currentUser ? (
+                {currentUser ? (
                 <div className="relative" ref={profileMenuRef}>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -504,33 +558,34 @@ function Navbar() {
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <RouterLink
-                      to="/login"
-                      className="text-gray-700 border border-gray-300 hover:text-[#008080] hover:border-[#008080] px-4 py-2 rounded-md transition-all duration-300 font-bold"
+                ) : (
+                  <div className="flex items-center space-x-4">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      Login 
-                    </RouterLink>
-                  </motion.div>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <RouterLink
-                      to="/signup"
-                      className="text-white bg-[#008080] hover:bg-[#006666] hover:text-white px-4 py-2 rounded-md font-bold transition-all duration-300 shadow-md whitespace-nowrap"
+                      <RouterLink
+                        to="/login"
+                        className="text-gray-700 border border-gray-300 hover:text-[#008080] hover:border-[#008080] px-4 py-2 rounded-md transition-all duration-300 font-bold"
+                      >
+                        Login 
+                      </RouterLink>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <RouterLink
+                        to="/signup"
+                        className="text-white bg-[#008080] hover:bg-[#006666] hover:text-white px-4 py-2 rounded-md font-bold transition-all duration-300 shadow-md whitespace-nowrap"
 
-                    >
-                      Sign Up
-                    </RouterLink>
-                  </motion.div>
-                </div>
-              )}
+                      >
+                        Sign Up
+                      </RouterLink>
+                    </motion.div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Mobile menu button */}
@@ -607,7 +662,7 @@ function Navbar() {
               }}
             />
 
-            {navLinks.flatMap((link) => {
+            {navLinks.slice(0, navLinks.length - 1).flatMap((link) => {
               if (link.path === '/services') {
                 // Special handling for 'Services' link in mobile view
                 return [
@@ -669,8 +724,55 @@ function Navbar() {
                       return blocked;
                     }}
                 />
+                
               );
             })}
+            {/* Courses Dropdown */}
+            <div>
+              <button
+                onClick={() => setCoursesMenuOpenMobile((prev) => !prev)}
+                className="w-full flex items-center justify-between text-gray-800 font-bold py-3 rounded-md hover:bg-gray-100 transition-colors duration-200"
+              >
+                Courses
+                {coursesMenuOpenMobile ? (
+                  <ChevronUpIcon className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
+
+              {coursesMenuOpenMobile && (
+                <div className="pl-4 space-y-1">
+                  <NavLink
+                    key="/option-trading-for-beginners"
+                    path="/option-trading-for-beginners"
+                    text="Option Trading For Beginners"
+                    isActive={location.pathname === '/option-trading-for-beginners'}
+                    isMobile={true}
+                    onClick={() => {
+                      const blocked = handleInterceptNavigation('/option-trading-for-beginners');
+                      setDrawerOpen(false);
+                      setCoursesMenuOpenMobile(false);
+                      return blocked;
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <NavLink
+                  key={navLinks[navLinks.length - 1].path}
+                  path={navLinks[navLinks.length - 1].path}
+                  text= {navLinks[navLinks.length - 1].text}
+                  isActive={location.pathname === navLinks[navLinks.length - 1].path}
+                  isMobile={true}
+                  onClick={() => {
+                      const blocked = handleInterceptNavigation(navLinks[navLinks.length - 1].path);
+                      setDrawerOpen(false);
+                      return blocked;
+                    }}
+                />
+
             {currentUser && (
               <NavLink
                 path="/settings"

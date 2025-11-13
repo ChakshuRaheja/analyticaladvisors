@@ -27,6 +27,7 @@ import Disclaimer from './pages/Disclaimer';
 import InvestorCharter from './pages/InvestorCharter';
 import InvestorGrievance from './pages/InvestorGrievance';
 import ScrollToTop from './components/ScrollToTop';
+import ProgressBar from './components/ProgressBar.jsx';
 // import Dashboard from './pages/Dashboard';
 import ApiTest from './components/ApiTest';
 import TestPage from './pages/TestPage';
@@ -34,6 +35,7 @@ import KycCallback from './pages/KycCallback';
 import BlogPage from './pages/BlogPage';
 import BlogDetailPage from './pages/BlogDetailPage';
 import StockRecommendations from './components/StockRecommendations';
+import OptionTradingForBeginners from './pages/OptionTradingForBeginners';
 import {NavigationBlockProvider} from './context/NavigationBlockContext';
 
 // Component to conditionally render the footer based on the current route
@@ -49,6 +51,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ProgressBar />
         <NavigationBlockProvider>
 
           <div className="flex flex-col min-h-screen">
@@ -96,6 +99,7 @@ function App() {
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/stock-recommendations" element={<PrivateRoute><StockRecommendations /></PrivateRoute>} />
                 <Route path="/blog/:id" element={<BlogDetailPage />} />
+                <Route path="/option-trading-for-beginners" element={<OptionTradingForBeginners />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

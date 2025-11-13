@@ -5,6 +5,7 @@ import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'fireb
 import { useAuth } from '../context/AuthContext';
 import { initiateEsign as initiateEsignService, verifyEsignStatus } from '../services/esign.service';
 import { toast } from 'react-toastify';
+import { sendNotificationToTelegram } from '../services/notification';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -102,6 +103,54 @@ const API_CONFIG = {
 
 // Subscription configuration
 const SUBSCRIPTION_CONFIG = {
+  stock_of_month: {
+    name: 'Stock of the Month',
+    endpoint: API_CONFIG.endpoints.stock_of_month,
+    color: 'red',
+    instructions:{
+      title: 'Principles of Trading',
+      points:[
+        'Always use a stop-loss — no exceptions.',
+        'Diversify. Never risk more than 4-5% of your capital per instrument.',
+        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
+        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
+      ]
+    },
+    columns: [
+      // { id: 'srNo', label: 'Sr. No', sortable: true },
+      { id: 'stockName', label: 'Stock Name', sortable: true },
+      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
+      { id: 'type', label: 'Type', sortable: true },
+      { id: 'sector', label: 'Sector', sortable: true },
+      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
+      { id: 'recommendation', label: 'Recommendation', sortable: true },
+      { id: 'researchReport', label: 'Research Report', sortable: true }
+    ]
+  },
+  equity_investing: {
+    name: 'Equity Investing',
+    endpoint: API_CONFIG.endpoints.equity_investing,
+    color: 'purple',
+    instructions:{
+      title: 'Client Instructions – Please Read Before Taking Any Action',
+      points:[
+        'Buy only those stocks which are marked as Buy.',
+        'Maintain portfolio allocation as per the advised levels.',
+        'The remaining funds may be kept as cash or parked in the Stock of the Month.',
+        'Allocation is based on the total capital you plan to invest over the next year.'
+      ]
+    },
+    columns: [
+      // { id: 'srNo', label: 'Sr. No', sortable: true },
+      { id: 'stockName', label: 'Stock Name', sortable: true },
+      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
+      { id: 'type', label: 'Type', sortable: true },
+      { id: 'sector', label: 'Sector', sortable: true },
+      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
+      { id: 'recommendation', label: 'Recommendation', sortable: true },
+      { id: 'researchReport', label: 'Research Report', sortable: true }
+    ]
+  },
   swing_equity: {
     name: 'Swing Trading - Equity',
     endpoint: API_CONFIG.endpoints.swing_equity,
@@ -158,55 +207,7 @@ const SUBSCRIPTION_CONFIG = {
       { id: 'update', label: 'Update', sortable: true },
       { id: 'status', label: 'Status', sortable: true }
     ]
-  },
-  equity_investing: {
-    name: 'Equity Investing',
-    endpoint: API_CONFIG.endpoints.equity_investing,
-    color: 'purple',
-    instructions:{
-      title: 'Client Instructions – Please Read Before Taking Any Action',
-      points:[
-        'Buy only those stocks which are marked as Buy.',
-        'Maintain portfolio allocation as per the advised levels.',
-        'The remaining funds may be kept as cash or parked in the Stock of the Month.',
-        'Allocation is based on the total capital you plan to invest over the next year.'
-      ]
-    },
-    columns: [
-      // { id: 'srNo', label: 'Sr. No', sortable: true },
-      { id: 'stockName', label: 'Stock Name', sortable: true },
-      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
-      { id: 'type', label: 'Type', sortable: true },
-      { id: 'sector', label: 'Sector', sortable: true },
-      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
-      { id: 'recommendation', label: 'Recommendation', sortable: true },
-      { id: 'researchReport', label: 'Research Report', sortable: true }
-    ]
-  },
-  stock_of_month: {
-    name: 'Stock of the Month',
-    endpoint: API_CONFIG.endpoints.stock_of_month,
-    color: 'red',
-    instructions:{
-      title: 'Principles of Trading',
-      points:[
-        'Always use a stop-loss — no exceptions.',
-        'Diversify. Never risk more than 4-5% of your capital per instrument.',
-        'Book your losses quickly. Let your winners run using trailing stops so you protect profits while still giving the trade room to grow.',
-        'Winners manage risk — losers manage hope. Hope has no place on a trading screen.'
-      ]
-    },
-    columns: [
-      // { id: 'srNo', label: 'Sr. No', sortable: true },
-      { id: 'stockName', label: 'Stock Name', sortable: true },
-      { id: 'nseBseCode', label: 'NSE/ BSE Code', sortable: true },
-      { id: 'type', label: 'Type', sortable: true },
-      { id: 'sector', label: 'Sector', sortable: true },
-      { id: 'preferredAllocation', label: 'Preferred Allocation (%)', sortable: true },
-      { id: 'recommendation', label: 'Recommendation', sortable: true },
-      { id: 'researchReport', label: 'Research Report', sortable: true }
-    ]
-  }
+  } 
 };
 
 const colorConfig = {
@@ -276,6 +277,7 @@ const StockRecommendations = ({ activeSubscriptions = [] }) => {
   const [userData, setUserData] = useState(null);
   const [kycLoading, setKycLoading] = useState(false);
   const [eSignLoading, setESignLoading] = useState(false);
+  const [activeTrial, setActiveTrial] = useState(false);
 
   const handleDigioCancel = () => {
     setShowKycPopup(false);
@@ -383,9 +385,9 @@ const detectSubscriptions = async () => {
     if (isTrialActive) {
       console.log('✅ Active trial found, activating all plans');
       const allPlans = [
+        'equity_investing',
         'swing_equity',
         'swing_commodity',
-        'equity_investing',
       ];
       setActiveSubs(allPlans);
       if (!activeTab && allPlans.length > 0) {
@@ -453,6 +455,18 @@ const detectSubscriptions = async () => {
 
     fetchUserData();
   }, [currentUser]);
+
+  // checking if free trial is active
+  useEffect(() => {
+    if (!userData || !userData.trialEndDate) return;
+
+    const today = new Date();
+    const trialEndDate = new Date(userData.trialEndDate);
+    if (trialEndDate >= today){
+      setActiveTrial(true);
+    }
+  }, [userData]);
+
 
   // Check KYC status when component mounts or user changes
   useEffect(() => {
@@ -622,38 +636,6 @@ const checkKycStatusFromFirebase = async () => {
       return;
     }
 
-//     console.log('🔍 [DEBUG] Firebase KYC status:', userData.kycStatus);
-//     console.log('🔍 [DEBUG] Firebase KYC data status:', kycData.status);
-
-//     // If Firebase already has approved status, use it directly
-//     if (kycData.status === 'approved' || userData.kycStatus === 'approved') {
-//       console.log('🔍 [DEBUG] Using Firebase approved status directly');
-//       setKycStatus('verified');
-//       setIsCheckingKyc(false);
-//       return;
-//     }
-//     // Add this code when both KYC and eSign are verified
-// if (kycStatus === 'verified' && esignStatus === 'verified') {
-//   const userRef = doc(db, 'users', currentUser.uid);
-//   await updateDoc(userRef, {
-//     kycEsignCompleted: true,
-//     kycEsignCompletedAt: new Date().toISOString(),
-//     updatedAt: new Date().toISOString()
-//   });
-//   setKycEsignCompleted(true);
-
-// }
-
-//     // Only call backend API if Firebase doesn't have a proper status
-//     console.log('🔍 [DEBUG] Calling backend API for status check');
-//     const API_BASE_URL = import.meta.env.PROD ? import.meta.env.VITE_API_BASE_URL : "http://localhost:3001";
-//     const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify({ requestID: kycData.requestId }),
-//       credentials: 'include'
-//     });
-
     // 1. First, call the backend API to verify KYC status
     console.log('🔍 [DEBUG] Calling backend API for status check');
     const API_BASE_URL = import.meta.env.PROD ? import.meta.env.VITE_API_BASE_URL : "http://localhost:3001";
@@ -689,6 +671,9 @@ const checkKycStatusFromFirebase = async () => {
 
     // 4. If approved, check eSign status
     if (newStatus === 'approved') {
+      //send internal telegram notification
+      const telegramNotificationBody = `🪪✅ \nKyc Approved:- \n Name: ${userData?.firstName +' '+userData?.lastName} \n UserId: ${currentUser.uid}`
+      await sendNotificationToTelegram(telegramNotificationBody);
       checkEsignStatusFromFirebase();
     }
 
@@ -880,6 +865,8 @@ const checkEsignStatusFromFirebase = async () => {
     
     // Set the status message
     if (status === 'verified') {
+      const telegramNotificationBody = `✍️✅ \nESign verified:- \n Name: ${userData?.firstName +' '+ userData.lastName} \n UserId: ${currentUser.uid}`
+      await sendNotificationToTelegram(telegramNotificationBody);
       setEsignStatusMessage('eSign verification completed successfully! Your stock recommendations are now unlocked.');
       // Update KYC eSign completion status if both are verified
       if (kycStatus === 'verified') {
@@ -906,74 +893,23 @@ const checkEsignStatusFromFirebase = async () => {
   }
 };
 
-    
-   
+ // Consolidated effect to fetch data when activeTab, kycStatus,esignStatus and activeTrial change
+  useEffect(() => {
+    if (activeTab) {
+      const alreadyLoaded = stocks[activeTab] && stocks[activeTab].length > 0;
+      const isLoading = loading[activeTab];
 
-  // Test function to fetch and log raw API response
-  const testApiEndpoint = async () => {
-    try {
-      const endpoint = API_CONFIG.baseUrl + API_CONFIG.endpoints.swing_equity;
-      console.log('Testing API endpoint:', endpoint);
-      
-      const response = await fetchWithRetry(endpoint, {
-        method: 'GET',
-        mode: 'cors',
-        cache: 'no-cache',
-        credentials: 'omit'
-      });
-      
-      const data = await response.json();
-      console.log('Raw API Response (test):', JSON.stringify(data, null, 2));
-      
-      // Log response structure
-      if (Array.isArray(data)) {
-        console.log('Response is an array with length:', data.length);
-        if (data.length > 0) {
-          console.log('First item keys:', Object.keys(data[0]));
-          console.log('First item values:', data[0]);
-        }
-      } else if (data && typeof data === 'object') {
-        console.log('Response is an object with keys:', Object.keys(data));
-        // Check for common data containers
-        const possibleKeys = ['data', 'results', 'items', 'stocks', 'recommendations'];
-        for (const key of possibleKeys) {
-          if (Array.isArray(data[key])) {
-            console.log(`Found array in key '${key}' with ${data[key].length} items`);
-            if (data[key].length > 0) {
-              console.log(`First ${key} item:`, data[key][0]);
-            }
-          }
+      if (!alreadyLoaded && !isLoading) {
+        if (kycStatus === 'verified' && esignStatus === 'verified') {
+          fetchRecommendationData(activeTab);
+        } else if (activeTrial){
+          fetchRecommendationData(activeTab);
         }
       }
-      
-      return data;
-    } catch (error) {
-      console.error('Error testing API endpoint:', error);
-      return null;
     }
-  };
+  }, [activeTab, kycStatus, esignStatus, activeTrial]);
 
-  // Call the test function when component mounts
-  useEffect(() => {
-    testApiEndpoint();
-  }, []);
-
-  // Consolidated effect to fetch data when activeTab or kycStatus changes
- // Consolidated effect to fetch data when activeTab, kycStatus, and esignStatus change
-useEffect(() => {
-  if (activeTab && kycStatus === 'verified' && esignStatus === 'verified') {
-    const alreadyLoaded = stocks[activeTab] && stocks[activeTab].length > 0;
-    const isLoading = loading[activeTab];
-
-    
-
-    if (!alreadyLoaded && !isLoading) {
-      fetchSubscriptionData(activeTab);
-    }
-  }
-}, [activeTab, kycStatus, esignStatus]);
-
-  const fetchSubscriptionData = async (plan) => {
+  const fetchRecommendationData = async (plan) => {
     console.log(`[${plan}] Starting optimized data fetch`);
     setLoading((prev) => ({ ...prev, [plan]: true }));
     setErrors((prev) => ({ ...prev, [plan]: '' }));
@@ -1168,31 +1104,6 @@ useEffect(() => {
           mappedItem[ourField] = item[apiField] !== undefined ? item[apiField] : 'N/A';
         }
 
-        // // Handle plan-specific fields and data formatting
-        // if (plan === 'swing_equity' || plan === 'swing_commodity') {
-        //   // Ensure action is properly formatted
-        //   if (mappedItem.action === 'N/A' && item['Action (Buy / Sell)']) {
-        //     mappedItem.action = item['Action (Buy / Sell)'];
-        //   }
-          
-        //   // Format numbers to 2 decimal places
-        //   if (mappedItem.price && mappedItem.price !== 'N/A') {
-        //     mappedItem.price = parseFloat(mappedItem.price).toFixed(2);
-        //   }
-        //   if (mappedItem.target && mappedItem.target !== 'N/A') {
-        //     mappedItem.target = parseFloat(mappedItem.target).toFixed(2);
-        //   }
-        //   if (mappedItem.stopLoss && mappedItem.stopLoss !== 'N/A') {
-        //     mappedItem.stopLoss = parseFloat(mappedItem.stopLoss).toFixed(2);
-        //   }
-        //   if (mappedItem.exitPrice && mappedItem.exitPrice !== 'N/A') {
-        //     mappedItem.exitPrice = parseFloat(mappedItem.exitPrice).toFixed(2);
-        //   }
-        //   if (mappedItem.pl && mappedItem.pl !== 'N/A') {
-        //     mappedItem.pl = parseFloat(mappedItem.pl).toFixed(2);
-        //   }
-        // }
-        
         // Special handling for commodity tab
         if (plan === 'swing_commodity') {
           // Use stock name as commodity if commodity is not available
@@ -1450,7 +1361,7 @@ useEffect(() => {
     );
   }
 // Show KYC verification UI if not verified AND has active subscriptions AND not completed before
-if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
+if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted && !activeTrial) {
   return (
     <div className="container mx-auto px-4 py-16 pt-24 min-h-screen">
       <div className="text-base leading-relaxed text-gray-800">
@@ -1543,41 +1454,10 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
                 Proceed to Esign verification 
               </button>
             )}
-            
           </div>
-          
-          {/* {userData?.kycData?.requestId && (
-            <p className="text-sm text-gray-500 mt-6">
-              KYC verification link has been sent to your email. Please check your inbox and complete the process.
-            </p>
-          )} */}
         </div>
       </div>
-      
-      {/* KYC Success Popup */}
-      {/* {showKycPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">KYC Request Sent!</h3>
-              <p className="text-sm text-gray-500 mb-6">
-                We've sent a verification link to your email. Please check your inbox and complete the KYC process to unlock recommendations.
-              </p>
-              <button
-                onClick={() => setShowKycPopup(false)}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                Got it!
-              </button>
-            </div>
-          </div>
-        </div>
-      )} */}
+
       {/* KYC Status Popup */}
       {showKycStatusPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1610,7 +1490,7 @@ if (kycStatus !== 'verified' && activeSubs.length > 0 && !kycEsignCompleted) {
 
 
 // Show eSign verification UI if KYC is verified but eSign is not AND not completed before
-if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted)  {
+if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted && !activeTrial)  {
   return (
     <div className="container mx-auto px-4 py-16 pt-24 min-h-screen">
       <div className="max-w-2xl mx-auto text-center">
@@ -1731,7 +1611,7 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
   const subsToDisplay = activeSubs.length > 0 ? activeSubs : (activeTab ? [activeTab] : []);
 
   if (subsToDisplay.length > 0 && !subsToDisplay.includes("stock-of-month")) {
-    subsToDisplay.push("stock-of-month");
+    subsToDisplay.unshift("stock-of-month");
   }
 
   console.log('Rendering component. showEsignStatusPopup:', showEsignStatusPopup, 'esignStatusMessage:', esignStatusMessage);
