@@ -165,7 +165,7 @@ const SUBSCRIPTION_CONFIG = {
       ]
     },
     columns: [
-      // { id: 'srNo', label: 'Sr. No', sortable: true },
+      { id: 'status', label: 'Status', sortable: true },
       { id: 'stock', label: 'Stock', sortable: true },
       { id: 'action', label: 'Action', sortable: true },
       { id: 'entryDate', label: 'Entry Date', sortable: true },
@@ -176,7 +176,6 @@ const SUBSCRIPTION_CONFIG = {
       { id: 'stopLoss', label: 'Stop Loss', sortable: true },
       { id: 'pl', label: 'P/L', sortable: true },
       { id: 'update', label: 'Update', sortable: true },
-      { id: 'status', label: 'Status', sortable: true }
     ]
   },
   swing_commodity: {
@@ -193,7 +192,7 @@ const SUBSCRIPTION_CONFIG = {
       ]
     },
     columns: [
-      // { id: 'srNo', label: 'Sr. No', sortable: true },
+      { id: 'status', label: 'Status', sortable: true },
       { id: 'commodity', label: 'Commodity', sortable: true },
       { id: 'action', label: 'Action', sortable: true },
       { id: 'entryDate', label: 'Entry Date', sortable: true },
@@ -205,7 +204,6 @@ const SUBSCRIPTION_CONFIG = {
       { id: 'pl', label: 'P/L', sortable: true },
       { id: 'margin', label: 'Margin', sortable: true },
       { id: 'update', label: 'Update', sortable: true },
-      { id: 'status', label: 'Status', sortable: true }
     ]
   } 
 };
@@ -910,7 +908,7 @@ const checkEsignStatusFromFirebase = async () => {
   }, [activeTab, kycStatus, esignStatus, activeTrial]);
 
   const fetchRecommendationData = async (plan) => {
-    console.log(`[${plan}] Starting optimized data fetch`);
+    // console.log(`[${plan}] Starting optimized data fetch`);
     setLoading((prev) => ({ ...prev, [plan]: true }));
     setErrors((prev) => ({ ...prev, [plan]: '' }));
 
@@ -922,7 +920,7 @@ const checkEsignStatusFromFirebase = async () => {
       }
       const fullUrl = `${API_CONFIG.baseUrl}${endpoint}`;
       
-      console.log(`[${plan}] Fetching data from: ${fullUrl}`);
+      // console.log(`[${plan}] Fetching data from: ${fullUrl}`);
 
       // Make the API request with retry logic
       const response = await fetchWithRetry(fullUrl, {
@@ -938,29 +936,29 @@ const checkEsignStatusFromFirebase = async () => {
       let data;
       try {
         data = JSON.parse(responseText);
-        console.group(`[${plan}] Response Analysis`);
-        console.log('Response Type:', Array.isArray(data) ? 'Array' : 'Object');
+        // console.group(`[${plan}] Response Analysis`);
+        // console.log('Response Type:', Array.isArray(data) ? 'Array' : 'Object');
         
         if (Array.isArray(data)) {
           console.log(`Array length:`, data.length);
           if (data.length > 0) {
-            console.log('First item:', data[0]);
-            console.log('First item keys:', Object.keys(data[0]));
+            // console.log('First item:', data[0]);
+            // console.log('First item keys:', Object.keys(data[0]));
           }
         } else if (data && typeof data === 'object') {
-          console.log('Top-level keys:', Object.keys(data));
+          // console.log('Top-level keys:', Object.keys(data));
           
           // Check common response structures
           const possibleDataKeys = ['data', 'results', 'items', 'stocks', 'recommendations'];
           for (const key of possibleDataKeys) {
             if (data[key] !== undefined) {
-              console.log(`Found data in key: ${key}`, Array.isArray(data[key]) ? 
-                `(Array of ${data[key].length} items)` : 
-                `(Type: ${typeof data[key]})`);
+              // console.log(`Found data in key: ${key}`, Array.isArray(data[key]) ? 
+              //   `(Array of ${data[key].length} items)` : 
+              //   `(Type: ${typeof data[key]})`);
               
               if (Array.isArray(data[key]) && data[key].length > 0) {
-                console.log(`First ${key} item:`, data[key][0]);
-                console.log(`${key} item keys:`, Object.keys(data[key][0]));
+                // console.log(`First ${key} item:`, data[key][0]);
+                // console.log(`${key} item keys:`, Object.keys(data[key][0]));
               }
             }
           }
@@ -968,8 +966,8 @@ const checkEsignStatusFromFirebase = async () => {
         console.groupEnd();
         
       } catch (e) {
-        console.error(`[${plan}] Error parsing JSON:`, e);
-        console.error('Raw response that failed to parse:', responseText);
+      //   console.error(`[${plan}] Error parsing JSON:`, e);
+      //   console.error('Raw response that failed to parse:', responseText);
         throw new Error(`Invalid JSON response: ${e.message}`);
       }
 
@@ -986,44 +984,40 @@ const checkEsignStatusFromFirebase = async () => {
         for (const key of possibleDataKeys) {
           if (data[key] && Array.isArray(data[key])) {
             stockData = data[key];
-            console.log(`[${plan}] Found data in key: ${key} (${stockData.length} items)`);
+            // console.log(`[${plan}] Found data in key: ${key} (${stockData.length} items)`);
             break;
           }
         }
         
         // If no array found but the object has properties that look like stock data
         if (stockData.length === 0 && Object.keys(data).length > 0) {
-          console.log(`[${plan}] No array found in response, treating top-level object as single item`);
+          // console.log(`[${plan}] No array found in response, treating top-level object as single item`);
           stockData = [data];
         }
       }
       
-      console.log(`[${plan}] Extracted ${stockData.length} items for processing`);
-
       // Log the first item to see its structure
       if (stockData.length > 0) {
-        console.log(`[${plan}] First item structure:`, stockData[0]);
-        console.log(`[${plan}] First item keys:`, Object.keys(stockData[0]));
+        // console.log(`[${plan}] First item structure:`, stockData[0]);
+        // console.log(`[${plan}] First item keys:`, Object.keys(stockData[0]));
       }
 
       // Log the raw data before processing
-      console.log(`[${plan}] Raw stock data before processing:`, stockData);
+      // console.log(`[${plan}] Raw stock data before processing:`, stockData); 
 
       // Log the raw data structure for debugging
-      console.log(`[${plan}] Raw data structure:`, JSON.stringify(stockData, null, 2));
+      // console.log(`[${plan}] Raw data structure:`, JSON.stringify(stockData, null, 2));
 
       // Map the API response to match our column structure
       stockData = stockData.map((item, index) => {
         if (!item || typeof item !== 'object') {
-          console.warn(`[${plan}] Invalid item at index ${index}:`, item);
+          // console.warn(`[${plan}] Invalid item at index ${index}:`, item);
           return null;
         }
 
-        console.log(`[${plan}] Processing item ${index}:`, item);
         
         // Get all available keys from the item
         const itemKeys = Object.keys(item);
-        console.log(`[${plan}] Available keys in item:`, itemKeys);
 
         // Define field mappings for each subscription type
         const fieldMappings = {
@@ -1122,12 +1116,8 @@ const checkEsignStatusFromFirebase = async () => {
             }
           }
         }
-
-        console.log(`[${plan}] Mapped item ${index}:`, mappedItem);
         return mappedItem;
       }).filter(Boolean); // Remove any null items
-
-      console.log(`[${plan}] Processed Stock Data:`, stockData);
 
       if (stockData.length > 0) {
         stockData.sort((a, b) => {
@@ -1135,22 +1125,20 @@ const checkEsignStatusFromFirebase = async () => {
           const srNoB = parseInt(b.srNo) || 0;
           return srNoB - srNoA; // Descending order
         });
-        console.log(`[${plan}] Data sorted by Sr. No. in descending order`);
-        console.log(`[${plan}] Updating UI with ${stockData.length} items`);
+
         updateColumnOrder(plan, stockData);
         setStocks((prev) => ({
           ...prev,
           [plan]: stockData,
         }));
       } else {
-        console.warn(`[${plan}] No data in the response`);
+        console.warn(` No data in the response`);
         setStocks((prev) => ({
           ...prev,
           [plan]: [],
         }));
       }
     } catch (error) {
-      console.error(`Error fetching ${plan} stocks:`, error);
       let errorMessage;
       if (error.message.includes('Failed to fetch')) {
         errorMessage =
@@ -1261,85 +1249,195 @@ const checkEsignStatusFromFirebase = async () => {
     }
 
     return (
-      <div className="bg-white shadow overflow-hidden  sm:rounded-b-lg sm:rounded-tr-lg min-h-96">
-        {/* Instructions Section */}
-        {config.instructions && (
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-6 m-6 rounded-r-lg">
-            <h3 className="text-lg font-semibold text-blue-900 mb-3">
-              {config.instructions.title}
-            </h3>
-            <ol className="list-decimal list-inside space-y-2">
-              {config.instructions.points.map((point, index) => (
-                <li key={index} className="text-sm text-blue-800">
-                  {point}
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {config.columns.map((column) => (
-                  <th 
-                    key={column.id} 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    {column.label}
-                  </th>
+      <div>
+        <div className="bg-white shadow overflow-hidden  sm:rounded-b-lg sm:rounded-tr-lg min-h-96">
+          {/* Instructions Section */}
+          {config.instructions && (
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-6 m-6 rounded-r-lg">
+              <h3 className="text-lg font-semibold text-blue-900 mb-3">
+                {config.instructions.title}
+              </h3>
+              <ol className="list-decimal list-inside space-y-2">
+                {config.instructions.points.map((point, index) => (
+                  <li key={index} className="text-sm text-blue-800">
+                    {point}
+                  </li>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {tabStocks && tabStocks.length > 0 ? (
-                tabStocks.map((stock, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    {config.columns.map((column) => {
-                      const value = stock[column.id]
-                      const stringValue = value !== undefined && value !== null ? value.toString() : 'N/A';
-                      // Handle case-insensitive "buy" or "sell"
-                      const lowerValue = stringValue.trim().toLowerCase();
-                      const isBuy = lowerValue === 'buy';
-                      const isSell = lowerValue === 'sell';
-                      return (
-                        <td 
-                          key={column.id} 
-                          className= {`px-6 py-4 whitespace-nowrap text-sm ${
-                                      isBuy
-                                        ? 'text-green-600 font-medium'
-                                        : isSell
-                                        ? 'text-red-600 font-medium'
-                                        : 'text-gray-500'
-                                    }`}
-                        >
-                          {
-                          /^https?:\/\//.test(stringValue) ? (
-                            <a href={stringValue} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                              Research Report
-                            </a>
-                          ) : (
-                            stringValue
-                          )
-                        }
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))
-              ) : (
+              </ol>
+            </div>
+          )}
+  
+          {/* Open trades table */}
+          {(normalizedTab !== 'stock_of_month' && normalizedTab !== 'equity_investing') && (<div className='mt-10 mb-5'>
+            <h1 className="text-2xl font-semibold text-gray-700 text-center tracking-wide">
+              Open Trades
+            </h1>
+  
+            <div className="w-20 h-1 bg-blue-500 mx-auto mt-2 rounded-full"></div>
+          </div>)}
+  
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td 
-                    colSpan={config.columns.length} 
-                    className="px-6 py-4 text-center text-sm text-gray-500"
-                  >
-                    No  recommendations found.
-                  </td>
+                  {config.columns.map((column) => (
+                    <th 
+                      key={column.id} 
+                      className="px-6 py-3 text-left text-sm font-bold text-gray-500 uppercase tracking-wider"
+                    >
+                      {column.label}
+                    </th>
+                  ))}
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {tabStocks && tabStocks.length > 0 ? (
+                  tabStocks
+                    .filter(stock => stock.status?.toLowerCase() !== "closed")
+                    .map((stock, index) => {
+                      const status = stock.status?.toLowerCase();
+  
+                      return (
+                        <tr key={index} className={`hover:bg-opacity-65 ${status === 'open' ? 'bg-[#FBCEB1]' : 'bg-gray-15'}`}>
+                          {config.columns.map((column) => {
+                            const value = stock[column.id]
+                            const stringValue = value !== undefined && value !== null ? value.toString() : 'N/A';
+                            // Handle case-insensitive "buy" or "sell"
+                            const lowerValue = stringValue.trim().toLowerCase();
+                            const isBuy = lowerValue === 'buy';
+                            const isSell = lowerValue === 'sell';
+                            const isPositivePNL = (/^\d+(\.\d+)?%$/).test(lowerValue.replace(/\s+/g, ''));
+                            const isNegtivePNL = (/^-?\d+(\.\d+)?%$/).test(lowerValue.replace(/\s+/g, ''));
+                            const isOpen = lowerValue == 'open';
+                                                        
+                            return (
+                              <td 
+                                key={column.id} 
+                                className= {`px-6 py-4 whitespace-nowrap text-sm border ${
+                                            (isBuy || isPositivePNL)
+                                              ? ' text-green-600 font-medium'
+                                              : (isSell || isNegtivePNL)
+                                              ? 'text-red-600 font-medium'
+                                              : isOpen ? 'text-blue-700 font-medium'
+                                              : 'text-gray-500'
+                                          }`}
+                              >
+                                {
+                                /^https?:\/\//.test(stringValue) ? (
+                                  <a href={stringValue} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                    Research Report
+                                  </a>
+                                ) : (
+                                  stringValue
+                                )
+                              }
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })
+                ) : (
+                  <tr>
+                    <td 
+                      colSpan={config.columns.length} 
+                      className="px-6 py-4 text-center text-sm text-gray-500"
+                    >
+                      No  recommendations found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        {/* Closed trades table */}
+        {(normalizedTab !== 'stock_of_month' && normalizedTab !== 'equity_investing') && (<div className="bg-white shadow mt-5 overflow-hidden  sm:rounded-b-lg sm:rounded-tr-lg min-h-96" >
+          <div>
+            <div className='mt-5 mb-5'>
+              <h1 className="text-2xl font-bold text-gray-700 text-center tracking-wide">
+                Closed Trades
+              </h1>
+  
+              <div className="w-20 h-1 bg-blue-500 mx-auto mt-2 rounded-full"></div>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {config.columns.map((column) => (
+                      <th 
+                        key={column.id} 
+                        className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        {column.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {tabStocks && tabStocks.length > 0 ? (
+                    tabStocks
+                      .filter(stock => stock.status?.toLowerCase() === "closed")
+                      .map((stock, index) => {
+                        const status = stock.status?.toLowerCase();
+                        return (
+                          <tr key={index} className='hover:bg-opacity-65 bg-[#E4F9E4]'>
+                            {config.columns.map((column) => {
+                              const value = stock[column.id]
+                              const stringValue = value !== undefined && value !== null ? value.toString() : 'N/A';
+                              // Handle case-insensitive "buy" or "sell"
+                              const lowerValue = stringValue.trim().toLowerCase();
+                              const isBuy = lowerValue === 'buy';
+                              const isSell = lowerValue === 'sell';
+                              const isPositivePNL = (/^\d+(\.\d+)?%$/).test(lowerValue.replace(/\s+/g, ''));
+                              const isNegtivePNL = (/^-?\d+(\.\d+)?%$/).test(lowerValue.replace(/\s+/g, ''));
+                              const isclosed = lowerValue == 'closed';
+                              
+                              return (
+                                <td 
+                                  key={column.id} 
+                                  className= {`px-6 py-4 whitespace-nowrap text-sm border ${
+                                              (isBuy || isPositivePNL || isclosed)
+                                                ? 'text-green-600 font-medium'
+                                                : (isSell || isNegtivePNL)
+                                                ? 'text-red-600 font-medium'
+                                                : 'text-gray-500'
+                                            }`}
+                                >
+                                  {
+                                  /^https?:\/\//.test(stringValue) ? (
+                                    <a href={stringValue} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                      Research Report
+                                    </a>
+                                  ) : (
+                                    stringValue
+                                  )
+                                }
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })
+                  ) : (
+                    <tr>
+                      <td 
+                        colSpan={config.columns.length} 
+                        className="px-6 py-4 text-center text-sm text-gray-500"
+                      >
+                        No  recommendations found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+  
+          </div>
+        </div>)}
       </div>
     );
   };
@@ -1644,7 +1742,7 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
       
       <div className="container mx-auto px-4 py-72 pt-20">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Recommendations</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mt-5 mb-2">Recommendations</h1>
           <p className="text-gray-600 mt-2">
             View and analyze recommendations across your subscription plans.
           </p>
