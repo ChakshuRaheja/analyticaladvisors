@@ -383,6 +383,7 @@ const detectSubscriptions = async () => {
     if (isTrialActive) {
       console.log('✅ Active trial found, activating all plans');
       const allPlans = [
+        'stock_of_month',
         'equity_investing',
         'swing_equity',
         'swing_commodity',
@@ -1706,9 +1707,10 @@ if (kycStatus === 'verified' && esignStatus !== 'verified' && !kycEsignCompleted
 }
 
 
-  const subsToDisplay = activeSubs.length > 0 ? activeSubs : (activeTab ? [activeTab] : []);
+  let subsToDisplay = activeSubs.length > 0 ? activeSubs : (activeTab ? [activeTab] : []);
 
-  if (subsToDisplay.length > 0 && !subsToDisplay.includes("stock-of-month")) {
+  if (subsToDisplay.length > 0 && subsToDisplay.includes("stock-of-month")) {
+    subsToDisplay = subsToDisplay.filter(sub => sub !== "stock-of-month");
     subsToDisplay.unshift("stock-of-month");
   }
 
