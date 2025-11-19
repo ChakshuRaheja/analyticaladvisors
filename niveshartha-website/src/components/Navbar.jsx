@@ -220,7 +220,7 @@ function Navbar() {
     setError("");
     try {
       await logout();
-      navigate("/");
+      navigate("/login");
     } catch (error) {
       setError("Failed to log out");
       console.error(error);
