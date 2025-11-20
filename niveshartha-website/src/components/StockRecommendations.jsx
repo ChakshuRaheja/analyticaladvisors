@@ -1302,7 +1302,7 @@ const checkEsignStatusFromFirebase = async () => {
                         <tr key={index} className={`hover:bg-opacity-65 ${status === 'open' ? 'bg-[#FBCEB1]' : 'bg-gray-15'}`}>
                           {config.columns.map((column) => {
                             const value = stock[column.id]
-                            const stringValue = value !== undefined && value !== null ? value.toString() : 'N/A';
+                            let stringValue = value !== undefined && value !== null ? value.toString() : 'N/A';
                             // Handle case-insensitive "buy" or "sell"
                             const lowerValue = stringValue.trim().toLowerCase();
                             const isBuy = lowerValue === 'buy';
@@ -1310,6 +1310,9 @@ const checkEsignStatusFromFirebase = async () => {
                             const isPositivePNL = (/^\d+(\.\d+)?%$/).test(lowerValue.replace(/\s+/g, ''));
                             const isNegtivePNL = (/^-?\d+(\.\d+)?%$/).test(lowerValue.replace(/\s+/g, ''));
                             const isOpen = lowerValue == 'open';
+                            if (isNegtivePNL || isPositivePNL){
+                              stringValue = lowerValue.replace(/\s+/g, '');
+                            }
                                                         
                             return (
                               <td 
@@ -1388,7 +1391,7 @@ const checkEsignStatusFromFirebase = async () => {
                           <tr key={index} className='hover:bg-opacity-65 bg-[#E4F9E4]'>
                             {config.columns.map((column) => {
                               const value = stock[column.id]
-                              const stringValue = value !== undefined && value !== null ? value.toString() : 'N/A';
+                              let stringValue = value !== undefined && value !== null ? value.toString() : 'N/A';
                               // Handle case-insensitive "buy" or "sell"
                               const lowerValue = stringValue.trim().toLowerCase();
                               const isBuy = lowerValue === 'buy';
@@ -1396,6 +1399,9 @@ const checkEsignStatusFromFirebase = async () => {
                               const isPositivePNL = (/^\d+(\.\d+)?%$/).test(lowerValue.replace(/\s+/g, ''));
                               const isNegtivePNL = (/^-?\d+(\.\d+)?%$/).test(lowerValue.replace(/\s+/g, ''));
                               const isclosed = lowerValue == 'closed';
+                              if (isNegtivePNL || isPositivePNL){
+                                stringValue = lowerValue.replace(/\s+/g, '');
+                              }
                               
                               return (
                                 <td 
